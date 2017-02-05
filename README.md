@@ -1,5 +1,5 @@
-NerdAnim
-========
+BeastMaster
+===========
 A Bukkit plugin that handles custom mob spawning.
 
 
