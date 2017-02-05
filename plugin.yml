@@ -1,0 +1,22 @@
+name: ${project.name}
+version: ${project.version}
+author: totemo
+authors: []
+description: ${project.description}
+website: ${project.url}
+database: true
+main: nu.nerd.beastmaster.BeastMaster
+
+permissions:
+  beastmaster.admin:
+    description: Permission to administer the plugin.
+    default: op
+
+commands:
+  beastmaster:
+    description: ${project.name} administrative command.
+    permission: beastmaster.admin
+    usage: |
+    
+      §e/<command> help§f - Show usage help.
+      §e/<command> reload§f - Reload the configuration.

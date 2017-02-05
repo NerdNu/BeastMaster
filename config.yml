@@ -1,0 +1,6 @@
+debug:
+  config: false
+  replace: false
+
+chance:
+  wither-skeleton: 0.8
