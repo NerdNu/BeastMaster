@@ -116,6 +116,9 @@ public class ZoneManager {
      * @param logger the logger.
      */
     public void load(FileConfiguration config, Logger logger) {
+        _idToZone.clear();
+        _worldToZones.clear();
+
         ConfigurationSection zones = config.getConfigurationSection("zones");
         if (zones == null) {
             zones = config.createSection("zones");
