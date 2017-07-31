@@ -14,6 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import nu.nerd.beastmaster.commands.BeastItemExecutor;
 import nu.nerd.beastmaster.commands.BeastMasterExecutor;
+import nu.nerd.beastmaster.commands.BeastMobExecutor;
 import nu.nerd.beastmaster.commands.BeastZoneExecutor;
 import nu.nerd.beastmaster.commands.ExecutorBase;
 import nu.nerd.beastmaster.zones.ZoneManager;
@@ -39,6 +40,11 @@ public class BeastMaster extends JavaPlugin implements Listener {
      */
     public static ZoneManager ZONES = new ZoneManager();
 
+    /**
+     * Mob type manager as a singleton.
+     */
+    public static MobTypeManager MOBS = new MobTypeManager();
+
     // ------------------------------------------------------------------------
     /**
      * @see org.bukkit.plugin.java.JavaPlugin#onEnable()
@@ -52,6 +58,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         addCommandExecutor(new BeastMasterExecutor());
         addCommandExecutor(new BeastZoneExecutor());
         addCommandExecutor(new BeastItemExecutor());
+        addCommandExecutor(new BeastMobExecutor());
 
         getServer().getPluginManager().registerEvents(this, this);
     }

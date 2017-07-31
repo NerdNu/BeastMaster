@@ -21,6 +21,10 @@ permissions:
     description: Permission to use the /beast-item command.
     default: op
 
+  beastmaster.mob:
+    description: Permission to use the /beast-mob command.
+    default: op
+
 commands:
   beastmaster:
     description: ${project.name} administrative command.
@@ -51,4 +55,21 @@ commands:
       §e/<command> remove <id>§f - Remove the definition of the specified item type.
       §e/<command> get <id> §f[§e<count>§f] - Give the player <count> of the item type with the specified, previously defined ID.
       §e/<command> list§f - List all item types.
+      
+  beast-mob:
+    description: Configure mobs.
+    permission: beastmaster.mob
+    usage: |
+    
+      §e/<command> help§f - Show usage help.
+      §e/<command> add <id> <entity-type>§f - Define a new mob type as a mob with the specified Bukkit API entity type, e.g. ZOMBIE. 
+      §e/<command> remove <id>§f - Remove the definition of the specified mob type.
+      §e/<command> info <id>§f - Describe the specified mob type.
+      §e/<command> list§f - List all mob types.
+      §e/<command> health <id> (<number>|default)§f - Override the health of the mob, or use the vanilla default.
+      §e/<command> speed <id> (<number>|default)§f - Override the speed of the mob, or use the vanilla default.
+      §e/<command> baby-fraction <id> (<number>|default)§f - Override the fraction of baby mobs [0..1.0], or use the vanilla default.
+      §e/<command> add-drop <id> <item-id> <chance> <min> [<max>]§f - Create or modify a drop of the mob, with an item type previously defined by /beast-item, and with the specified chance in the range 0.0 to 1.0 and the specified number of items. If the maximum number is not specified, it defaults to the same as min.
+      §e/<command> remove-drop <id> <item-id>§f - Remove the specified item from the possible drops of this mob.
+      §e/<command> list-drops <id>§f - List all possible drops from this mob. 
       

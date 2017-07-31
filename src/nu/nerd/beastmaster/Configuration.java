@@ -55,6 +55,7 @@ public class Configuration {
 
         Logger logger = BeastMaster.PLUGIN.getLogger();
         BeastMaster.ZONES.load(config, logger);
+        BeastMaster.MOBS.load(config, logger);
 
         if (DEBUG_CONFIG) {
             logger.info("Configuration:");
