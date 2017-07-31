@@ -4,3 +4,7 @@ debug:
 
 chance:
   wither-skeleton: 0.8
+  
+zones: {}
+
+items: {}

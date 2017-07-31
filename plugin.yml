@@ -17,6 +17,10 @@ permissions:
     description: Permission to use the /beast-zone command.
     default: op
 
+  beastmaster.item:
+    description: Permission to use the /beast-item command.
+    default: op
+
 commands:
   beastmaster:
     description: ${project.name} administrative command.
@@ -35,3 +39,16 @@ commands:
       §e/<command> add <id> <world>§f - Add a new zone in the specified world.
       §e/<command> remove <id>§f - Remove the definition of the specified zone.
       §e/<command> list§f - List all zones.
+
+  beast-item:
+    description: Configure items.
+    permission: beastmaster.item
+    usage: |
+    
+      §e/<command> help§f - Show usage help.
+      §e/<command> define <id>§f - Define a new item type as the thing held in the player's main hand. 
+      §e/<command> redefine <id>§f - Redefine the specified item type as the thing held in the player's main hand. 
+      §e/<command> remove <id>§f - Remove the definition of the specified item type.
+      §e/<command> get <id> §f[§e<count>§f] - Give the player <count> of the item type with the specified, previously defined ID.
+      §e/<command> list§f - List all item types.
+      

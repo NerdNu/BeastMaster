@@ -1,9 +1,13 @@
 package nu.nerd.beastmaster;
 
+import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.inventory.ItemStack;
 
 // ----------------------------------------------------------------------------
 /**
@@ -27,6 +31,11 @@ public class Configuration {
      */
     public double CHANCE_WITHER_SKELETON;
 
+    /**
+     * Custom items for drops. Each ItemStack will have size 1.
+     */
+    public HashMap<String, ItemStack> ITEMS = new HashMap<>();
+
     // ------------------------------------------------------------------------
     /**
      * Load the plugin configuration.
@@ -38,8 +47,13 @@ public class Configuration {
         DEBUG_REPLACE = config.getBoolean("debug.replace");
         CHANCE_WITHER_SKELETON = config.getDouble("chance.wither-skeleton");
 
-        Logger logger = BeastMaster.PLUGIN.getLogger();
+        ITEMS.clear();
+        ConfigurationSection items = config.getConfigurationSection("items");
+        for (String itemId : items.getKeys(false)) {
+            ITEMS.put(itemId, items.getItemStack(itemId));
+        }
 
+        Logger logger = BeastMaster.PLUGIN.getLogger();
         BeastMaster.ZONES.load(config, logger);
 
         if (DEBUG_CONFIG) {
@@ -48,6 +62,10 @@ public class Configuration {
             logger.info("CHANCE_WITHER_SKELETON: " + CHANCE_WITHER_SKELETON);
             logger.info("ZONES: " + BeastMaster.ZONES.getZones().stream()
             .map(z -> z.getDescription()).collect(Collectors.joining(", ")));
+            logger.info("ITEMS: ");
+            for (Entry<String, ItemStack> entry : ITEMS.entrySet()) {
+                logger.info(entry.getKey() + ": " + Util.getItemDescription(entry.getValue()));
+            }
         }
     } // reload
 
@@ -56,6 +74,11 @@ public class Configuration {
      * Save updated configuration.
      */
     public void save() {
+        FileConfiguration config = BeastMaster.PLUGIN.getConfig();
+        ConfigurationSection items = config.createSection("items");
+        for (Entry<String, ItemStack> entry : ITEMS.entrySet()) {
+            items.set(entry.getKey(), entry.getValue());
+        }
         BeastMaster.PLUGIN.saveConfig();
     }
 

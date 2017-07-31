@@ -12,6 +12,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import nu.nerd.beastmaster.commands.BeastItemExecutor;
 import nu.nerd.beastmaster.commands.BeastMasterExecutor;
 import nu.nerd.beastmaster.commands.BeastZoneExecutor;
 import nu.nerd.beastmaster.commands.ExecutorBase;
@@ -50,6 +51,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
 
         addCommandExecutor(new BeastMasterExecutor());
         addCommandExecutor(new BeastZoneExecutor());
+        addCommandExecutor(new BeastItemExecutor());
 
         getServer().getPluginManager().registerEvents(this, this);
     }
