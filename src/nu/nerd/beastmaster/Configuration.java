@@ -1,6 +1,7 @@
 package nu.nerd.beastmaster;
 
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -38,12 +39,25 @@ public class Configuration {
         CHANCE_WITHER_SKELETON = config.getDouble("chance.wither-skeleton");
 
         Logger logger = BeastMaster.PLUGIN.getLogger();
+
+        BeastMaster.ZONES.load(config, logger);
+
         if (DEBUG_CONFIG) {
             logger.info("Configuration:");
             logger.info("DEBUG_REPLACE: " + DEBUG_REPLACE);
             logger.info("CHANCE_WITHER_SKELETON: " + CHANCE_WITHER_SKELETON);
+            logger.info("ZONES: " + BeastMaster.ZONES.getZones().stream()
+            .map(z -> z.getDescription()).collect(Collectors.joining(", ")));
         }
     } // reload
+
+    // ------------------------------------------------------------------------
+    /**
+     * Save updated configuration.
+     */
+    public void save() {
+        BeastMaster.PLUGIN.saveConfig();
+    }
 
     // ------------------------------------------------------------------------
 } // class Configuration

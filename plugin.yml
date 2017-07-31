@@ -6,10 +6,15 @@ description: ${project.description}
 website: ${project.url}
 database: true
 main: nu.nerd.beastmaster.BeastMaster
+softdepend: [ Multiverse-Core ]
 
 permissions:
   beastmaster.admin:
     description: Permission to administer the plugin.
+    default: op
+
+  beastmaster.zone:
+    description: Permission to use the /beast-zone command.
     default: op
 
 commands:
@@ -20,3 +25,13 @@ commands:
     
       §e/<command> help§f - Show usage help.
       §e/<command> reload§f - Reload the configuration.
+      
+  beast-zone:
+    description: Configure zones where beasts operate.
+    permission: beastmaster.zone
+    usage: |
+    
+      §e/<command> help§f - Show usage help.
+      §e/<command> add <id> <world>§f - Add a new zone in the specified world.
+      §e/<command> remove <id>§f - Remove the definition of the specified zone.
+      §e/<command> list§f - List all zones.

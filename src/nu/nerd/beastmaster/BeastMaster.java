@@ -5,15 +5,17 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Biome;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import net.md_5.bungee.api.ChatColor;
+import nu.nerd.beastmaster.commands.BeastMasterExecutor;
+import nu.nerd.beastmaster.commands.BeastZoneExecutor;
+import nu.nerd.beastmaster.commands.ExecutorBase;
+import nu.nerd.beastmaster.zones.ZoneManager;
 
 // ----------------------------------------------------------------------------
 /**
@@ -31,6 +33,11 @@ public class BeastMaster extends JavaPlugin implements Listener {
      */
     public static BeastMaster PLUGIN;
 
+    /**
+     * Zone manager as a singleton.
+     */
+    public static ZoneManager ZONES = new ZoneManager();
+
     // ------------------------------------------------------------------------
     /**
      * @see org.bukkit.plugin.java.JavaPlugin#onEnable()
@@ -40,6 +47,9 @@ public class BeastMaster extends JavaPlugin implements Listener {
         PLUGIN = this;
         saveDefaultConfig();
         CONFIG.reload();
+
+        addCommandExecutor(new BeastMasterExecutor());
+        addCommandExecutor(new BeastZoneExecutor());
 
         getServer().getPluginManager().registerEvents(this, this);
     }
@@ -51,24 +61,6 @@ public class BeastMaster extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         Bukkit.getScheduler().cancelTasks(this);
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * @see org.bukkit.plugin.java.JavaPlugin#onCommand(org.bukkit.command.CommandSender,
-     *      org.bukkit.command.Command, java.lang.String, java.lang.String[])
-     */
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length != 1 || args[0].equalsIgnoreCase("help")) {
-            return false;
-        }
-
-        if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
-            CONFIG.reload();
-            sender.sendMessage(ChatColor.GOLD + getName() + " configuration reloaded.");
-        }
-        return true;
     }
 
     // ------------------------------------------------------------------------
@@ -91,5 +83,17 @@ public class BeastMaster extends JavaPlugin implements Listener {
             event.getEntity().remove();
             world.spawnEntity(loc, EntityType.WITHER_SKELETON);
         }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Add the specified CommandExecutor and set it as its own TabCompleter.
+     * 
+     * @param executor the CommandExecutor.
+     */
+    protected void addCommandExecutor(ExecutorBase executor) {
+        PluginCommand command = getCommand(executor.getName());
+        command.setExecutor(executor);
+        command.setTabCompleter(executor);
     }
 } // class BeastMaster
