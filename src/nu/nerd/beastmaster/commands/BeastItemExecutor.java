@@ -197,7 +197,7 @@ public class BeastItemExecutor extends ExecutorBase {
                 return true;
             }
         }
-        return true;
+        return false;
     } // onCommand
 
     // ------------------------------------------------------------------------
