@@ -110,7 +110,7 @@ public class BeastMobExecutor extends ExecutorBase {
 
             } else if (args[0].equals("list")) {
                 if (args.length != 1) {
-                    sender.sendMessage(ChatColor.RED + "Too many arguments. Usage: /" + getName() + " list");
+                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " list");
                     return true;
                 }
 
@@ -232,7 +232,7 @@ public class BeastMobExecutor extends ExecutorBase {
 
             } else if (args[0].equals("list-drops")) {
                 if (args.length != 2) {
-                    sender.sendMessage(ChatColor.RED + "Too many arguments. Usage: /" + getName() + " list-drops");
+                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " list-drops");
                     return true;
                 }
 
