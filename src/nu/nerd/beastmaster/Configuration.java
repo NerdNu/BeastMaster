@@ -76,10 +76,14 @@ public class Configuration {
      */
     public void save() {
         FileConfiguration config = BeastMaster.PLUGIN.getConfig();
+        Logger logger = BeastMaster.PLUGIN.getLogger();
+
         ConfigurationSection items = config.createSection("items");
         for (Entry<String, ItemStack> entry : ITEMS.entrySet()) {
             items.set(entry.getKey(), entry.getValue());
         }
+        BeastMaster.ZONES.save(config, logger);
+        BeastMaster.MOBS.save(config, logger);
         BeastMaster.PLUGIN.saveConfig();
     }
 

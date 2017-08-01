@@ -10,8 +10,6 @@ import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import nu.nerd.beastmaster.BeastMaster;
-
 // ----------------------------------------------------------------------------
 /**
  * Manages the zone definitions.
@@ -135,7 +133,7 @@ public class ZoneManager {
 
     // ------------------------------------------------------------------------
     /**
-     * Save all the zones in the plugin configuration and write that to disk.
+     * Save all the zones in the plugin configuration.
      * 
      * @param config the plugin configuration file.
      * @param logger the logger.
@@ -146,7 +144,6 @@ public class ZoneManager {
         for (Zone zone : _idToZone.values()) {
             zone.save(zones, logger);
         }
-        BeastMaster.CONFIG.save();
     }
 
     // ------------------------------------------------------------------------

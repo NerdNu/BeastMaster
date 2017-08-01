@@ -88,8 +88,7 @@ public class MobTypeManager {
 
     // ------------------------------------------------------------------------
     /**
-     * Save all the mob types in the plugin configuration and write that to
-     * disk.
+     * Save all the mob types in the plugin configuration.
      * 
      * @param config the plugin configuration file.
      * @param logger the logger.
@@ -100,7 +99,6 @@ public class MobTypeManager {
         for (MobType mobType : _types.values()) {
             mobType.save(mobsSection, logger);
         }
-        BeastMaster.CONFIG.save();
     }
 
     // ------------------------------------------------------------------------

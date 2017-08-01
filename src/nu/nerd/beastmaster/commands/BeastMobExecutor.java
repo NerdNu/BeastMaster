@@ -12,6 +12,7 @@ import net.md_5.bungee.api.ChatColor;
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.Drop;
 import nu.nerd.beastmaster.MobType;
+import nu.nerd.beastmaster.zones.Zone;
 
 // ----------------------------------------------------------------------------
 /**
@@ -65,7 +66,7 @@ public class BeastMobExecutor extends ExecutorBase {
 
                 mobType = new MobType(idArg, entityType);
                 BeastMaster.MOBS.addMobType(mobType);
-                BeastMaster.MOBS.save(BeastMaster.PLUGIN.getConfig(), BeastMaster.PLUGIN.getLogger());
+                BeastMaster.CONFIG.save();
                 sender.sendMessage(ChatColor.GOLD + "Added a new mob type: " + mobType.getDescription());
                 return true;
 
@@ -83,7 +84,13 @@ public class BeastMobExecutor extends ExecutorBase {
                 }
 
                 BeastMaster.MOBS.removeMobType(mobType);
-                BeastMaster.MOBS.save(BeastMaster.PLUGIN.getConfig(), BeastMaster.PLUGIN.getLogger());
+
+                // Also remove the mob type from spawns in all known zones.
+                for (Zone zone : BeastMaster.ZONES.getZones()) {
+                    zone.removeSpawn(mobType.getId());
+                }
+
+                BeastMaster.CONFIG.save();
                 sender.sendMessage(ChatColor.GOLD + "Removed mob type: " + mobType.getDescription());
                 return true;
 
@@ -191,7 +198,7 @@ public class BeastMobExecutor extends ExecutorBase {
                 Drop oldDrop = mobType.getDrop(itemIdArg);
                 Drop newDrop = new Drop(itemIdArg, chance, min, max);
                 mobType.addDrop(newDrop);
-                BeastMaster.MOBS.save(BeastMaster.PLUGIN.getConfig(), BeastMaster.PLUGIN.getLogger());
+                BeastMaster.CONFIG.save();
                 if (oldDrop != null) {
                     sender.sendMessage(ChatColor.GOLD + "Replacing " + ChatColor.YELLOW + idArg +
                                        ChatColor.GOLD + " drop:");
@@ -219,7 +226,7 @@ public class BeastMobExecutor extends ExecutorBase {
 
                 String itemIdArg = args[2];
                 Drop drop = mobType.removeDrop(itemIdArg);
-                BeastMaster.MOBS.save(BeastMaster.PLUGIN.getConfig(), BeastMaster.PLUGIN.getLogger());
+                BeastMaster.CONFIG.save();
 
                 if (drop == null) {
                     sender.sendMessage(ChatColor.RED + "Mob type " + idArg + " has no drop with ID \"" + itemIdArg + "\"!");
@@ -315,7 +322,7 @@ public class BeastMobExecutor extends ExecutorBase {
         }
 
         setMethod.accept(mobType, value);
-        BeastMaster.MOBS.save(BeastMaster.PLUGIN.getConfig(), BeastMaster.PLUGIN.getLogger());
+        BeastMaster.CONFIG.save();
         String formattedValue = (value == null) ? "default" : "" + value;
         sender.sendMessage(ChatColor.GOLD + "The " + propertyName + " of mob type " + ChatColor.YELLOW + mobType.getId() +
                            ChatColor.GOLD + " is now " + ChatColor.YELLOW + formattedValue + ChatColor.GOLD + ".");
