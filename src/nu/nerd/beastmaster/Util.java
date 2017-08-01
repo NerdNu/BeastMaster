@@ -37,7 +37,10 @@ public class Util {
      */
     public static String getItemDescription(ItemStack item) {
         StringBuilder description = new StringBuilder();
-        description.append(item.getAmount()).append('x').append(item.getType().name()).append(':').append(item.getDurability());
+        if (item.getAmount() != 1) {
+            description.append(item.getAmount()).append('x');
+        }
+        description.append(item.getType().name()).append(':').append(item.getDurability());
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             if (meta instanceof SkullMeta) {

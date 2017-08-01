@@ -1,5 +1,7 @@
 package nu.nerd.beastmaster;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.logging.Logger;
 
 import org.bukkit.ChatColor;
@@ -46,6 +48,19 @@ public class MobType {
         _babyFraction = (Double) section.get("baby-fraction");
         _speed = (Double) section.get("speed");
         _health = (Double) section.get("health");
+
+        _drops.clear();
+        ConfigurationSection drops = section.getConfigurationSection("drops");
+        if (drops != null) {
+            for (String itemId : drops.getKeys(false)) {
+                Drop drop = new Drop(itemId, 0, 0, 0);
+                ConfigurationSection dropSection = drops.getConfigurationSection(itemId);
+                if (drop.load(dropSection, logger)) {
+                    _drops.put(itemId, drop);
+                }
+            }
+        }
+
         // TODO: implement potions.
         return true;
     }
@@ -69,6 +84,11 @@ public class MobType {
         }
         if (_health != null) {
             section.set("health", _health);
+        }
+
+        ConfigurationSection dropsSection = section.createSection("drops");
+        for (Drop drop : _drops.values()) {
+            drop.save(dropsSection, logger);
         }
     }
 
@@ -182,6 +202,60 @@ public class MobType {
 
     // ------------------------------------------------------------------------
     /**
+     * Add or replace the drop with the item ID of the specified Drop.
+     * 
+     * @param drop the drop.
+     */
+    public void addDrop(Drop drop) {
+        _drops.put(drop.getItemId(), drop);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Remove the drop with the specified item ID.
+     * 
+     * @param itemId the item ID.
+     * @return the removed drop.
+     */
+    public Drop removeDrop(String itemId) {
+        return _drops.remove(itemId);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Remove the drop with the same item ID as the specified drop from the
+     * drops of this mob.
+     * 
+     * @param drop the drop.
+     * @return the removed drop.
+     */
+    public Drop removeDrop(Drop drop) {
+        return removeDrop(drop.getItemId());
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the drop with the specified item ID, or null if not found.
+     * 
+     * @param itemId the item ID.
+     * @return the drop with the specified item ID, or null if not found.
+     */
+    public Drop getDrop(String itemId) {
+        return _drops.get(itemId);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return a collection of all drops of this mob type.
+     * 
+     * @return a collection of all drops of this mob type.
+     */
+    public Collection<Drop> getAllDrops() {
+        return _drops.values();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * The programmatic ID of this MobType.
      */
     protected String _id;
@@ -205,4 +279,9 @@ public class MobType {
      * Health in hearts; null => no override.
      */
     protected Double _health;
+
+    /**
+     * Map from item ID to drop for this mob type.
+     */
+    protected HashMap<String, Drop> _drops = new HashMap<>();
 } // class MobType

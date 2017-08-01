@@ -5,6 +5,8 @@ import java.util.logging.Logger;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 
+import net.md_5.bungee.api.ChatColor;
+
 // ----------------------------------------------------------------------------
 /**
  * Represents a possible item drop.
@@ -15,11 +17,25 @@ public class Drop {
      * Constructor.
      * 
      * @param itemId the ID of the custom item.
+     * @param dropChance the drop chance in the range [0.0, 1.0].
+     * @param min the minimum number of drops.
+     * @param max the maximum number of drops.
      */
-    public Drop(String itemId) {
+    public Drop(String itemId, double dropChance, int min, int max) {
         _itemId = itemId;
-        _min = _max = 1;
-        _dropChance = 0;
+        _dropChance = dropChance;
+        _min = min;
+        _max = max;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the item ID of this drop.
+     * 
+     * @return the item ID of this drop.
+     */
+    public String getItemId() {
+        return _itemId;
     }
 
     // ------------------------------------------------------------------------
@@ -32,9 +48,9 @@ public class Drop {
      */
     public boolean load(ConfigurationSection section, Logger logger) {
         _itemId = section.getName();
+        _dropChance = section.getDouble("chance", 0.0);
         _min = section.getInt("min", 1);
         _max = section.getInt("max", Math.max(1, _min));
-        _dropChance = section.getDouble("chance", 0.0);
         return true;
     }
 
@@ -47,9 +63,9 @@ public class Drop {
      */
     public void save(ConfigurationSection parentSection, Logger logger) {
         ConfigurationSection section = parentSection.createSection(_itemId);
+        section.set("chance", _dropChance);
         section.set("min", _min);
         section.set("max", _max);
-        section.set("chance", _dropChance);
     }
 
     // ------------------------------------------------------------------------
@@ -78,14 +94,15 @@ public class Drop {
 
     // ------------------------------------------------------------------------
     /**
-     * Return a brief description of the drop item, its probablility and count.
+     * Return a brief description of the drop ID, item, probability and count.
      * 
      * @return a brief description of the drop.
      */
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(_dropChance * 100).append("% ");
+        s.append(ChatColor.YELLOW).append(_itemId).append(": ");
+        s.append(ChatColor.WHITE).append(_dropChance * 100).append("% ");
         if (_min == _max) {
             s.append(_min);
         } else {
@@ -100,6 +117,16 @@ public class Drop {
 
     // ------------------------------------------------------------------------
     /**
+     * The custom item ID.
+     */
+    protected String _itemId;
+
+    /**
+     * Drop chance, [0.0,1.0].
+     */
+    protected double _dropChance;
+
+    /**
      * Minimum number of items in item stack.
      */
     protected int _min;
@@ -108,14 +135,4 @@ public class Drop {
      * Maximum number of items in item stack.
      */
     protected int _max;
-
-    /**
-     * Drop chance, [0.0,1.0].
-     */
-    protected double _dropChance;
-
-    /**
-     * The custom item ID.
-     */
-    protected String _itemId;
 } // class Drop
