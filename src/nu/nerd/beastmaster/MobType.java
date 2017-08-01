@@ -102,24 +102,37 @@ public class MobType {
     public LivingEntity spawn(Location loc) {
         LivingEntity mob = (LivingEntity) loc.getWorld().spawnEntity(loc, _entityType);
 
-        if (_babyFraction != null) {
-            if (mob instanceof Ageable) {
-                Ageable ageable = (Ageable) mob;
-                ageable.setAdult();
-                if (Math.random() < _babyFraction) {
-                    ageable.setBaby();
-                }
+        // Don't change age of mob during configuration (which may happen
+        // long after spawning).
+        if (_babyFraction != null && mob instanceof Ageable) {
+            Ageable ageable = (Ageable) mob;
+            ageable.setAdult();
+            if (Math.random() < _babyFraction) {
+                ageable.setBaby();
             }
         }
 
+        configureMob(mob);
+        return mob;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Configure a mob according to this mob type.
+     * 
+     * @param mob the mob.
+     */
+    public void configureMob(LivingEntity mob) {
+        mob.setMetadata(BeastMaster.MOB_META_KEY, BeastMaster.MOB_META);
         AttributeInstance speed = mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
         if (_speed != null) {
             speed.setBaseValue(_speed);
         }
         if (_health != null) {
+            AttributeInstance maxHealth = mob.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+            maxHealth.setBaseValue(_health);
             mob.setHealth(_health);
         }
-        return mob;
     }
 
     // ------------------------------------------------------------------------
@@ -130,6 +143,16 @@ public class MobType {
      */
     public String getId() {
         return _id;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the EntityType of this mob type.
+     * 
+     * @return the EntityType of this mob type.
+     */
+    public EntityType getEntityType() {
+        return _entityType;
     }
 
     // ------------------------------------------------------------------------

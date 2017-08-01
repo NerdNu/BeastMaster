@@ -110,6 +110,14 @@ public class Zone {
 
     // ------------------------------------------------------------------------
     /**
+     * Choose a random spawn from the types allowed in the zone.
+     */
+    public String randomSpawnMobType() {
+        return _spawns.choose();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Add the specified mob type (by ID) as a spawn replacement in this zone.
      * 
      * @param mobTypeId the ID of the mob type (which must already be defined).
