@@ -1,8 +1,9 @@
 package nu.nerd.beastmaster.commands;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.function.DoublePredicate;
+import java.util.function.Predicate;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -43,7 +44,7 @@ public class BeastMobExecutor extends ExecutorBase {
         if (args.length >= 1) {
             if (args[0].equals("add")) {
                 if (args.length != 3) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " add <id> <entity-type>");
+                    Commands.invalidArguments(sender, getName() + " add <mob-id> <entity-type>");
                     return true;
                 }
 
@@ -52,7 +53,7 @@ public class BeastMobExecutor extends ExecutorBase {
 
                 MobType mobType = BeastMaster.MOBS.getMobType(idArg);
                 if (mobType != null) {
-                    sender.sendMessage(ChatColor.RED + "A mob type named " + idArg + " already exists!");
+                    Commands.errorNotNull(sender, "mob type", idArg);
                     return true;
                 }
 
@@ -72,14 +73,14 @@ public class BeastMobExecutor extends ExecutorBase {
 
             } else if (args[0].equals("remove")) {
                 if (args.length != 2) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " remove <id>");
+                    Commands.invalidArguments(sender, getName() + " remove <mob-id>");
                     return true;
                 }
 
                 String idArg = args[1];
                 MobType mobType = BeastMaster.MOBS.getMobType(idArg);
                 if (mobType == null) {
-                    sender.sendMessage(ChatColor.RED + "There is no mob type named \"" + idArg + "\"!");
+                    Commands.errorNull(sender, "mob type", idArg);
                     return true;
                 }
 
@@ -96,19 +97,19 @@ public class BeastMobExecutor extends ExecutorBase {
 
             } else if (args[0].equals("info")) {
                 if (args.length != 2) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " info <id>");
+                    Commands.invalidArguments(sender, getName() + " info <mob-id>");
                     return true;
                 }
 
                 String idArg = args[1];
                 MobType mobType = BeastMaster.MOBS.getMobType(idArg);
                 if (mobType == null) {
-                    sender.sendMessage(ChatColor.RED + "There is no mob type named \"" + idArg + "\"!");
+                    Commands.errorNull(sender, "mob type", idArg);
                     return true;
                 }
 
                 sender.sendMessage(ChatColor.GOLD + "Mob type: " + mobType.getDescription());
-                Collection<Drop> allDrops = mobType.getAllDrops();
+                Collection<Drop> allDrops = mobType.getDropSet().getAllDrops();
                 sender.sendMessage(ChatColor.GOLD + (allDrops.isEmpty() ? "No drops defined." : "Drops:"));
                 for (Drop drop : allDrops) {
                     sender.sendMessage(drop.toString());
@@ -117,7 +118,7 @@ public class BeastMobExecutor extends ExecutorBase {
 
             } else if (args[0].equals("list")) {
                 if (args.length != 1) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " list");
+                    Commands.invalidArguments(sender, getName() + " list");
                     return true;
                 }
 
@@ -144,7 +145,7 @@ public class BeastMobExecutor extends ExecutorBase {
 
             } else if (args[0].equals("add-drop")) {
                 if (args.length < 5 || args.length > 6) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " add-drop <id> <item-id> <chance> <min> [<max>]");
+                    Commands.invalidArguments(sender, getName() + " add-drop <mob-id> <item-id> <chance> <min> [<max>]");
                     return true;
                 }
 
@@ -156,48 +157,43 @@ public class BeastMobExecutor extends ExecutorBase {
 
                 MobType mobType = BeastMaster.MOBS.getMobType(idArg);
                 if (mobType == null) {
-                    sender.sendMessage(ChatColor.RED + "There is no mob type named \"" + idArg + "\"!");
+                    Commands.errorNull(sender, "mob type", idArg);
                     return true;
                 }
 
-                double chance = -1;
-                try {
-                    chance = Double.parseDouble(chanceArg);
-                } catch (NumberFormatException ex) {
-                }
-                if (chance < 0.0 || chance > 1.0) {
-                    sender.sendMessage(ChatColor.RED + "The chance must be a number in the range [0.0, 1.0]!");
+                Double chance = Commands.parseNumber(chanceArg, Commands::parseDouble,
+                                                     x -> x >= 0.0 && x <= 1.0,
+                                                     () -> sender.sendMessage(ChatColor.RED + "The chance must be a number in the range [0.0, 1.0]!"),
+                                                     null);
+                if (chance == null) {
                     return true;
                 }
 
-                int min = -1;
-                try {
-                    min = Integer.parseInt(minArg);
-                } catch (NumberFormatException ex) {
-                }
-                if (min < 0) {
-                    sender.sendMessage(ChatColor.RED + "The minimum number of drops must be at least 0!");
+                Integer min = Commands.parseNumber(minArg, Commands::parseInt,
+                                                   x -> x >= 1,
+                                                   () -> sender.sendMessage(ChatColor.RED + "The minimum number of drops must be at least 1!"),
+                                                   null);
+                if (min == null) {
                     return true;
                 }
 
-                int max;
+                Integer max;
                 if (maxArg != null) {
-                    max = -1;
-                    try {
-                        max = Integer.parseInt(maxArg);
-                    } catch (NumberFormatException ex) {
-                    }
-                    if (max < min) {
-                        sender.sendMessage(ChatColor.RED + "The maximum number of drops must be at least as many as the minimum number!");
+                    max = Commands.parseNumber(maxArg, Commands::parseInt,
+                                               x -> x >= min,
+                                               () -> sender.sendMessage(ChatColor.RED +
+                                                                        "The maximum number of drops must be at least as many as the minimum number!"),
+                                               null);
+                    if (max == null) {
                         return true;
                     }
                 } else {
                     max = min;
                 }
 
-                Drop oldDrop = mobType.getDrop(itemIdArg);
+                Drop oldDrop = mobType.getDropSet().getDrop(itemIdArg);
                 Drop newDrop = new Drop(itemIdArg, chance, min, max);
-                mobType.addDrop(newDrop);
+                mobType.getDropSet().addDrop(newDrop);
                 BeastMaster.CONFIG.save();
                 if (oldDrop != null) {
                     sender.sendMessage(ChatColor.GOLD + "Replacing " + ChatColor.YELLOW + idArg +
@@ -213,19 +209,19 @@ public class BeastMobExecutor extends ExecutorBase {
 
             } else if (args[0].equals("remove-drop")) {
                 if (args.length != 3) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " remove-drop <id> <item-id>");
+                    Commands.invalidArguments(sender, getName() + " remove-drop <mob-id> <item-id>");
                     return true;
                 }
 
                 String idArg = args[1];
                 MobType mobType = BeastMaster.MOBS.getMobType(idArg);
                 if (mobType == null) {
-                    sender.sendMessage(ChatColor.RED + "There is no mob type named \"" + idArg + "\"!");
+                    Commands.errorNull(sender, "mob type", idArg);
                     return true;
                 }
 
                 String itemIdArg = args[2];
-                Drop drop = mobType.removeDrop(itemIdArg);
+                Drop drop = mobType.getDropSet().removeDrop(itemIdArg);
                 BeastMaster.CONFIG.save();
 
                 if (drop == null) {
@@ -239,24 +235,24 @@ public class BeastMobExecutor extends ExecutorBase {
 
             } else if (args[0].equals("list-drops")) {
                 if (args.length != 2) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " list-drops");
+                    Commands.invalidArguments(sender, getName() + " list-drops <mob-id>");
                     return true;
                 }
 
-                String id = args[1];
-                MobType mobType = BeastMaster.MOBS.getMobType(id);
+                String idArg = args[1];
+                MobType mobType = BeastMaster.MOBS.getMobType(idArg);
                 if (mobType == null) {
-                    sender.sendMessage(ChatColor.RED + "There is no mob type named \"" + id + "\"!");
+                    Commands.errorNull(sender, "mob type", idArg);
                     return true;
                 }
 
-                Collection<Drop> allDrops = mobType.getAllDrops();
+                Collection<Drop> allDrops = mobType.getDropSet().getAllDrops();
                 if (allDrops.isEmpty()) {
                     sender.sendMessage(ChatColor.GOLD + "Mob type " +
-                                       ChatColor.YELLOW + id + ChatColor.GOLD + " has no drops defined.");
+                                       ChatColor.YELLOW + idArg + ChatColor.GOLD + " has no drops defined.");
                 } else {
                     sender.sendMessage(ChatColor.GOLD + "Drops of mob type " +
-                                       ChatColor.YELLOW + id + ChatColor.GOLD + ":");
+                                       ChatColor.YELLOW + idArg + ChatColor.GOLD + ":");
                 }
                 for (Drop drop : allDrops) {
                     sender.sendMessage(drop.toString());
@@ -276,8 +272,7 @@ public class BeastMobExecutor extends ExecutorBase {
      * @param args the command arguments after /beast-mob.
      * @param expectedCommandArg the subcommand name.
      * @param propertyName the human-readable name of the property for messages.
-     * @param valueCheck a predicate that should return true if the value is
-     *        valid.
+     * @param inRange a predicate that should return true if the value is valid.
      * @param valueCheckDescription the decription of valid values shown in
      *        error messages.
      * @param setMethod a reference to the MobType instance method used to set
@@ -287,45 +282,40 @@ public class BeastMobExecutor extends ExecutorBase {
     protected boolean handleMobTypeSetProperty(CommandSender sender, String[] args,
                                                String expectedCommandArg,
                                                String propertyName,
-                                               DoublePredicate valueCheck,
+                                               Predicate<Double> inRange,
                                                String valueCheckDescription,
                                                BiConsumer<MobType, Double> setMethod) {
         if (args.length != 3) {
-            sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() +
-                               " " + expectedCommandArg + " <id> (<number>|default)");
+            Commands.invalidArguments(sender, getName() + " " + expectedCommandArg +
+                                              " <mob-id> (<number>|default)");
             return true;
         }
 
-        String id = args[1];
-        MobType mobType = BeastMaster.MOBS.getMobType(id);
+        String idArg = args[1];
+        MobType mobType = BeastMaster.MOBS.getMobType(idArg);
         if (mobType == null) {
-            sender.sendMessage(ChatColor.RED + "There is no mob type named \"" + id + "\"!");
+            Commands.errorNull(sender, "mob type", idArg);
             return true;
         }
 
-        String valueArg = args[2];
-        Double value;
-        try {
-            if (valueArg.equals("default")) {
-                value = null;
-            } else {
-                value = Double.parseDouble(valueArg);
-                if (!valueCheck.test(value)) {
-                    sender.sendMessage(ChatColor.RED + "The " + propertyName +
-                                       " value must be " + valueCheckDescription + ".");
-                    return true;
-                }
-            }
-        } catch (NumberFormatException ex) {
-            sender.sendMessage(ChatColor.RED + "The " + propertyName + " value must be a number or \"default\".");
-            return true;
-        }
+        Runnable rangeError = () -> sender.sendMessage(ChatColor.RED + "The " + propertyName +
+                                                       " value must be " + valueCheckDescription + ".");
+        Runnable formatError = () -> sender.sendMessage(ChatColor.RED + "The " + propertyName +
+                                                        " value must be a number or \"default\".");
+        Optional<Double> optionalValue = Commands.parseNumberDefaulted(args[2], "default",
+                                                                       Commands::parseDouble,
+                                                                       inRange,
+                                                                       rangeError, formatError);
 
-        setMethod.accept(mobType, value);
-        BeastMaster.CONFIG.save();
-        String formattedValue = (value == null) ? "default" : "" + value;
-        sender.sendMessage(ChatColor.GOLD + "The " + propertyName + " of mob type " + ChatColor.YELLOW + mobType.getId() +
-                           ChatColor.GOLD + " is now " + ChatColor.YELLOW + formattedValue + ChatColor.GOLD + ".");
+        if (optionalValue != null) {
+            Double value = optionalValue.orElse(null);
+            setMethod.accept(mobType, value);
+            BeastMaster.CONFIG.save();
+            String formattedValue = (value == null) ? "default" : "" + value;
+            sender.sendMessage(ChatColor.GOLD + "The " + propertyName + " of mob type " +
+                               ChatColor.YELLOW + mobType.getId() + ChatColor.GOLD + " is now " +
+                               ChatColor.YELLOW + formattedValue + ChatColor.GOLD + ".");
+        }
         return true;
     }
 } // class BeastMobExecutor

@@ -42,7 +42,7 @@ public class BeastItemExecutor extends ExecutorBase {
         if (args.length >= 1) {
             if (args[0].equals("define")) {
                 if (args.length != 2) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " define <id>");
+                    Commands.invalidArguments(sender, getName() + " define <id>");
                     return true;
                 }
 
@@ -74,7 +74,7 @@ public class BeastItemExecutor extends ExecutorBase {
 
             } else if (args[0].equals("redefine")) {
                 if (args.length != 2) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " redefine <id>");
+                    Commands.invalidArguments(sender, getName() + " redefine <id>");
                     return true;
                 }
 
@@ -100,7 +100,7 @@ public class BeastItemExecutor extends ExecutorBase {
 
             } else if (args[0].equals("remove")) {
                 if (args.length != 2) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " remove <id>");
+                    Commands.invalidArguments(sender, getName() + " remove <id>");
                     return true;
                 }
 
@@ -117,7 +117,7 @@ public class BeastItemExecutor extends ExecutorBase {
 
             } else if (args[0].equals("get")) {
                 if (args.length < 2 || args.length > 3) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " get <id> [<count>]");
+                    Commands.invalidArguments(sender, getName() + " get <id> [<count>]");
                     return true;
                 }
 
@@ -132,17 +132,13 @@ public class BeastItemExecutor extends ExecutorBase {
                     return true;
                 }
 
-                int count = 1;
+                Integer count = 1;
                 if (args.length == 3) {
-                    String countArg = args[2];
-                    try {
-                        count = Integer.parseInt(countArg);
-                    } catch (NumberFormatException ex) {
-                        count = 0;
-                    }
-
-                    if (count <= 0) {
-                        sender.sendMessage(ChatColor.RED + countArg + " is not a valid number of items!");
+                    count = Commands.parseNumber(args[2], Commands::parseInt,
+                                                 (c) -> c > 0,
+                                                 () -> sender.sendMessage(ChatColor.RED + "The number of items must be more than zero!"),
+                                                 null);
+                    if (count == null) {
                         return true;
                     }
                 }
@@ -185,7 +181,7 @@ public class BeastItemExecutor extends ExecutorBase {
 
             } else if (args[0].equals("list")) {
                 if (args.length != 1) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " list");
+                    Commands.invalidArguments(sender, getName() + " list");
                     return true;
                 }
 

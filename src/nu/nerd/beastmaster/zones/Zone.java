@@ -48,6 +48,9 @@ public class Zone {
             logger.severe("Could not load zone: " + getId() + ": invalid world " + worldName);
             return false;
         }
+        _centreX = section.getInt("centre-x");
+        _centreZ = section.getInt("centre-z");
+        _radius = section.getInt("radius");
 
         _spawns.clear();
         ConfigurationSection spawnsSection = section.getConfigurationSection("spawns");
@@ -70,6 +73,9 @@ public class Zone {
     public void save(ConfigurationSection parentSection, Logger logger) {
         ConfigurationSection section = parentSection.createSection(getId());
         section.set("world", _world.getName());
+        section.set("centre-x", _centreX);
+        section.set("centre-z", _centreZ);
+        section.set("radius", _radius);
 
         ConfigurationSection spawnsSection = section.createSection("spawns");
         for (Entry<String, Double> entry : getSpawnWeights().entrySet()) {
@@ -89,13 +95,30 @@ public class Zone {
 
     // ------------------------------------------------------------------------
     /**
+     * Set the square bounds of the zone as a centre position and a radius that
+     * is half the side length of the square.
+     * 
+     * @param centreX the centre X coordinate.
+     * @param centreZ the centre Z coordinate.
+     * @param radius the radius.
+     */
+    public void setBounds(int centreX, int centreZ, int radius) {
+        _centreX = centreX;
+        _centreZ = centreZ;
+        _radius = radius;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Return true if the zone contains the specified location.
      * 
      * @param loc the Location.
      * @return true if the zone contains the specified location.
      */
     public boolean contains(Location loc) {
-        return loc.getWorld().equals(getWorld());
+        return loc.getWorld().equals(getWorld()) &&
+               Math.abs(loc.getX() - _centreX) < _radius &&
+               Math.abs(loc.getZ() - _centreZ) < _radius;
     }
 
     // ------------------------------------------------------------------------
@@ -106,6 +129,36 @@ public class Zone {
      */
     public World getWorld() {
         return _world;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the centre X coordinate.
+     * 
+     * @return the centre X coordinate.
+     */
+    public int getCentreX() {
+        return _centreX;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the centre Z coordinate.
+     * 
+     * @return the centre Z coordinate.
+     */
+    public int getCentreZ() {
+        return _centreZ;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the zone radius (half the square side length) in blocks.
+     * 
+     * @return the zone radius (half the square side length) in blocks.
+     */
+    public int getRadius() {
+        return _radius;
     }
 
     // ------------------------------------------------------------------------
@@ -177,7 +230,11 @@ public class Zone {
     public String getDescription() {
         return ChatColor.YELLOW + _id +
                ChatColor.WHITE + " in world " +
-               ChatColor.YELLOW + _world.getName();
+               ChatColor.YELLOW + _world.getName() +
+               ChatColor.WHITE + " square, radius " +
+               ChatColor.YELLOW + _radius +
+               ChatColor.WHITE + " centred on " +
+               ChatColor.YELLOW + "(" + _centreX + "," + _centreZ + ")";
     }
 
     // ------------------------------------------------------------------------
@@ -190,6 +247,21 @@ public class Zone {
      * The world containing the zone.
      */
     protected World _world;
+
+    /**
+     * Centre X coordinate.
+     */
+    protected int _centreX;
+
+    /**
+     * Centre Z coordinate.
+     */
+    protected int _centreZ;
+
+    /**
+     * Radius of the zone (half the square side length) in blocks.
+     */
+    protected int _radius;
 
     /**
      * Weighted selection of string IDs of mob types that replace spawns in this

@@ -7,6 +7,7 @@ website: ${project.url}
 database: true
 main: nu.nerd.beastmaster.BeastMaster
 softdepend: [ Multiverse-Core ]
+depend: [ WorldEdit ]
 
 permissions:
   beastmaster.admin:
@@ -42,6 +43,7 @@ commands:
       §e/<command> help§f - Show usage help.
       §e/<command> add <zone-id> <world>§f - Add a new zone in the specified world.
       §e/<command> remove <zone-id>§f - Remove the definition of the specified zone.
+      §e/<command> square <zone-id> <x> <z> <radius>§f - Set the square bounds of the zone to be a square centred on (x,z) with the specified radius (half side-length).
       §e/<command> list§f - List all zones.
       §e/<command> add-spawn <zone-id> <mob-id> <weight>§f - Add the specified mob as a replacement for hostile spawns in the identified zone with the given relative weight (or modify the weight).
       §e/<command> remove-spawn <zone-id> <mob-id>§f - Disable spawns of the specified mob in the given zone.

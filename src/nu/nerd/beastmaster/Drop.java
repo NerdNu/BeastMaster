@@ -40,6 +40,29 @@ public class Drop {
 
     // ------------------------------------------------------------------------
     /**
+     * Set the type ID of the objective associated with this drop, or null if
+     * this drop does not denote an objective.
+     * 
+     * @param objectiveType the type ID of the objective.
+     */
+    public void setObjectiveType(String objectiveType) {
+        _objectiveType = objectiveType;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the type ID of the objective associated with this drop, or null if
+     * this drop does not denote an objective.
+     * 
+     * @return the type ID of the objective associated with this drop, or null
+     *         if this drop does not denote an objective.
+     */
+    public String getObjectiveType() {
+        return _objectiveType;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Load a custom drop from a configuration file section named after the
      * custom item ID.
      * 
@@ -51,6 +74,7 @@ public class Drop {
         _dropChance = section.getDouble("chance", 0.0);
         _min = section.getInt("min", 1);
         _max = section.getInt("max", Math.max(1, _min));
+        _objectiveType = section.getString("objective");
         return true;
     }
 
@@ -66,6 +90,7 @@ public class Drop {
         section.set("chance", _dropChance);
         section.set("min", _min);
         section.set("max", _max);
+        section.set("objective", _objectiveType);
     }
 
     // ------------------------------------------------------------------------
@@ -135,4 +160,10 @@ public class Drop {
      * Maximum number of items in item stack.
      */
     protected int _max;
+
+    /**
+     * The type ID of the objective associated with this drop, or null if this
+     * drop does not denote an objective.
+     */
+    protected String _objectiveType;
 } // class Drop

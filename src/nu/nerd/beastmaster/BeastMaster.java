@@ -25,6 +25,7 @@ import nu.nerd.beastmaster.commands.BeastMasterExecutor;
 import nu.nerd.beastmaster.commands.BeastMobExecutor;
 import nu.nerd.beastmaster.commands.BeastZoneExecutor;
 import nu.nerd.beastmaster.commands.ExecutorBase;
+import nu.nerd.beastmaster.objectives.ObjectiveManager;
 import nu.nerd.beastmaster.zones.Zone;
 import nu.nerd.beastmaster.zones.ZoneManager;
 
@@ -55,6 +56,11 @@ public class BeastMaster extends JavaPlugin implements Listener {
     public static MobTypeManager MOBS = new MobTypeManager();
 
     /**
+     * Manages all objectives.
+     */
+    protected ObjectiveManager OBJECTIVES = new ObjectiveManager();
+
+    /**
      * Metadata name (key) used to tag affected mobs.
      */
     public static final String MOB_META_KEY = "BM_Mob";
@@ -82,7 +88,17 @@ public class BeastMaster extends JavaPlugin implements Listener {
         addCommandExecutor(new BeastMobExecutor());
 
         getServer().getPluginManager().registerEvents(this, this);
-    }
+
+        // Every tick, do particle effects for objectives.
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
+            @Override
+            public void run() {
+                OBJECTIVES.tickAll();
+            }
+        }, 1, 1);
+
+        OBJECTIVES.extractSchematics();
+    } // onEnable
 
     // ------------------------------------------------------------------------
     /**
@@ -91,6 +107,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         Bukkit.getScheduler().cancelTasks(this);
+        OBJECTIVES.removeAll();
     }
 
     // ------------------------------------------------------------------------
@@ -198,11 +215,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         MobType mobType = MOBS.getMobType(monster);
         if (mobType != null) {
             event.getDrops().clear();
-            for (Drop drop : mobType.getAllDrops()) {
-                if (Math.random() < drop.getDropChance()) {
-                    loc.getWorld().dropItemNaturally(loc, drop.generate());
-                }
-            }
+            mobType.getDropSet().drop(loc);
         }
     } // onEntityDeath
 
@@ -243,4 +256,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         command.setExecutor(executor);
         command.setTabCompleter(executor);
     }
+
+    // ------------------------------------------------------------------------
+
 } // class BeastMaster

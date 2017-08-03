@@ -41,7 +41,7 @@ public class BeastZoneExecutor extends ExecutorBase {
         if (args.length >= 1) {
             if (args[0].equals("add")) {
                 if (args.length != 3) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " add <zone-id> <world>");
+                    Commands.invalidArguments(sender, getName() + " add <zone-id> <world>");
                     return true;
                 }
 
@@ -49,12 +49,12 @@ public class BeastZoneExecutor extends ExecutorBase {
                 String worldArg = args[2];
                 Zone zone = BeastMaster.ZONES.getZone(zoneArg);
                 if (zone != null) {
-                    sender.sendMessage(ChatColor.RED + "A zone named " + zoneArg + " already exists!");
+                    Commands.errorNotNull(sender, "zone", zoneArg);
                     return true;
                 }
                 World world = Bukkit.getWorld(worldArg);
                 if (world == null) {
-                    sender.sendMessage(ChatColor.RED + "There is no world named " + worldArg + "!");
+                    Commands.errorNull(sender, "world", worldArg);
                     return true;
                 }
 
@@ -70,14 +70,14 @@ public class BeastZoneExecutor extends ExecutorBase {
 
             } else if (args[0].equals("remove")) {
                 if (args.length != 2) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " remove <zone-id>");
+                    Commands.invalidArguments(sender, getName() + " remove <zone-id>");
                     return true;
                 }
 
                 String zoneArg = args[1];
                 Zone zone = BeastMaster.ZONES.getZone(zoneArg);
                 if (zone == null) {
-                    sender.sendMessage(ChatColor.RED + "There is no zone named \"" + zoneArg + "\".");
+                    Commands.errorNull(sender, "zone", zoneArg);
                     return true;
                 }
 
@@ -88,9 +88,24 @@ public class BeastZoneExecutor extends ExecutorBase {
                                    ChatColor.GOLD + ".");
                 return true;
 
+            } else if (args[0].equals("square")) {
+                if (args.length != 5) {
+                    Commands.invalidArguments(sender, getName() + " square <zone-id> <x> <z> <radius>");
+                    return true;
+                }
+
+                String zoneArg = args[1];
+                Zone zone = BeastMaster.ZONES.getZone(zoneArg);
+                if (zone == null) {
+                    Commands.errorNull(sender, "zone", zoneArg);
+                    return true;
+                }
+
+                sender.sendMessage(ChatColor.GOLD + "Set bounds for " + zone.getDescription() + ChatColor.GOLD + ".");
+                return true;
             } else if (args[0].equals("list")) {
                 if (args.length != 1) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " list");
+                    Commands.invalidArguments(sender, getName() + " list");
                     return true;
                 }
 
@@ -102,21 +117,21 @@ public class BeastZoneExecutor extends ExecutorBase {
 
             } else if (args[0].equals("add-spawn")) {
                 if (args.length != 4) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " add-spawn <zone-id> <mob-id> <weight>");
+                    Commands.invalidArguments(sender, getName() + " add-spawn <zone-id> <mob-id> <weight>");
                     return true;
                 }
 
                 String zoneArg = args[1];
                 Zone zone = BeastMaster.ZONES.getZone(zoneArg);
                 if (zone == null) {
-                    sender.sendMessage(ChatColor.RED + "There is no zone named \"" + zoneArg + "\".");
+                    Commands.errorNull(sender, "zone", zoneArg);
                     return true;
                 }
 
                 String mobIdArg = args[2];
                 MobType mobType = BeastMaster.MOBS.getMobType(mobIdArg);
                 if (mobType == null) {
-                    sender.sendMessage(ChatColor.RED + "There is no mob type named \"" + mobIdArg + "\"!");
+                    Commands.errorNull(sender, "mob type", mobIdArg);
                     return true;
                 }
 
@@ -142,21 +157,21 @@ public class BeastZoneExecutor extends ExecutorBase {
 
             } else if (args[0].equals("remove-spawn")) {
                 if (args.length != 3) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " remove-spawn <zone-id> <mob-id>");
+                    Commands.invalidArguments(sender, getName() + " remove-spawn <zone-id> <mob-id>");
                     return true;
                 }
 
                 String zoneArg = args[1];
                 Zone zone = BeastMaster.ZONES.getZone(zoneArg);
                 if (zone == null) {
-                    sender.sendMessage(ChatColor.RED + "There is no zone named \"" + zoneArg + "\".");
+                    Commands.errorNull(sender, "zone", zoneArg);
                     return true;
                 }
 
                 String mobIdArg = args[2];
                 MobType mobType = BeastMaster.MOBS.getMobType(mobIdArg);
                 if (mobType == null) {
-                    sender.sendMessage(ChatColor.RED + "There is no mob type named \"" + mobIdArg + "\"!");
+                    Commands.errorNull(sender, "mob type", mobIdArg);
                     return true;
                 }
 
@@ -175,14 +190,14 @@ public class BeastZoneExecutor extends ExecutorBase {
 
             } else if (args[0].equals("list-spawns")) {
                 if (args.length != 2) {
-                    sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + getName() + " list-spawns <zone-id>");
+                    Commands.invalidArguments(sender, getName() + " list-spawns <zone-id>");
                     return true;
                 }
 
                 String zoneArg = args[1];
                 Zone zone = BeastMaster.ZONES.getZone(zoneArg);
                 if (zone == null) {
-                    sender.sendMessage(ChatColor.RED + "There is no zone named \"" + zoneArg + "\".");
+                    Commands.errorNull(sender, "zone", zoneArg);
                     return true;
                 }
 
