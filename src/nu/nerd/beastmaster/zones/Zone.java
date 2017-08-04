@@ -102,7 +102,7 @@ public class Zone {
      * @param centreZ the centre Z coordinate.
      * @param radius the radius.
      */
-    public void setBounds(int centreX, int centreZ, int radius) {
+    public void setSquareBounds(int centreX, int centreZ, int radius) {
         _centreX = centreX;
         _centreZ = centreZ;
         _radius = radius;

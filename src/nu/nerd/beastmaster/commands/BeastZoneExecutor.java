@@ -23,7 +23,7 @@ public class BeastZoneExecutor extends ExecutorBase {
      * Default constructor.
      */
     public BeastZoneExecutor() {
-        super("beast-zone", "help", "add", "remove", "list",
+        super("beast-zone", "help", "add", "remove", "square", "list",
               "add-spawn", "remove-spawn", "list-spawns");
     }
 
@@ -101,8 +101,35 @@ public class BeastZoneExecutor extends ExecutorBase {
                     return true;
                 }
 
+                Integer centreX = Commands.parseNumber(args[2], Commands::parseInt,
+                                                       n -> true,
+                                                       () -> sender.sendMessage(ChatColor.RED + "The X coordinate must be an integer!"),
+                                                       null);
+                if (centreX == null) {
+                    return true;
+                }
+
+                Integer centreZ = Commands.parseNumber(args[3], Commands::parseInt,
+                                                       n -> true,
+                                                       () -> sender.sendMessage(ChatColor.RED + "The Z coordinate must be an integer!"),
+                                                       null);
+                if (centreZ == null) {
+                    return true;
+                }
+
+                Integer radius = Commands.parseNumber(args[4], Commands::parseInt,
+                                                      n -> n >= 0,
+                                                      () -> sender.sendMessage(ChatColor.RED + "The radius must be at least zero!"),
+                                                      () -> sender.sendMessage(ChatColor.RED + "The radius must be a non-negative integer!"));
+                if (radius == null) {
+                    return true;
+                }
+
+                zone.setSquareBounds(centreX, centreZ, radius);
+                BeastMaster.CONFIG.save();
                 sender.sendMessage(ChatColor.GOLD + "Set bounds for " + zone.getDescription() + ChatColor.GOLD + ".");
                 return true;
+
             } else if (args[0].equals("list")) {
                 if (args.length != 1) {
                     Commands.invalidArguments(sender, getName() + " list");
