@@ -116,6 +116,16 @@ public class ObjectiveType {
 
     // ------------------------------------------------------------------------
     /**
+     * Return true if this objective lives forever (until claimed).
+     * 
+     * @return true if this objective lives forever (until claimed).
+     */
+    public boolean isImmortal() {
+        return getExtraTicks() < 0;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Return a list of possible schematics of this objective, one of which will
      * be selected randomly to use as the objective marker.
      * 
@@ -173,8 +183,8 @@ public class ObjectiveType {
         s.append(ChatColor.WHITE).append(" instances between ");
         s.append(ChatColor.YELLOW).append(_minRange).append(ChatColor.WHITE).append(" and ");
         s.append(ChatColor.YELLOW).append(_maxRange).append(ChatColor.WHITE).append(" blocks");
-        if (getExtraTicks() < 0) {
-            s.append(ChatColor.YELLOW).append("\n- unlimited lifetime");
+        if (isImmortal()) {
+            s.append(ChatColor.WHITE).append("\n- unlimited lifetime");
         }
         return s.toString();
     }
