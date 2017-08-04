@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.inventory.ItemStack;
 
 // ----------------------------------------------------------------------------
 /**
@@ -83,7 +84,10 @@ public class DropSet {
     public void drop(Location loc) {
         for (Drop drop : _drops.values()) {
             if (Math.random() < drop.getDropChance()) {
-                loc.getWorld().dropItemNaturally(loc, drop.generate());
+                ItemStack item = drop.generate();
+                if (item != null) {
+                    loc.getWorld().dropItemNaturally(loc, item);
+                }
             }
         }
     }

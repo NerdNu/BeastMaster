@@ -136,7 +136,8 @@ public class Drop {
         s.append(' ');
 
         ItemStack item = BeastMaster.CONFIG.ITEMS.get(_itemId);
-        s.append((item == null) ? "nothing" : Util.getItemDescription(item));
+        s.append((item == null) ? ChatColor.RED + "nothing"
+                                : ChatColor.WHITE + Util.getItemDescription(item));
         return s.toString();
     }
 
