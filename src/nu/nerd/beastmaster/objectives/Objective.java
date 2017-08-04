@@ -92,7 +92,7 @@ public class Objective {
                                            _objectiveType.getParticleRadius(),
                                            _objectiveType.getParticleRadius(), data);
 
-        for (Entity entity : _location.getWorld().getNearbyEntities(_location, 5, 5, 5)) {
+        for (Entity entity : _location.getWorld().getNearbyEntities(_location, 2, 2, 2)) {
             if (entity instanceof Player) {
                 spawnLoot((Player) entity);
                 return false;
