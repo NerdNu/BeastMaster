@@ -21,7 +21,7 @@ public class BeastObjectiveExecutor extends ExecutorBase {
      */
     public BeastObjectiveExecutor() {
         super("beast-obj", "help", "add", "remove", "list", "info",
-              "limit", "range", "time",
+              "limit", "range", "height", "time",
               "add-drop", "remove-drop", "list-drops");
     }
 
@@ -144,16 +144,16 @@ public class BeastObjectiveExecutor extends ExecutorBase {
 
                 Integer minRange = Commands.parseNumber(args[2], Commands::parseInt,
                                                         (x) -> x >= 0,
-                                                        () -> sender.sendMessage(ChatColor.RED + "The minimum range be at least zero!"),
-                                                        () -> sender.sendMessage(ChatColor.RED + "The minimum range be an integer!"));
+                                                        () -> sender.sendMessage(ChatColor.RED + "The minimum range must be at least zero!"),
+                                                        () -> sender.sendMessage(ChatColor.RED + "The minimum range must be an integer!"));
                 if (minRange == null) {
                     return true;
                 }
                 Integer maxRange = Commands.parseNumber(args[3], Commands::parseInt,
                                                         (x) -> x >= minRange,
-                                                        () -> sender
-                                                        .sendMessage(ChatColor.RED + "The maximum range be at least as big as the minimum range!"),
-                                                        () -> sender.sendMessage(ChatColor.RED + "The maximum range be an integer!"));
+                                                        () -> sender.sendMessage(ChatColor.RED +
+                                                                                 "The maximum range must be at least as big as the minimum range!"),
+                                                        () -> sender.sendMessage(ChatColor.RED + "The maximum range must be an integer!"));
                 if (maxRange == null) {
                     return true;
                 }
@@ -161,8 +161,41 @@ public class BeastObjectiveExecutor extends ExecutorBase {
                 objectiveType.setRange(minRange, maxRange);
                 BeastMaster.CONFIG.save();
                 sender.sendMessage(ChatColor.GOLD + "Objective: " + objectiveType.getDescription());
-
                 return true;
+
+            } else if (args[0].equals("height")) {
+                if (args.length != 4) {
+                    Commands.invalidArguments(sender, getName() + " height <obj-id> <min> <max>");
+                    return true;
+                }
+
+                String idArg = args[1];
+                ObjectiveType objectiveType = BeastMaster.OBJECTIVE_TYPES.getObjectiveType(idArg);
+                if (objectiveType == null) {
+                    Commands.errorNull(sender, "objective", idArg);
+                    return true;
+                }
+
+                Integer minY = Commands.parseNumber(args[2], Commands::parseInt,
+                                                    (x) -> x >= 0,
+                                                    () -> sender.sendMessage(ChatColor.RED + "The minimum Y must be at least zero!"),
+                                                    () -> sender.sendMessage(ChatColor.RED + "The minimum Y must be an integer!"));
+                if (minY == null) {
+                    return true;
+                }
+                Integer maxY = Commands.parseNumber(args[3], Commands::parseInt,
+                                                    (y) -> y >= minY && y <= 255,
+                                                    () -> sender.sendMessage(ChatColor.RED + "The maximum Y must be between the minimum Y and 255!"),
+                                                    () -> sender.sendMessage(ChatColor.RED + "The maximum Y must be an integer!"));
+                if (maxY == null) {
+                    return true;
+                }
+
+                objectiveType.setHeight(minY, maxY);
+                BeastMaster.CONFIG.save();
+                sender.sendMessage(ChatColor.GOLD + "Objective: " + objectiveType.getDescription());
+                return true;
+
             } else if (args[0].equals("time")) {
                 sender.sendMessage(ChatColor.RED + "Not yet implemented; all objectives have unlimited lifetimes!");
                 return true;

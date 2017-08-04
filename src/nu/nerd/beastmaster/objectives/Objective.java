@@ -1,13 +1,14 @@
 package nu.nerd.beastmaster.objectives;
 
-import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.material.MaterialData;
 
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.DropSet;
@@ -29,6 +30,7 @@ public class Objective {
      * @param lifeTicks the number of ticks this objective should live.
      */
     public Objective(ObjectiveType objectiveType, Location loc, int lifeTicks) {
+        _objectiveType = objectiveType;
         _location = loc.clone();
         _lifeTicks = lifeTicks;
     }
@@ -75,18 +77,21 @@ public class Objective {
      *         out).
      */
     public boolean isAlive() {
-        --_lifeTicks;
-        if (_lifeTicks <= 0) {
-            BeastMaster.PLUGIN.getLogger().info("Objective at " + Util.formatLocation(_location) + " timed out.");
-            return false;
+        if (!_objectiveType.isImmortal()) {
+            --_lifeTicks;
+            if (_lifeTicks <= 0) {
+                BeastMaster.PLUGIN.getLogger().info("Objective at " + Util.formatLocation(_location) + " timed out.");
+                return false;
+            }
         }
 
-        World.Spigot spigot = _location.getWorld().spigot();
-        spigot.playEffect(_location, Effect.COLOURED_DUST, 0, 0,
-                          _objectiveType.getParticleRadius(),
-                          _objectiveType.getParticleRadius(),
-                          _objectiveType.getParticleRadius(),
-                          1.0f, _objectiveType.getParticleCount(), 64);
+        MaterialData data = new MaterialData(Material.GLOWSTONE);
+        _location.getWorld().spawnParticle(Particle.BLOCK_CRACK, _location,
+                                           _objectiveType.getParticleCount(),
+                                           _objectiveType.getParticleRadius(),
+                                           _objectiveType.getParticleRadius(),
+                                           _objectiveType.getParticleRadius(), data);
+
         for (Entity entity : _location.getWorld().getNearbyEntities(_location, 5, 5, 5)) {
             if (entity instanceof Player) {
                 spawnLoot((Player) entity);

@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Biome;
+import org.bukkit.block.Block;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -12,6 +13,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -26,6 +28,7 @@ import nu.nerd.beastmaster.commands.BeastMobExecutor;
 import nu.nerd.beastmaster.commands.BeastObjectiveExecutor;
 import nu.nerd.beastmaster.commands.BeastZoneExecutor;
 import nu.nerd.beastmaster.commands.ExecutorBase;
+import nu.nerd.beastmaster.objectives.Objective;
 import nu.nerd.beastmaster.objectives.ObjectiveManager;
 import nu.nerd.beastmaster.objectives.ObjectiveTypeManager;
 import nu.nerd.beastmaster.zones.Zone;
@@ -116,6 +119,24 @@ public class BeastMaster extends JavaPlugin implements Listener {
     public void onDisable() {
         Bukkit.getScheduler().cancelTasks(this);
         OBJECTIVES.removeAll();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * If a player breaks an objective block, do treasure drops and stop that
+     * the particle effects.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onBlockBreak(BlockBreakEvent event) {
+        Block block = event.getBlock();
+        Objective objective = OBJECTIVES.getObjective(block);
+        if (objective != null) {
+            // Prevent the objective break from being logged by LogBlock.
+            event.setCancelled(true);
+
+            OBJECTIVES.removeObjective(objective);
+            objective.spawnLoot(event.getPlayer());
+        }
     }
 
     // ------------------------------------------------------------------------

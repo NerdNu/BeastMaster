@@ -1,12 +1,21 @@
 package nu.nerd.beastmaster;
 
+import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.inventory.meta.ItemMeta;
+
+import nu.nerd.beastmaster.objectives.Objective;
+import nu.nerd.beastmaster.objectives.ObjectiveType;
+import nu.nerd.beastmaster.zones.Zone;
 
 // ----------------------------------------------------------------------------
 /**
@@ -85,7 +94,7 @@ public class DropSet {
         for (Drop drop : _drops.values()) {
             if (Math.random() < drop.getDropChance()) {
                 ItemStack item = drop.generate();
-                if (item != null) {
+                if (item != null && trySpawnObjective(drop, item, loc)) {
                     loc.getWorld().dropItemNaturally(loc, item);
                 }
             }
@@ -125,6 +134,78 @@ public class DropSet {
         for (Drop drop : _drops.values()) {
             drop.save(section, logger);
         }
+    }
+
+    // --------------------------------------------------------------------------
+    /**
+     * If a drop has an accompanying objective, try to spawn it.
+     * 
+     * @param drop the drop.
+     * @param item the generated dropped item.
+     * @return true if the drop is not an objective drop, or if it is and an
+     *         objective was successfully spawned. (Return false if an objective
+     *         drop failed to spawn an objective.)
+     */
+    protected boolean trySpawnObjective(Drop drop, ItemStack item, Location dropLoc) {
+        String objTypeId = drop.getObjectiveType();
+        if (objTypeId == null) {
+            return true;
+        }
+
+        ObjectiveType objType = BeastMaster.OBJECTIVE_TYPES.getObjectiveType(objTypeId);
+        if (objType == null) {
+            return false;
+        }
+        Zone zone = BeastMaster.ZONES.getZone(dropLoc);
+        if (zone == null) {
+            return false;
+        }
+        Objective obj = BeastMaster.OBJECTIVES.spawnObjective(objType, zone, dropLoc);
+        if (obj != null) {
+            substituteObjectiveText(item, obj.getLocation());
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // --------------------------------------------------------------------------
+    /**
+     * Substitute formatting parameters into the text of dropped items that are
+     * for objectives.
+     * 
+     * Text substitution is performed on lore and book page text. The
+     * substitution parameters are:
+     * 
+     * @param item the dropped item.
+     * @param loc the location to format into text.
+     */
+    protected void substituteObjectiveText(ItemStack item, Location loc) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta instanceof BookMeta) {
+            BookMeta bookMeta = (BookMeta) meta;
+            ArrayList<String> newPages = new ArrayList<>();
+            for (String page : bookMeta.getPages()) {
+                newPages.add(MessageFormat.format(page,
+                                                  loc.getBlockX(),
+                                                  loc.getBlockY(),
+                                                  loc.getBlockZ()));
+            }
+            bookMeta.setPages(newPages);
+        }
+
+        List<String> lore = meta.getLore();
+        if (lore != null && !lore.isEmpty()) {
+            ArrayList<String> newLore = new ArrayList<>();
+            for (String line : lore) {
+                newLore.add(MessageFormat.format(line,
+                                                 loc.getBlockX(),
+                                                 loc.getBlockY(),
+                                                 loc.getBlockZ()));
+            }
+            meta.setLore(newLore);
+        }
+        item.setItemMeta(meta);
     }
 
     // ------------------------------------------------------------------------

@@ -95,6 +95,7 @@ commands:
       §e/<command> info <obj-id>§f - Describe the specified objective type.
       §e/<command> limit <obj-id> <max>§f - Specify the maximum number of objectives of the specified type in its zone. 
       §e/<command> range <obj-id> <min> <max>§f - Specify the minimum and maximum range an objective can spawn from the drop that initiates it.
+      §e/<command> height <obj-id> <min> <max>§f - Specify the minimum and maximum Y coordinate an objective can spawn.
       §e/<command> time <obj-id> <speed> <extra-ticks>§f - Specify the expected player speed from which objective lifetimes are computed. The <extra-ticks> value is a fixed amount of time added to the objective lifetime, irrespective of its range.
       §e/<command> add-drop <obj-id> <item-id> <chance> <min> [<max>]§f - Create or modify a drop of the objective type, with an item type previously defined by /beast-item, and with the specified chance in the range 0.0 to 1.0 and the specified number of items. If the maximum number is not specified, it defaults to the same as min.
       §e/<command> remove-drop <obj-id> <item-id>§f - Remove the specified item from the possible drops of this objective type.

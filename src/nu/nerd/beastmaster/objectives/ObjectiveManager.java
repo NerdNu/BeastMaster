@@ -5,7 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -15,7 +15,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Entity;
 import org.bukkit.util.Vector;
 
 import com.sk89q.worldedit.CuboidClipboard;
@@ -89,45 +88,26 @@ public class ObjectiveManager {
      * currently exists in the world, or if the objective would be over the
      * world border.
      *
-     * @param deathLocation death location in the affected world.
-     * @return a new Objective, or null if it could not be spawned.
+     * @param objectiveType the objective type.
+     * @param zone the zone whose limits will be obeyed when placing the
+     *        objective.
+     * @param dropLocation the location where a drop triggered the objective's
+     *        spawning.
+     * @return a new Objective if fewer have been spawned than the limit, a
+     *         reference to the oldest objective still in the world old if the
+     *         maximum have been spawned, or null if no objective could be
+     *         spawned.
      */
     public Objective spawnObjective(ObjectiveType objectiveType, Zone zone, Location deathLocation) {
-        if (_objectives.size() >= objectiveType.getMaxCount()) {
-            return null;
+        if (_blockToObjective.size() >= objectiveType.getMaxCount()) {
+            return (_objectives.isEmpty()) ? null : Util.randomChoice(_objectives);
         }
 
-        double angleRadians = 2 * Math.PI * Math.random();
-        double range = Util.random(objectiveType.getMinRange(), objectiveType.getMaxRange());
-        double dX = range * Math.cos(angleRadians);
-        double dZ = range * Math.sin(angleRadians);
-
-        World world = deathLocation.getWorld();
-        Block floorBlock = world.getHighestBlockAt((int) (deathLocation.getX() + dX),
-                                                   (int) (deathLocation.getZ() + dZ));
-        Location objLocation = floorBlock.getLocation();
-
-        if (Math.abs(objLocation.getBlockX()) < zone.getRadius() &&
-            Math.abs(objLocation.getBlockZ()) < zone.getRadius() &&
-            objLocation.getBlockY() < world.getMaxHeight() - 1) {
-            // Don't spawn the objective if it might break item
-            // frames/paintings.
-            Collection<Entity> entities = objLocation.getWorld().getNearbyEntities(objLocation, 2, 2, 2);
-            if (entities.size() == 0) {
-                double distance = objLocation.distance(deathLocation);
-                BeastMaster.PLUGIN.getLogger().info("Distance " + distance);
-                int travelTicks = 20 * (int) (distance / objectiveType.getMinPlayerSpeed());
-                BeastMaster.PLUGIN.getLogger().info("Travel ticks " + travelTicks);
-                int lifeInTicks = objectiveType.getExtraTicks() + travelTicks;
-                BeastMaster.PLUGIN.getLogger().info("Life in ticks " + lifeInTicks);
-
-                // This check should be redundant after the height check.
-                if (objLocation.getBlock().getType() == Material.AIR) {
-                    Objective objective = new Objective(objectiveType, objLocation, lifeInTicks);
-                    _objectives.put(objective.getBlock(), objective);
-                    markObjective(objectiveType, objLocation);
-                    return objective;
-                }
+        // Try a few times to spawn an objective.
+        for (int i = 0; i < 3; ++i) {
+            Objective objective = spawnNewObjective(objectiveType, zone, deathLocation);
+            if (objective != null) {
+                return objective;
             }
         }
         return null;
@@ -139,11 +119,13 @@ public class ObjectiveManager {
      * those that were found or timed out.
      */
     public void tickAll() {
-        Iterator<Entry<Block, Objective>> it = _objectives.entrySet().iterator();
+        Iterator<Entry<Block, Objective>> it = _blockToObjective.entrySet().iterator();
         while (it.hasNext()) {
             Entry<Block, Objective> entry = it.next();
-            if (!entry.getValue().isAlive()) {
-                entry.getValue().vaporise();
+            Objective objective = entry.getValue();
+            if (!objective.isAlive()) {
+                objective.vaporise();
+                _objectives.remove(objective);
                 it.remove();
             }
         }
@@ -160,7 +142,7 @@ public class ObjectiveManager {
      */
     public Objective getObjective(Block block) {
         if (block.getType() == Material.SKULL) {
-            Objective objective = _objectives.get(block);
+            Objective objective = _blockToObjective.get(block);
             if (objective != null) {
                 return objective;
             }
@@ -177,7 +159,8 @@ public class ObjectiveManager {
      */
     public void removeObjective(Objective objective) {
         objective.vaporise();
-        _objectives.remove(objective.getBlock());
+        _objectives.remove(objective);
+        _blockToObjective.remove(objective.getBlock());
     }
 
     // ------------------------------------------------------------------------
@@ -185,12 +168,11 @@ public class ObjectiveManager {
      * Remove all the pots.
      */
     public void removeAll() {
-        Iterator<Entry<Block, Objective>> it = _objectives.entrySet().iterator();
-        while (it.hasNext()) {
-            Entry<Block, Objective> entry = it.next();
-            entry.getValue().vaporise();
-            it.remove();
+        for (Objective objective : _objectives) {
+            objective.vaporise();
         }
+        _objectives.clear();
+        _blockToObjective.clear();
     }
 
     // ------------------------------------------------------------------------
@@ -292,6 +274,105 @@ public class ObjectiveManager {
 
     // ------------------------------------------------------------------------
     /**
+     * Try to spawn a new objective, subject to the constraints listed in the
+     * JavaDoc of {@link #spawnObjective(ObjectiveType, Zone, Location)}.
+     * 
+     * @param objectiveType the objective type.
+     * @param zone the zone whose limits will be obeyed when placing the
+     *        objective.
+     * @param dropLocation the location where a drop triggered the objective's
+     *        spawning.
+     * @return a new objective, or null if it could not be spawned.
+     */
+    protected Objective spawnNewObjective(ObjectiveType objectiveType, Zone zone, Location dropLocation) {
+        double angleRadians = 2 * Math.PI * Math.random();
+        double range = Util.random(objectiveType.getMinRange(), objectiveType.getMaxRange());
+        double dX = range * Math.cos(angleRadians);
+        double dZ = range * Math.sin(angleRadians);
+
+        World world = dropLocation.getWorld();
+        Block floorBlock = world.getHighestBlockAt((int) (dropLocation.getX() + dX),
+                                                   (int) (dropLocation.getZ() + dZ));
+        Location highestLocation = floorBlock.getLocation();
+
+        int minX = zone.getCentreX() - zone.getRadius();
+        int maxX = zone.getCentreX() + zone.getRadius();
+        int minZ = zone.getCentreZ() - zone.getRadius();
+        int maxZ = zone.getCentreZ() + zone.getRadius();
+        int x = highestLocation.getBlockX();
+        int highestY = highestLocation.getBlockY();
+        int z = highestLocation.getBlockZ();
+
+        if (x >= minX && x <= maxX && z >= minZ && z <= maxZ) {
+            // Select a block in the vertical range of the objective type. No
+            // higher than the highest block.
+            int minY = Math.min(objectiveType.getMinY(), highestY);
+            int maxY = Math.min(objectiveType.getMaxY(), highestY);
+            int startY = Util.random(minY, maxY);
+
+            // Scan for an eligible location between startY and maxY. Must be
+            // air and no entities (item frames, paintings) to break.
+            for (int y = startY; y < maxY; ++y) {
+                Block objBlock = world.getBlockAt(x, y, z);
+                if (objBlock.getType() == Material.AIR &&
+                    world.getNearbyEntities(objBlock.getLocation(), 2, 2, 2).isEmpty()) {
+
+                    // While the chosen location is above the minimum Y and it
+                    // is floating in the air, look for a horizontal surface
+                    // below to use instead.
+                    int floorY = getFloorY(objectiveType.getMinY(), world, x, y, z);
+                    objBlock = world.getBlockAt(x, floorY, z);
+                    Location objLocation = objBlock.getLocation();
+
+                    BeastMaster.PLUGIN.getLogger().info("Objective spawned at " + Util.formatLocation(objLocation));
+                    double distance = objLocation.distance(dropLocation);
+                    BeastMaster.PLUGIN.getLogger().info("Distance " + distance);
+                    int travelTicks = 20 * (int) (distance / objectiveType.getMinPlayerSpeed());
+                    BeastMaster.PLUGIN.getLogger().info("Travel ticks " + travelTicks);
+                    int lifeInTicks = objectiveType.getExtraTicks() + travelTicks;
+                    BeastMaster.PLUGIN.getLogger().info("Life in ticks " + lifeInTicks);
+
+                    Objective objective = new Objective(objectiveType, objLocation, lifeInTicks);
+                    _blockToObjective.put(objBlock, objective);
+                    _objectives.add(objective);
+                    markObjective(objectiveType, objLocation);
+                    return objective;
+                }
+            } // for
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return a floor below (x,y,z) that the objective could sit on, provided it
+     * is empty of blocks and entities and at least the minimum Y for the
+     * objective type.
+     * 
+     * @param minY the minimum Y.
+     * @param world the world.
+     * @param x the X coordinate.
+     * @param y the starting Y coordinate for the search; the maximum return
+     *        value.
+     * @param z the Z coordinate.
+     * @return the Y coordinate of the first empty spot below y and above minY
+     *         if there is a floor to sit on, or minY if it is all empty space.
+     */
+    protected int getFloorY(int minY, World world, int x, int y, int z) {
+        while (y > minY) {
+            Block block = world.getBlockAt(x, y - 1, z);
+            if (block.getType() == Material.AIR &&
+                world.getNearbyEntities(block.getLocation(), 2, 2, 2).isEmpty()) {
+                --y;
+            } else {
+                break;
+            }
+        }
+        return y;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * A list of schematic file base names built into the plugin JAR.
      */
     protected static String[] SCHEMATICS = {
@@ -300,8 +381,14 @@ public class ObjectiveManager {
     };
 
     /**
+     * Objectives listed in the order they were created, to facilitate
+     * recycling.
+     */
+    protected ArrayList<Objective> _objectives = new ArrayList<>();
+
+    /**
      * Map from Block to Objective at that block.
      */
-    protected HashMap<Block, Objective> _objectives = new HashMap<Block, Objective>();
+    protected HashMap<Block, Objective> _blockToObjective = new HashMap<Block, Objective>();
 
 } // class ObjectiveManager

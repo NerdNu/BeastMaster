@@ -26,6 +26,8 @@ public class ObjectiveType {
         _maxCount = 30;
         _minRange = 100;
         _maxRange = 300;
+        _minY = 40;
+        _maxY = 255;
     }
 
     // ------------------------------------------------------------------------
@@ -97,6 +99,38 @@ public class ObjectiveType {
 
     // ------------------------------------------------------------------------
     /**
+     * Set the range of Y coordinates objectives can spawn.
+     * 
+     * @param minY the minimum Y coordinate.
+     * @param maxY the maximum Y coordinate.
+     */
+    public void setHeight(int minY, int maxY) {
+        _minY = minY;
+        _maxY = maxY;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the minimum Y coordinate at which an objective can spawn.
+     * 
+     * @return the minimum Y coordinate at which an objective can spawn.
+     */
+    public int getMinY() {
+        return _minY;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the maximum Y coordinate at which an objective can spawn.
+     * 
+     * @return the maximum Y coordinate at which an objective can spawn.
+     */
+    public int getMaxY() {
+        return _maxY;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * 
      * @return
      */
@@ -145,7 +179,7 @@ public class ObjectiveType {
      */
     public float getParticleRadius() {
         // TODO: configurability.
-        return 2;
+        return 0.8f;
     }
 
     // ------------------------------------------------------------------------
@@ -183,8 +217,10 @@ public class ObjectiveType {
         s.append(ChatColor.WHITE).append(" instances between ");
         s.append(ChatColor.YELLOW).append(_minRange).append(ChatColor.WHITE).append(" and ");
         s.append(ChatColor.YELLOW).append(_maxRange).append(ChatColor.WHITE).append(" blocks");
+        s.append(ChatColor.WHITE).append("\n - at Y ").append(ChatColor.YELLOW).append(_minY);
+        s.append(ChatColor.WHITE).append(" to Y ").append(ChatColor.YELLOW).append(_maxY);
         if (isImmortal()) {
-            s.append(ChatColor.WHITE).append("\n- unlimited lifetime");
+            s.append(ChatColor.WHITE).append(", unlimited lifetime");
         }
         return s.toString();
     }
@@ -201,6 +237,8 @@ public class ObjectiveType {
         _maxCount = section.getInt("max-count");
         _minRange = section.getInt("min-range");
         _maxRange = section.getInt("max-range");
+        _minY = section.getInt("min-y");
+        _maxY = section.getInt("max-y");
         _schematics.clear();
         _schematics.addAll(section.getStringList("schematics"));
         _drops.load(section.getConfigurationSection("drops"), logger);
@@ -220,6 +258,8 @@ public class ObjectiveType {
         section.set("max-count", _maxCount);
         section.set("min-range", _minRange);
         section.set("max-range", _maxRange);
+        section.set("min-y", _minY);
+        section.set("max-y", _maxY);
         section.set("schematics", _schematics);
         ConfigurationSection dropsSection = section.createSection("drops");
         _drops.save(dropsSection, logger);
@@ -245,6 +285,16 @@ public class ObjectiveType {
      * The maximum range of an objective from the drop that spawned it.
      */
     protected int _maxRange;
+
+    /**
+     * Minimum Y at which an objective can spawn.
+     */
+    protected int _minY;
+
+    /**
+     * Maximum Y at which an objective can spawn.
+     */
+    protected int _maxY;
 
     /**
      * The list of possible schematics used as marker blocks.
