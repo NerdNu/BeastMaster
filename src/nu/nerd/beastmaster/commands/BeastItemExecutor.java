@@ -42,7 +42,7 @@ public class BeastItemExecutor extends ExecutorBase {
         if (args.length >= 1) {
             if (args[0].equals("define")) {
                 if (args.length != 2) {
-                    Commands.invalidArguments(sender, getName() + " define <id>");
+                    Commands.invalidArguments(sender, getName() + " define <item-id>");
                     return true;
                 }
 
@@ -51,10 +51,10 @@ public class BeastItemExecutor extends ExecutorBase {
                 }
                 Player player = (Player) sender;
 
-                String id = args[1];
-                if (BeastMaster.CONFIG.ITEMS.containsKey(id)) {
-                    sender.sendMessage(ChatColor.RED + "An item named \"" + id + "\" is already defined. " +
-                                       "Use \"/" + getName() + " redefine " + id + "\" to redefine the item.");
+                String idArg = args[1];
+                if (BeastMaster.CONFIG.ITEMS.containsKey(idArg)) {
+                    sender.sendMessage(ChatColor.RED + "An item named \"" + idArg + "\" is already defined. " +
+                                       "Use \"/" + getName() + " redefine " + idArg + "\" to redefine the item.");
                     return true;
                 }
 
@@ -66,15 +66,15 @@ public class BeastItemExecutor extends ExecutorBase {
 
                 ItemStack definition = item.clone();
                 definition.setAmount(1);
-                BeastMaster.CONFIG.ITEMS.put(id, definition);
+                BeastMaster.CONFIG.ITEMS.put(idArg, definition);
                 BeastMaster.CONFIG.save();
-                sender.sendMessage(ChatColor.GOLD + "Item " + ChatColor.YELLOW + id +
+                sender.sendMessage(ChatColor.GOLD + "Item " + ChatColor.YELLOW + idArg +
                                    ChatColor.GOLD + " is now defined as: " + ChatColor.WHITE + Util.getItemDescription(definition));
                 return true;
 
             } else if (args[0].equals("redefine")) {
                 if (args.length != 2) {
-                    Commands.invalidArguments(sender, getName() + " redefine <id>");
+                    Commands.invalidArguments(sender, getName() + " redefine <item-id>");
                     return true;
                 }
 
@@ -83,7 +83,7 @@ public class BeastItemExecutor extends ExecutorBase {
                 }
                 Player player = (Player) sender;
 
-                String id = args[1];
+                String idArg = args[1];
                 ItemStack item = player.getInventory().getItemInMainHand();
                 if (item == null || item.getType() == Material.AIR) {
                     sender.sendMessage(ChatColor.RED + "Hold the object to define as an item in your main hand!");
@@ -92,32 +92,32 @@ public class BeastItemExecutor extends ExecutorBase {
 
                 ItemStack definition = item.clone();
                 definition.setAmount(1);
-                BeastMaster.CONFIG.ITEMS.put(id, definition);
+                BeastMaster.CONFIG.ITEMS.put(idArg, definition);
                 BeastMaster.CONFIG.save();
-                sender.sendMessage(ChatColor.GOLD + "Item " + ChatColor.YELLOW + id +
+                sender.sendMessage(ChatColor.GOLD + "Item " + ChatColor.YELLOW + idArg +
                                    ChatColor.GOLD + " is now defined as: " + ChatColor.WHITE + Util.getItemDescription(definition));
                 return true;
 
             } else if (args[0].equals("remove")) {
                 if (args.length != 2) {
-                    Commands.invalidArguments(sender, getName() + " remove <id>");
+                    Commands.invalidArguments(sender, getName() + " remove <item-id>");
                     return true;
                 }
 
-                String id = args[1];
-                if (!BeastMaster.CONFIG.ITEMS.containsKey(id)) {
-                    sender.sendMessage(ChatColor.RED + "There is no item with the ID \"" + id + "\"!");
+                String idArg = args[1];
+                if (!BeastMaster.CONFIG.ITEMS.containsKey(idArg)) {
+                    sender.sendMessage(ChatColor.RED + "There is no item with the ID \"" + idArg + "\"!");
                     return true;
                 }
 
-                BeastMaster.CONFIG.ITEMS.remove(id);
+                BeastMaster.CONFIG.ITEMS.remove(idArg);
                 BeastMaster.CONFIG.save();
-                sender.sendMessage(ChatColor.GOLD + "Item " + ChatColor.YELLOW + id + ChatColor.GOLD + " definition removed.");
+                sender.sendMessage(ChatColor.GOLD + "Item " + ChatColor.YELLOW + idArg + ChatColor.GOLD + " definition removed.");
                 return true;
 
             } else if (args[0].equals("get")) {
                 if (args.length < 2 || args.length > 3) {
-                    Commands.invalidArguments(sender, getName() + " get <id> [<count>]");
+                    Commands.invalidArguments(sender, getName() + " get <item-id> [<count>]");
                     return true;
                 }
 
@@ -126,9 +126,9 @@ public class BeastItemExecutor extends ExecutorBase {
                 }
                 Player player = (Player) sender;
 
-                String id = args[1];
-                if (!BeastMaster.CONFIG.ITEMS.containsKey(id)) {
-                    sender.sendMessage(ChatColor.RED + "There is no item with the ID \"" + id + "\"!");
+                String idArg = args[1];
+                if (!BeastMaster.CONFIG.ITEMS.containsKey(idArg)) {
+                    sender.sendMessage(ChatColor.RED + "There is no item with the ID \"" + idArg + "\"!");
                     return true;
                 }
 
@@ -144,7 +144,7 @@ public class BeastItemExecutor extends ExecutorBase {
                 }
 
                 // Let's be careful not to mess with the original item.
-                ItemStack item = BeastMaster.CONFIG.ITEMS.get(id).clone();
+                ItemStack item = BeastMaster.CONFIG.ITEMS.get(idArg).clone();
 
                 // Split oversized item stacks prior to adding to the inventory.
                 ArrayList<ItemStack> stacks = new ArrayList<>();
