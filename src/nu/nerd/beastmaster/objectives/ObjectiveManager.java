@@ -93,7 +93,7 @@ public class ObjectiveManager {
      * @return a new Objective, or null if it could not be spawned.
      */
     public Objective spawnObjective(ObjectiveType objectiveType, Zone zone, Location deathLocation) {
-        if (_objectives.size() >= objectiveType.getMaxObjectives()) {
+        if (_objectives.size() >= objectiveType.getMaxCount()) {
             return null;
         }
 

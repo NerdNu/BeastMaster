@@ -9,6 +9,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.inventory.ItemStack;
 
+import nu.nerd.beastmaster.objectives.ObjectiveType;
+
 // ----------------------------------------------------------------------------
 /**
  * Reads and exposes the plugin configuration.
@@ -56,6 +58,7 @@ public class Configuration {
         Logger logger = BeastMaster.PLUGIN.getLogger();
         BeastMaster.ZONES.load(config, logger);
         BeastMaster.MOBS.load(config, logger);
+        BeastMaster.OBJECTIVE_TYPES.load(config, logger);
 
         if (DEBUG_CONFIG) {
             logger.info("Configuration:");
@@ -63,9 +66,28 @@ public class Configuration {
             logger.info("CHANCE_WITHER_SKELETON: " + CHANCE_WITHER_SKELETON);
             logger.info("ZONES: " + BeastMaster.ZONES.getZones().stream()
             .map(z -> z.getDescription()).collect(Collectors.joining(", ")));
+
             logger.info("ITEMS: ");
             for (Entry<String, ItemStack> entry : ITEMS.entrySet()) {
                 logger.info(entry.getKey() + ": " + Util.getItemDescription(entry.getValue()));
+            }
+
+            logger.info("MOBS: ");
+            for (MobType mobType : BeastMaster.MOBS.getMobTypes()) {
+                logger.info(mobType.getDescription());
+                logger.info("With drops:");
+                for (Drop drop : mobType.getDropSet().getAllDrops()) {
+                    logger.info(drop.toString());
+                }
+            }
+
+            logger.info("OBJECTIVE_TYPES: ");
+            for (ObjectiveType objectiveType : BeastMaster.OBJECTIVE_TYPES.getObjectiveTypes()) {
+                logger.info(objectiveType.getDescription());
+                logger.info("With drops:");
+                for (Drop drop : objectiveType.getDropSet().getAllDrops()) {
+                    logger.info(drop.toString());
+                }
             }
         }
     } // reload
@@ -84,6 +106,7 @@ public class Configuration {
         }
         BeastMaster.ZONES.save(config, logger);
         BeastMaster.MOBS.save(config, logger);
+        BeastMaster.OBJECTIVE_TYPES.save(config, logger);
         BeastMaster.PLUGIN.saveConfig();
     }
 

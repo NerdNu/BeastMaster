@@ -23,9 +23,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import nu.nerd.beastmaster.commands.BeastItemExecutor;
 import nu.nerd.beastmaster.commands.BeastMasterExecutor;
 import nu.nerd.beastmaster.commands.BeastMobExecutor;
+import nu.nerd.beastmaster.commands.BeastObjectiveExecutor;
 import nu.nerd.beastmaster.commands.BeastZoneExecutor;
 import nu.nerd.beastmaster.commands.ExecutorBase;
 import nu.nerd.beastmaster.objectives.ObjectiveManager;
+import nu.nerd.beastmaster.objectives.ObjectiveTypeManager;
 import nu.nerd.beastmaster.zones.Zone;
 import nu.nerd.beastmaster.zones.ZoneManager;
 
@@ -58,7 +60,12 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * Manages all objectives.
      */
-    protected ObjectiveManager OBJECTIVES = new ObjectiveManager();
+    public static ObjectiveManager OBJECTIVES = new ObjectiveManager();
+
+    /**
+     * Manages all objective type.
+     */
+    public static ObjectiveTypeManager OBJECTIVE_TYPES = new ObjectiveTypeManager();
 
     /**
      * Metadata name (key) used to tag affected mobs.
@@ -86,6 +93,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         addCommandExecutor(new BeastZoneExecutor());
         addCommandExecutor(new BeastItemExecutor());
         addCommandExecutor(new BeastMobExecutor());
+        addCommandExecutor(new BeastObjectiveExecutor());
 
         getServer().getPluginManager().registerEvents(this, this);
 

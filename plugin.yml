@@ -26,6 +26,10 @@ permissions:
     description: Permission to use the /beast-mob command.
     default: op
 
+  beastmaster.obj:
+    description: Permission to use the /beast-obj command.
+    default: op
+
 commands:
   beastmaster:
     description: ${project.name} administrative command.
@@ -55,10 +59,10 @@ commands:
     usage: |
     
       §e/<command> help§f - Show usage help.
-      §e/<command> define <id>§f - Define a new item type as the thing held in the player's main hand. 
-      §e/<command> redefine <id>§f - Redefine the specified item type as the thing held in the player's main hand. 
-      §e/<command> remove <id>§f - Remove the definition of the specified item type.
-      §e/<command> get <id> §f[§e<count>§f] - Give the player <count> of the item type with the specified, previously defined ID.
+      §e/<command> define <item-id>§f - Define a new item type as the thing held in the player's main hand. 
+      §e/<command> redefine <item-id>§f - Redefine the specified item type as the thing held in the player's main hand. 
+      §e/<command> remove <item-id>§f - Remove the definition of the specified item type.
+      §e/<command> get <item-id> §f[§e<count>§f] - Give the player <count> of the item type with the specified, previously defined ID.
       §e/<command> list§f - List all item types.
       
   beast-mob:
@@ -67,14 +71,32 @@ commands:
     usage: |
     
       §e/<command> help§f - Show usage help.
-      §e/<command> add <id> <entity-type>§f - Define a new mob type as a mob with the specified Bukkit API entity type, e.g. ZOMBIE. 
-      §e/<command> remove <id>§f - Remove the definition of the specified mob type.
-      §e/<command> info <id>§f - Describe the specified mob type.
+      §e/<command> add <mob-id> <entity-type>§f - Define a new mob type as a mob with the specified Bukkit API entity type, e.g. ZOMBIE. 
+      §e/<command> remove <mob-id>§f - Remove the definition of the specified mob type.
+      §e/<command> info <mob-id>§f - Describe the specified mob type.
       §e/<command> list§f - List all mob types.
-      §e/<command> health <id> (<number>|default)§f - Override the health of the mob, or use the vanilla default.
-      §e/<command> speed <id> (<number>|default)§f - Override the speed of the mob, or use the vanilla default.
-      §e/<command> baby-fraction <id> (<number>|default)§f - Override the fraction of baby mobs [0..1.0], or use the vanilla default.
-      §e/<command> add-drop <id> <item-id> <chance> <min> [<max>]§f - Create or modify a drop of the mob, with an item type previously defined by /beast-item, and with the specified chance in the range 0.0 to 1.0 and the specified number of items. If the maximum number is not specified, it defaults to the same as min.
-      §e/<command> remove-drop <id> <item-id>§f - Remove the specified item from the possible drops of this mob.
-      §e/<command> list-drops <id>§f - List all possible drops from this mob. 
+      §e/<command> health <mob-id> (<number>|default)§f - Override the health of the mob, or use the vanilla default.
+      §e/<command> speed <mob-id> (<number>|default)§f - Override the speed of the mob, or use the vanilla default.
+      §e/<command> baby-fraction <mob-id> (<number>|default)§f - Override the fraction of baby mobs [0..1.0], or use the vanilla default.
+      §e/<command> add-drop <mob-id> <item-id> <chance> <min> [<max>]§f - Create or modify a drop of the mob, with an item type previously defined by /beast-item, and with the specified chance in the range 0.0 to 1.0 and the specified number of items. If the maximum number is not specified, it defaults to the same as min.
+      §e/<command> remove-drop <mob-id> <item-id>§f - Remove the specified item from the possible drops of this mob.
+      §e/<command> objective <mob-id> <item-id> (<obj-id>|none)§f - Signify that this drop causes an objective to spawn, or not if the objective ID is "none". 
+      §e/<command> list-drops <mob-id>§f - List all possible drops from this mob. 
+      
+  beast-obj:
+    description: Configure objectives.
+    permission: beastmaster.obj
+    usage: |
+    
+      §e/<command> help§f - Show usage help.
+      §e/<command> add <obj-id>§f - Define a new objective type. 
+      §e/<command> remove <obj-id>§f - Remove the definition of the specified objective type.
+      §e/<command> list§f - List all objective types.
+      §e/<command> info <obj-id>§f - Describe the specified objective type.
+      §e/<command> limit <obj-id> <max>§f - Specify the maximum number of objectives of the specified type in its zone. 
+      §e/<command> range <obj-id> <min> <max>§f - Specify the minimum and maximum range an objective can spawn from the drop that initiates it.
+      §e/<command> time <obj-id> <speed> <extra-ticks>§f - Specify the expected player speed from which objective lifetimes are computed. The <extra-ticks> value is a fixed amount of time added to the objective lifetime, irrespective of its range.
+      §e/<command> add-drop <obj-id> <item-id> <chance> <min> [<max>]§f - Create or modify a drop of the objective type, with an item type previously defined by /beast-item, and with the specified chance in the range 0.0 to 1.0 and the specified number of items. If the maximum number is not specified, it defaults to the same as min.
+      §e/<command> remove-drop <obj-id> <item-id>§f - Remove the specified item from the possible drops of this objective type.
+      §e/<command> list-drops <obj-id>§f - List all possible drops from this objective type. 
       

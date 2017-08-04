@@ -2,10 +2,9 @@ package nu.nerd.beastmaster;
 
 import java.util.logging.Logger;
 
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
-
-import net.md_5.bungee.api.ChatColor;
 
 // ----------------------------------------------------------------------------
 /**
@@ -127,6 +126,9 @@ public class Drop {
     public String toString() {
         StringBuilder s = new StringBuilder();
         s.append(ChatColor.YELLOW).append(_itemId).append(": ");
+        if (_objectiveType != null) {
+            s.append(ChatColor.GREEN).append("(objective: ").append(_objectiveType).append(") ");
+        }
         s.append(ChatColor.WHITE).append(_dropChance * 100).append("% ");
         if (_min == _max) {
             s.append(_min);
@@ -163,7 +165,7 @@ public class Drop {
     protected int _max;
 
     /**
-     * The type ID of the objective associated with this drop, or null if this
+     * The type ID of the objective associated with this item, or null if this
      * drop does not denote an objective.
      */
     protected String _objectiveType;

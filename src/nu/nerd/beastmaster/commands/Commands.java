@@ -170,7 +170,10 @@ public class Commands {
      * @param thingId the ID used to look up the thing.
      */
     public static void errorNotNull(CommandSender sender, String thingDescription, String thingId) {
-        sender.sendMessage(ChatColor.RED + "A " + thingDescription + " named " + thingId + " already exists!");
+        String vowels = "aeiou";
+        String firstLetter = "" + Character.toLowerCase(thingDescription.charAt(0));
+        String firstWord = vowels.contains(firstLetter) ? "An " : "A ";
+        sender.sendMessage(ChatColor.RED + firstWord + thingDescription + " named " + thingId + " already exists!");
     }
 
     // ------------------------------------------------------------------------

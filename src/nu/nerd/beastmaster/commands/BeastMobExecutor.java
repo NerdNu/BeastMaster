@@ -13,6 +13,7 @@ import net.md_5.bungee.api.ChatColor;
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.Drop;
 import nu.nerd.beastmaster.MobType;
+import nu.nerd.beastmaster.objectives.ObjectiveType;
 import nu.nerd.beastmaster.zones.Zone;
 
 // ----------------------------------------------------------------------------
@@ -27,7 +28,7 @@ public class BeastMobExecutor extends ExecutorBase {
     public BeastMobExecutor() {
         super("beast-mob", "help", "add", "remove", "info", "list",
               "health", "speed", "baby-fraction",
-              "add-drop", "remove-drop", "list-drops");
+              "add-drop", "remove-drop", "objective", "list-drops");
     }
 
     // ------------------------------------------------------------------------
@@ -231,6 +232,43 @@ public class BeastMobExecutor extends ExecutorBase {
                                        ChatColor.GOLD + " drop:");
                     sender.sendMessage(drop.toString());
                 }
+                return true;
+
+            } else if (args[0].equals("objective")) {
+                if (args.length != 4) {
+                    Commands.invalidArguments(sender, getName() + " objective <mob-id> <item-id> (<obj-id>|none)");
+                    return true;
+                }
+
+                String idArg = args[1];
+                MobType mobType = BeastMaster.MOBS.getMobType(idArg);
+                if (mobType == null) {
+                    Commands.errorNull(sender, "mob type", idArg);
+                    return true;
+                }
+
+                String itemIdArg = args[2];
+                Drop drop = mobType.getDropSet().getDrop(itemIdArg);
+                if (drop == null) {
+                    Commands.errorNull(sender, "drop of " + idArg, itemIdArg);
+                    return true;
+                }
+
+                String objIdArg = args[3];
+                if (objIdArg.equals("none")) {
+                    drop.setObjectiveType(null);
+                    sender.sendMessage(ChatColor.GOLD + "Cleared objective on drop " + drop.toString());
+                } else {
+                    ObjectiveType objectiveType = BeastMaster.OBJECTIVE_TYPES.getObjectiveType(objIdArg);
+                    if (objectiveType == null) {
+                        Commands.errorNull(sender, "objective type", objIdArg);
+                        return true;
+                    }
+
+                    drop.setObjectiveType(objIdArg);
+                    sender.sendMessage(ChatColor.GOLD + "Set objective on drop " + drop.toString());
+                }
+                BeastMaster.CONFIG.save();
                 return true;
 
             } else if (args[0].equals("list-drops")) {
