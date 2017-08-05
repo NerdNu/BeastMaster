@@ -119,11 +119,11 @@ public class MobType {
             mob.setHealth(_health);
         }
 
+        // Prevent mobs from picking up items, since MA is despawning them.
+        mob.setCanPickupItems(false);
+
         // Clear default armour.
-        mob.getEquipment().setHelmet(null);
-        mob.getEquipment().setChestplate(null);
-        mob.getEquipment().setLeggings(null);
-        mob.getEquipment().setBoots(null);
+        mob.getEquipment().clear();
     }
 
     // ------------------------------------------------------------------------
