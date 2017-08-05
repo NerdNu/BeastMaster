@@ -243,7 +243,6 @@ public class BeastMaster extends JavaPlugin implements Listener {
         // To do better than this, we need persistent metadata. *sigh*
         MobType mobType = MOBS.getMobType(monster);
         if (mobType != null) {
-            event.getDrops().clear();
             mobType.getDropSet().drop(loc);
         }
     } // onEntityDeath

@@ -118,6 +118,12 @@ public class MobType {
             maxHealth.setBaseValue(_health);
             mob.setHealth(_health);
         }
+
+        // Clear default armour.
+        mob.getEquipment().setHelmet(null);
+        mob.getEquipment().setChestplate(null);
+        mob.getEquipment().setLeggings(null);
+        mob.getEquipment().setBoots(null);
     }
 
     // ------------------------------------------------------------------------
