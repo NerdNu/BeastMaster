@@ -4,9 +4,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
-
-import net.md_5.bungee.api.ChatColor;
 
 // ----------------------------------------------------------------------------
 /**

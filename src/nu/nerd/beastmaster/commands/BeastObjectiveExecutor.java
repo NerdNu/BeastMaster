@@ -2,10 +2,10 @@ package nu.nerd.beastmaster.commands;
 
 import java.util.Collection;
 
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-import net.md_5.bungee.api.ChatColor;
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.Drop;
 import nu.nerd.beastmaster.objectives.ObjectiveType;

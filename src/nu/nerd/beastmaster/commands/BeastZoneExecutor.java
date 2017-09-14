@@ -4,11 +4,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-import net.md_5.bungee.api.ChatColor;
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.MobType;
 import nu.nerd.beastmaster.zones.Zone;

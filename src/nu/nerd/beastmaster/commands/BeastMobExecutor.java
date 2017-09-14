@@ -5,11 +5,11 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 
-import net.md_5.bungee.api.ChatColor;
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.Drop;
 import nu.nerd.beastmaster.MobType;
@@ -311,7 +311,7 @@ public class BeastMobExecutor extends ExecutorBase {
      * @param expectedCommandArg the subcommand name.
      * @param propertyName the human-readable name of the property for messages.
      * @param inRange a predicate that should return true if the value is valid.
-     * @param valueCheckDescription the decription of valid values shown in
+     * @param valueCheckDescription the description of valid values shown in
      *        error messages.
      * @param setMethod a reference to the MobType instance method used to set
      *        the property.

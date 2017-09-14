@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 
-import net.md_5.bungee.api.ChatColor;
 import nu.nerd.beastmaster.DropSet;
 
 // ----------------------------------------------------------------------------
