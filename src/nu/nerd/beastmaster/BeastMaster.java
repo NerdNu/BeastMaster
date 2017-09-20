@@ -23,6 +23,7 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import nu.nerd.beastmaster.commands.BeastItemExecutor;
+import nu.nerd.beastmaster.commands.BeastLootExecutor;
 import nu.nerd.beastmaster.commands.BeastMasterExecutor;
 import nu.nerd.beastmaster.commands.BeastMobExecutor;
 import nu.nerd.beastmaster.commands.BeastObjectiveExecutor;
@@ -43,7 +44,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * Configuration wrapper instance.
      */
-    public static Configuration CONFIG = new Configuration();
+    public static final Configuration CONFIG = new Configuration();
 
     /**
      * This plugin, accessible as, effectively, a singleton.
@@ -53,22 +54,32 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * Zone manager as a singleton.
      */
-    public static ZoneManager ZONES = new ZoneManager();
+    public static final ZoneManager ZONES = new ZoneManager();
+
+    /**
+     * Item manager as a singleton.
+     */
+    public static final ItemManager ITEMS = new ItemManager();
 
     /**
      * Mob type manager as a singleton.
      */
-    public static MobTypeManager MOBS = new MobTypeManager();
+    public static final MobTypeManager MOBS = new MobTypeManager();
+
+    /**
+     * Loot table manager as a singleton.
+     */
+    public static final LootManager LOOTS = new LootManager();
 
     /**
      * Manages all objectives.
      */
-    public static ObjectiveManager OBJECTIVES = new ObjectiveManager();
+    public static final ObjectiveManager OBJECTIVES = new ObjectiveManager();
 
     /**
      * Manages all objective type.
      */
-    public static ObjectiveTypeManager OBJECTIVE_TYPES = new ObjectiveTypeManager();
+    public static final ObjectiveTypeManager OBJECTIVE_TYPES = new ObjectiveTypeManager();
 
     /**
      * Metadata name (key) used to tag affected mobs.
@@ -95,6 +106,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         addCommandExecutor(new BeastMasterExecutor());
         addCommandExecutor(new BeastZoneExecutor());
         addCommandExecutor(new BeastItemExecutor());
+        addCommandExecutor(new BeastLootExecutor());
         addCommandExecutor(new BeastMobExecutor());
         addCommandExecutor(new BeastObjectiveExecutor());
 
@@ -243,7 +255,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         // To do better than this, we need persistent metadata. *sigh*
         MobType mobType = MOBS.getMobType(monster);
         if (mobType != null) {
-            mobType.getDropSet().drop(loc);
+            // TODO: Implement death drops for mob type.
         }
     } // onEntityDeath
 

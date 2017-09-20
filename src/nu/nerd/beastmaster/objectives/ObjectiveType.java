@@ -7,8 +7,6 @@ import java.util.logging.Logger;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 
-import nu.nerd.beastmaster.DropSet;
-
 // ----------------------------------------------------------------------------
 /**
  * Describes a type of objective that can be spawned in a world by the
@@ -193,16 +191,6 @@ public class ObjectiveType {
         return 25;
     }
 
-    // ------------------------------------------------------------------------
-    /**
-     * Return the set of drops to be dropped by objectives of this type.
-     * 
-     * @return the set of drops to be dropped by objectives of this type.
-     */
-    public DropSet getDropSet() {
-        return _drops;
-    }
-
     // --------------------------------------------------------------------------
     /**
      * Return a brief, human-readable description of this objective type.
@@ -241,7 +229,6 @@ public class ObjectiveType {
         _maxY = section.getInt("max-y");
         _schematics.clear();
         _schematics.addAll(section.getStringList("schematics"));
-        _drops.load(section.getConfigurationSection("drops"), logger);
         return true;
     }
 
@@ -261,8 +248,6 @@ public class ObjectiveType {
         section.set("min-y", _minY);
         section.set("max-y", _maxY);
         section.set("schematics", _schematics);
-        ConfigurationSection dropsSection = section.createSection("drops");
-        _drops.save(dropsSection, logger);
     }
 
     // ------------------------------------------------------------------------
@@ -301,9 +286,6 @@ public class ObjectiveType {
      */
     protected ArrayList<String> _schematics = new ArrayList<>(Arrays.asList("MHF_Chest"));
 
-    /**
-     * The set of drops to be dropped by objectives of this type.
-     */
-    protected DropSet _drops = new DropSet();
+    // TODO: implement a reference to loot table.
 
 } // class ObjectiveType

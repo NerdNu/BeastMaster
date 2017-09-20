@@ -35,6 +35,10 @@ public class Util {
      * @return a string describing a dropped item stack.
      */
     public static String getItemDescription(ItemStack item) {
+        if (item == null) {
+            return "null";
+        }
+
         StringBuilder description = new StringBuilder();
         if (item.getAmount() != 1) {
             description.append(item.getAmount()).append('x');

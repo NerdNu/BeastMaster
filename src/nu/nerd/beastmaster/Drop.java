@@ -95,6 +95,8 @@ public class Drop {
     // ------------------------------------------------------------------------
     /**
      * Return the probability of this drop, in the range [0.0,1.0].
+     * 
+     * @return the probability of this drop, in the range [0.0,1.0].
      */
     public double getDropChance() {
         return _dropChance;
@@ -106,14 +108,49 @@ public class Drop {
      * configured range.
      *
      * @return the ItemStack.
+     * @throws IllegalArgumentException if the dropped item has one of the
+     *         special item IDs.
      */
     public ItemStack generate() {
-        ItemStack result = BeastMaster.CONFIG.ITEMS.get(_itemId);
+        Item item = BeastMaster.ITEMS.getItem(_itemId);
+        if (item.isSpecial()) {
+            throw new IllegalArgumentException("can't drop special item " + item.getId());
+        }
+
+        ItemStack result = item.getItemStack();
         if (result != null) {
             result = result.clone();
             result.setAmount(Util.random(_min, _max));
         }
         return result;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return a short description of this drop, suitable for display in-line.
+     * 
+     * The description does not include a full explanation of the dropped item;
+     * only it's ID.
+     * 
+     * @return a short description of this drop, suitable for display in-line.
+     */
+    public String getShortDescription() {
+        StringBuilder s = new StringBuilder();
+        s.append(ChatColor.WHITE).append(_dropChance * 100).append("% ");
+
+        Item item = BeastMaster.ITEMS.getItem(_itemId);
+        if (!item.isSpecial()) {
+            if (_min == _max) {
+                s.append(_min);
+            } else {
+                s.append('[').append(_min).append(',').append(_max).append(']');
+            }
+            s.append(' ');
+            ItemStack itemStack = item.getItemStack();
+            s.append((itemStack == null) ? ChatColor.RED + "nothing"
+                                         : ChatColor.YELLOW + _itemId);
+        }
+        return s.toString();
     }
 
     // ------------------------------------------------------------------------
@@ -130,16 +167,20 @@ public class Drop {
             s.append(ChatColor.GREEN).append("(objective: ").append(_objectiveType).append(") ");
         }
         s.append(ChatColor.WHITE).append(_dropChance * 100).append("% ");
-        if (_min == _max) {
-            s.append(_min);
-        } else {
-            s.append('[').append(_min).append(',').append(_max).append(']');
-        }
-        s.append(' ');
 
-        ItemStack item = BeastMaster.CONFIG.ITEMS.get(_itemId);
-        s.append((item == null) ? ChatColor.RED + "nothing"
-                                : ChatColor.WHITE + Util.getItemDescription(item));
+        Item item = BeastMaster.ITEMS.getItem(_itemId);
+        if (!item.isSpecial()) {
+            if (_min == _max) {
+                s.append(_min);
+            } else {
+                s.append('[').append(_min).append(',').append(_max).append(']');
+            }
+            s.append(' ');
+
+            ItemStack itemStack = item.getItemStack();
+            s.append((itemStack == null) ? ChatColor.RED + "nothing"
+                                         : ChatColor.WHITE + Util.getItemDescription(itemStack));
+        }
         return s.toString();
     }
 

@@ -2,7 +2,6 @@ package nu.nerd.beastmaster.commands;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map.Entry;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -13,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import nu.nerd.beastmaster.BeastMaster;
+import nu.nerd.beastmaster.Item;
 import nu.nerd.beastmaster.Util;
 
 // ----------------------------------------------------------------------------
@@ -52,21 +52,22 @@ public class BeastItemExecutor extends ExecutorBase {
                 Player player = (Player) sender;
 
                 String idArg = args[1];
-                if (BeastMaster.CONFIG.ITEMS.containsKey(idArg)) {
+                Item item = BeastMaster.ITEMS.getItem(idArg);
+                if (item != null) {
                     sender.sendMessage(ChatColor.RED + "An item named \"" + idArg + "\" is already defined. " +
                                        "Use \"/" + getName() + " redefine " + idArg + "\" to redefine the item.");
                     return true;
                 }
 
-                ItemStack item = player.getInventory().getItemInMainHand();
-                if (item == null || item.getType() == Material.AIR) {
+                ItemStack itemStack = player.getInventory().getItemInMainHand();
+                if (itemStack == null || itemStack.getType() == Material.AIR) {
                     sender.sendMessage(ChatColor.RED + "Hold the object to define as an item in your main hand!");
                     return true;
                 }
 
-                ItemStack definition = item.clone();
+                ItemStack definition = itemStack.clone();
                 definition.setAmount(1);
-                BeastMaster.CONFIG.ITEMS.put(idArg, definition);
+                BeastMaster.ITEMS.addItem(idArg, definition);
                 BeastMaster.CONFIG.save();
                 sender.sendMessage(ChatColor.GOLD + "Item " + ChatColor.YELLOW + idArg +
                                    ChatColor.GOLD + " is now defined as: " + ChatColor.WHITE + Util.getItemDescription(definition));
@@ -84,15 +85,22 @@ public class BeastItemExecutor extends ExecutorBase {
                 Player player = (Player) sender;
 
                 String idArg = args[1];
-                ItemStack item = player.getInventory().getItemInMainHand();
-                if (item == null || item.getType() == Material.AIR) {
+                ItemStack itemStack = player.getInventory().getItemInMainHand();
+                if (itemStack == null || itemStack.getType() == Material.AIR) {
                     sender.sendMessage(ChatColor.RED + "Hold the object to define as an item in your main hand!");
                     return true;
                 }
 
-                ItemStack definition = item.clone();
+                ItemStack definition = itemStack.clone();
                 definition.setAmount(1);
-                BeastMaster.CONFIG.ITEMS.put(idArg, definition);
+
+                Item oldItem = BeastMaster.ITEMS.getItem(idArg);
+                if (oldItem.isSpecial()) {
+                    sender.sendMessage(ChatColor.RED + "The special item " + idArg + " cannot be redefined.");
+                    return true;
+                }
+
+                BeastMaster.ITEMS.addItem(idArg, definition);
                 BeastMaster.CONFIG.save();
                 sender.sendMessage(ChatColor.GOLD + "Item " + ChatColor.YELLOW + idArg +
                                    ChatColor.GOLD + " is now defined as: " + ChatColor.WHITE + Util.getItemDescription(definition));
@@ -105,12 +113,18 @@ public class BeastItemExecutor extends ExecutorBase {
                 }
 
                 String idArg = args[1];
-                if (!BeastMaster.CONFIG.ITEMS.containsKey(idArg)) {
+                Item item = BeastMaster.ITEMS.getItem(idArg);
+                if (item == null) {
                     sender.sendMessage(ChatColor.RED + "There is no item with the ID \"" + idArg + "\"!");
                     return true;
                 }
 
-                BeastMaster.CONFIG.ITEMS.remove(idArg);
+                if (item.isSpecial()) {
+                    sender.sendMessage(ChatColor.RED + "Special items cannot be removed!");
+                    return true;
+                }
+
+                BeastMaster.ITEMS.removeItem(idArg);
                 BeastMaster.CONFIG.save();
                 sender.sendMessage(ChatColor.GOLD + "Item " + ChatColor.YELLOW + idArg + ChatColor.GOLD + " definition removed.");
                 return true;
@@ -127,8 +141,14 @@ public class BeastItemExecutor extends ExecutorBase {
                 Player player = (Player) sender;
 
                 String idArg = args[1];
-                if (!BeastMaster.CONFIG.ITEMS.containsKey(idArg)) {
-                    sender.sendMessage(ChatColor.RED + "There is no item with the ID \"" + idArg + "\"!");
+                Item item = BeastMaster.ITEMS.getItem(idArg);
+                if (item == null) {
+                    Commands.errorNull(sender, "item", idArg);
+                    return true;
+                }
+
+                if (item.isSpecial()) {
+                    sender.sendMessage(ChatColor.RED + "You can't get special items. They can only be dropped.");
                     return true;
                 }
 
@@ -143,26 +163,27 @@ public class BeastItemExecutor extends ExecutorBase {
                     }
                 }
 
-                // Let's be careful not to mess with the original item.
-                ItemStack item = BeastMaster.CONFIG.ITEMS.get(idArg).clone();
+                // Let's be careful not to mess with the original ItemStack.
+                ItemStack itemStack = item.getItemStack().clone();
 
                 // Split oversized item stacks prior to adding to the inventory.
                 ArrayList<ItemStack> stacks = new ArrayList<>();
-                if (item.getMaxStackSize() < 0) {
-                    item.setAmount(count);
-                    stacks.add(item);
+                if (itemStack.getMaxStackSize() < 0) {
+                    itemStack.setAmount(count);
+                    stacks.add(itemStack);
                 } else {
-                    int fullStacks = count / item.getMaxStackSize();
-                    int partialStack = count % item.getMaxStackSize();
-                    sender.sendMessage("count: " + count + " fullStacks: " + fullStacks + " partialStack: " + partialStack);
+                    int fullStacks = count / itemStack.getMaxStackSize();
+                    int partialStack = count % itemStack.getMaxStackSize();
+                    // sender.sendMessage("count: " + count + " fullStacks: " +
+                    // fullStacks + " partialStack: " + partialStack);
 
                     for (int i = 0; i < fullStacks; ++i) {
-                        ItemStack stack = item.clone();
-                        stack.setAmount(item.getMaxStackSize());
+                        ItemStack stack = itemStack.clone();
+                        stack.setAmount(itemStack.getMaxStackSize());
                         stacks.add(stack);
                     }
                     if (partialStack != 0) {
-                        ItemStack stack = item.clone();
+                        ItemStack stack = itemStack.clone();
                         stack.setAmount(partialStack);
                         stacks.add(stack);
                     }
@@ -176,7 +197,7 @@ public class BeastItemExecutor extends ExecutorBase {
                     loc.getWorld().dropItemNaturally(loc, drop);
                 }
                 player.sendMessage(ChatColor.GOLD + "You got " + ChatColor.YELLOW + count +
-                                   ChatColor.GOLD + " of " + ChatColor.WHITE + Util.getItemDescription(item));
+                                   ChatColor.GOLD + " of " + ChatColor.WHITE + Util.getItemDescription(item.getItemStack()));
                 return true;
 
             } else if (args[0].equals("list")) {
@@ -186,9 +207,14 @@ public class BeastItemExecutor extends ExecutorBase {
                 }
 
                 sender.sendMessage(ChatColor.GOLD + "Items:");
-                for (Entry<String, ItemStack> entry : BeastMaster.CONFIG.ITEMS.entrySet()) {
-                    sender.sendMessage(ChatColor.YELLOW + entry.getKey() +
-                                       ChatColor.WHITE + ": " + Util.getItemDescription(entry.getValue()));
+                for (Item item : BeastMaster.ITEMS.getAllItems()) {
+                    if (item.isSpecial()) {
+                        sender.sendMessage(ChatColor.YELLOW + item.getId() +
+                                           ChatColor.WHITE + " (special)");
+                    } else {
+                        sender.sendMessage(ChatColor.YELLOW + item.getId() +
+                                           ChatColor.WHITE + ": " + Util.getItemDescription(item.getItemStack()));
+                    }
                 }
                 return true;
             }

@@ -112,7 +112,7 @@ public class MobTypeManager {
      * @param logger the logger.
      */
     public void save(FileConfiguration config, Logger logger) {
-        // Create mobs section empty to remove delete mob types.
+        // Create mobs section empty to remove deleted mob types.
         ConfigurationSection mobsSection = config.createSection("mobs");
         for (MobType mobType : _idToType.values()) {
             mobType.save(mobsSection, logger);

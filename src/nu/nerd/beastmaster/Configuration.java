@@ -1,13 +1,9 @@
 package nu.nerd.beastmaster;
 
-import java.util.HashMap;
-import java.util.Map.Entry;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.inventory.ItemStack;
 
 import nu.nerd.beastmaster.objectives.ObjectiveType;
 
@@ -33,11 +29,6 @@ public class Configuration {
      */
     public double CHANCE_WITHER_SKELETON;
 
-    /**
-     * Custom items for drops. Each ItemStack will have size 1.
-     */
-    public HashMap<String, ItemStack> ITEMS = new HashMap<>();
-
     // ------------------------------------------------------------------------
     /**
      * Load the plugin configuration.
@@ -49,15 +40,11 @@ public class Configuration {
         DEBUG_REPLACE = config.getBoolean("debug.replace");
         CHANCE_WITHER_SKELETON = config.getDouble("chance.wither-skeleton");
 
-        ITEMS.clear();
-        ConfigurationSection items = config.getConfigurationSection("items");
-        for (String itemId : items.getKeys(false)) {
-            ITEMS.put(itemId, items.getItemStack(itemId));
-        }
-
         Logger logger = BeastMaster.PLUGIN.getLogger();
+        BeastMaster.ITEMS.load(config, logger);
         BeastMaster.ZONES.load(config, logger);
         BeastMaster.MOBS.load(config, logger);
+        BeastMaster.LOOTS.load(config, logger);
         BeastMaster.OBJECTIVE_TYPES.load(config, logger);
 
         if (DEBUG_CONFIG) {
@@ -68,26 +55,27 @@ public class Configuration {
             .map(z -> z.getDescription()).collect(Collectors.joining(", ")));
 
             logger.info("ITEMS: ");
-            for (Entry<String, ItemStack> entry : ITEMS.entrySet()) {
-                logger.info(entry.getKey() + ": " + Util.getItemDescription(entry.getValue()));
+            for (Item item : BeastMaster.ITEMS.getAllItems()) {
+                logger.info(item.getId() + (item.isSpecial() ? " (special): " : ": ") +
+                            Util.getItemDescription(item.getItemStack()));
+            }
+
+            logger.info("LOOTS: ");
+            for (DropSet drops : BeastMaster.LOOTS.getDropSets()) {
+                logger.info(drops.getId() + ":");
+                for (Drop drop : drops.getAllDrops()) {
+                    logger.info(drop.toString());
+                }
             }
 
             logger.info("MOBS: ");
             for (MobType mobType : BeastMaster.MOBS.getMobTypes()) {
                 logger.info(mobType.getDescription());
-                logger.info("With drops:");
-                for (Drop drop : mobType.getDropSet().getAllDrops()) {
-                    logger.info(drop.toString());
-                }
             }
 
             logger.info("OBJECTIVE_TYPES: ");
             for (ObjectiveType objectiveType : BeastMaster.OBJECTIVE_TYPES.getObjectiveTypes()) {
                 logger.info(objectiveType.getDescription());
-                logger.info("With drops:");
-                for (Drop drop : objectiveType.getDropSet().getAllDrops()) {
-                    logger.info(drop.toString());
-                }
             }
         }
     } // reload
@@ -100,11 +88,9 @@ public class Configuration {
         FileConfiguration config = BeastMaster.PLUGIN.getConfig();
         Logger logger = BeastMaster.PLUGIN.getLogger();
 
-        ConfigurationSection items = config.createSection("items");
-        for (Entry<String, ItemStack> entry : ITEMS.entrySet()) {
-            items.set(entry.getKey(), entry.getValue());
-        }
         BeastMaster.ZONES.save(config, logger);
+        BeastMaster.ITEMS.save(config, logger);
+        BeastMaster.LOOTS.save(config, logger);
         BeastMaster.MOBS.save(config, logger);
         BeastMaster.OBJECTIVE_TYPES.save(config, logger);
         BeastMaster.PLUGIN.saveConfig();

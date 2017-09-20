@@ -6,7 +6,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
@@ -22,6 +24,26 @@ import nu.nerd.beastmaster.zones.Zone;
  * Represents a set of drops.
  */
 public class DropSet {
+    // ------------------------------------------------------------------------
+    /**
+     * Constructor.
+     * 
+     * @param id the programmatic ID of this DropSet.
+     */
+    public DropSet(String id) {
+        _id = id;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the programmatic ID of this DropSet.
+     * 
+     * @return the programmatic ID of this DropSet.
+     */
+    public String getId() {
+        return _id;
+    }
+
     // ------------------------------------------------------------------------
     /**
      * Remove all drops.
@@ -110,6 +132,7 @@ public class DropSet {
      * @param logger the logger for messages.
      */
     public void load(ConfigurationSection section, Logger logger) {
+        _id = section.getName();
         _drops.clear();
         if (section != null) {
             for (String itemId : section.getKeys(false)) {
@@ -127,13 +150,32 @@ public class DropSet {
      * Save all drops to the specified section, with each item corresponding to
      * one key.
      * 
-     * @param section the configuration section.
+     * @param parentSection the parent configuration section.
      * @param logger the logger.
      */
-    public void save(ConfigurationSection section, Logger logger) {
+    public void save(ConfigurationSection parentSection, Logger logger) {
+        ConfigurationSection section = parentSection.createSection(getId());
         for (Drop drop : _drops.values()) {
             drop.save(section, logger);
         }
+    }
+
+    // --------------------------------------------------------------------------
+    /**
+     * Return a description of this set of drops that can be presented to the
+     * user.
+     * 
+     * @return a description of this set of drops that can be presented to the
+     *         user.
+     */
+    public String getDescription() {
+        StringBuilder s = new StringBuilder();
+        s.append(ChatColor.YELLOW).append(_id);
+        s.append(ChatColor.WHITE).append(": [");
+        s.append(getAllDrops().stream().map(drop -> drop.getShortDescription())
+        .collect(Collectors.joining(ChatColor.WHITE + ", ")));
+        s.append(ChatColor.WHITE).append("]");
+        return s.toString();
     }
 
     // --------------------------------------------------------------------------
@@ -210,7 +252,12 @@ public class DropSet {
 
     // ------------------------------------------------------------------------
     /**
-     * Map from item ID to drop for this mob type.
+     * The programmatic ID.
+     */
+    protected String _id;
+
+    /**
+     * Map from item ID to drop.
      */
     protected HashMap<String, Drop> _drops = new HashMap<>();
 

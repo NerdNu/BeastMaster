@@ -10,7 +10,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import nu.nerd.beastmaster.BeastMaster;
-import nu.nerd.beastmaster.DropSet;
 import nu.nerd.beastmaster.Util;
 
 // ----------------------------------------------------------------------------
@@ -113,7 +112,8 @@ public class Objective {
 
         World world = getLocation().getWorld();
         world.playSound(getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 3, 1);
-        _objectiveType.getDropSet().drop(getLocation());
+
+        // TODO: drop drops per loot table.
     }
 
     // ------------------------------------------------------------------------
@@ -129,11 +129,6 @@ public class Objective {
      * The type of this objective.
      */
     protected ObjectiveType _objectiveType;
-
-    /**
-     * The set of drops returned by this objective.
-     */
-    protected DropSet _drops;
 
     /**
      * Location of the objective.

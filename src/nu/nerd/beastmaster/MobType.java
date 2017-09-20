@@ -46,8 +46,7 @@ public class MobType {
         _babyFraction = (Double) section.get("baby-fraction");
         _speed = (Double) section.get("speed");
         _health = (Double) section.get("health");
-        _drops.load(section.getConfigurationSection("drops"), logger);
-
+        // TODO: load loot table reference.
         // TODO: implement potions.
         return true;
     }
@@ -72,9 +71,7 @@ public class MobType {
         if (_health != null) {
             section.set("health", _health);
         }
-
-        ConfigurationSection dropsSection = section.createSection("drops");
-        _drops.save(dropsSection, logger);
+        // TODO: save loot table reference.
     }
 
     // ------------------------------------------------------------------------
@@ -178,16 +175,6 @@ public class MobType {
 
     // ------------------------------------------------------------------------
     /**
-     * Return the set of drops dropped by this mob on death.
-     * 
-     * @return the set of drops dropped by this mob on death.
-     */
-    public DropSet getDropSet() {
-        return _drops;
-    }
-
-    // ------------------------------------------------------------------------
-    /**
      * Return a string description of this type.
      * 
      * @return a string description of this type.
@@ -220,6 +207,7 @@ public class MobType {
             desc.append(ChatColor.YELLOW);
             desc.append(_health);
         }
+        // TODO: show loot table reference.
         // TODO: potions.
         return desc.toString();
     }
@@ -249,10 +237,5 @@ public class MobType {
      * Health in hearts; null => no override.
      */
     protected Double _health;
-
-    /**
-     * Set of drops dropped by this mob on death.
-     */
-    protected DropSet _drops = new DropSet();
 
 } // class MobType
