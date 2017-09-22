@@ -98,7 +98,7 @@ public class BeastLootExecutor extends ExecutorBase {
                 Collection<Drop> allDrops = dropSet.getAllDrops();
                 sender.sendMessage(ChatColor.GOLD + (allDrops.isEmpty() ? "No drops defined." : "Drops:"));
                 for (Drop drop : allDrops) {
-                    sender.sendMessage(drop.toString());
+                    sender.sendMessage(drop.getLongDescription());
                 }
                 return true;
 
@@ -170,12 +170,12 @@ public class BeastLootExecutor extends ExecutorBase {
                 if (oldDrop != null) {
                     sender.sendMessage(ChatColor.GOLD + "Replacing " + ChatColor.YELLOW + idArg +
                                        ChatColor.GOLD + " drop:");
-                    sender.sendMessage(ChatColor.GOLD + "Old: " + ChatColor.WHITE + oldDrop);
-                    sender.sendMessage(ChatColor.GOLD + "New: " + ChatColor.WHITE + newDrop);
+                    sender.sendMessage(ChatColor.GOLD + "Old: " + ChatColor.WHITE + oldDrop.getLongDescription());
+                    sender.sendMessage(ChatColor.GOLD + "New: " + ChatColor.WHITE + newDrop.getLongDescription());
                 } else {
                     sender.sendMessage(ChatColor.GOLD + "Adding " + ChatColor.YELLOW + idArg +
                                        ChatColor.GOLD + " drop:");
-                    sender.sendMessage(ChatColor.WHITE + newDrop.toString());
+                    sender.sendMessage(ChatColor.WHITE + newDrop.getLongDescription());
                 }
                 return true;
 
@@ -201,7 +201,7 @@ public class BeastLootExecutor extends ExecutorBase {
                 } else {
                     sender.sendMessage(ChatColor.GOLD + "Removed " + ChatColor.YELLOW + idArg +
                                        ChatColor.GOLD + " drop:");
-                    sender.sendMessage(drop.toString());
+                    sender.sendMessage(drop.getLongDescription());
                 }
                 return true;
 
@@ -227,7 +227,7 @@ public class BeastLootExecutor extends ExecutorBase {
                                        ChatColor.YELLOW + idArg + ChatColor.GOLD + ":");
                 }
                 for (Drop drop : allDrops) {
-                    sender.sendMessage(drop.toString());
+                    sender.sendMessage(drop.getLongDescription());
                 }
                 return true;
 
@@ -281,7 +281,7 @@ public class BeastLootExecutor extends ExecutorBase {
                 String objIdArg = args[3];
                 if (objIdArg.equals("none")) {
                     drop.setObjectiveType(null);
-                    sender.sendMessage(ChatColor.GOLD + "Cleared objective on drop " + drop.toString());
+                    sender.sendMessage(ChatColor.GOLD + "Cleared objective on drop " + drop.getLongDescription());
                 } else {
                     ObjectiveType objectiveType = BeastMaster.OBJECTIVE_TYPES.getObjectiveType(objIdArg);
                     if (objectiveType == null) {
@@ -290,7 +290,7 @@ public class BeastLootExecutor extends ExecutorBase {
                     }
 
                     drop.setObjectiveType(objIdArg);
-                    sender.sendMessage(ChatColor.GOLD + "Set objective on drop " + drop.toString());
+                    sender.sendMessage(ChatColor.GOLD + "Set objective on drop " + drop.getLongDescription());
                 }
                 BeastMaster.CONFIG.save();
                 return true;

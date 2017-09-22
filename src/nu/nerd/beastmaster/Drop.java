@@ -216,6 +216,10 @@ public class Drop {
      */
     public ItemStack generate() {
         Item item = BeastMaster.ITEMS.getItem(_itemId);
+        if (item == null) {
+            return null;
+        }
+
         if (item.isSpecial()) {
             throw new IllegalArgumentException("can't drop special item " + item.getId());
         }
@@ -242,7 +246,9 @@ public class Drop {
         s.append(ChatColor.WHITE).append(_dropChance * 100).append("% ");
 
         Item item = BeastMaster.ITEMS.getItem(_itemId);
-        if (item.isSpecial()) {
+        if (item == null) {
+            s.append(ChatColor.RED).append(_itemId);
+        } else if (item.isSpecial()) {
             s.append(ChatColor.YELLOW).append(_itemId);
         } else {
             if (_min == _max) {
@@ -263,12 +269,11 @@ public class Drop {
 
     // ------------------------------------------------------------------------
     /**
-     * Return a brief description of the drop ID, item, probability and count.
+     * Return a longer description of the drop ID, item, probability and count.
      * 
-     * @return a brief description of the drop.
+     * @return a longer description of the drop.
      */
-    @Override
-    public String toString() {
+    public String getLongDescription() {
         StringBuilder s = new StringBuilder();
         s.append(ChatColor.YELLOW).append(_itemId).append(": ");
         if (_objectiveType != null) {
@@ -277,7 +282,11 @@ public class Drop {
         s.append(ChatColor.WHITE).append(_dropChance * 100).append("% ");
 
         Item item = BeastMaster.ITEMS.getItem(_itemId);
-        if (!item.isSpecial()) {
+        if (item == null) {
+            s.append(ChatColor.RED).append(_itemId);
+        } else if (item.isSpecial()) {
+            s.append(ChatColor.YELLOW).append(_itemId);
+        } else {
             if (_min == _max) {
                 s.append(_min);
             } else {
@@ -290,6 +299,17 @@ public class Drop {
                                          : ChatColor.WHITE + Util.getItemDescription(itemStack));
         }
         return s.toString();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the long description of this drop.
+     * 
+     * @return the long description of this drop.
+     */
+    @Override
+    public String toString() {
+        return getLongDescription();
     }
 
     // ------------------------------------------------------------------------

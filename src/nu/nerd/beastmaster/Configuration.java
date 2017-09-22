@@ -62,10 +62,7 @@ public class Configuration {
 
             logger.info("LOOTS: ");
             for (DropSet drops : BeastMaster.LOOTS.getDropSets()) {
-                logger.info(drops.getId() + ":");
-                for (Drop drop : drops.getAllDrops()) {
-                    logger.info(drop.toString());
-                }
+                logger.info(drops.getDescription());
             }
 
             logger.info("MOBS: ");

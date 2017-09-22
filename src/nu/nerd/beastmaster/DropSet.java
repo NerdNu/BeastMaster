@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
@@ -169,20 +168,24 @@ public class DropSet {
 
     // ------------------------------------------------------------------------
     /**
-     * Load all drops from the specified configuration section, with each key
-     * being an item ID.
+     * Load all properties and drops from the specified configuration section,
+     * with each key being an item ID.
      * 
      * @param section the section.
      * @param logger the logger for messages.
      */
     public void load(ConfigurationSection section, Logger logger) {
         _id = section.getName();
+        _single = section.getBoolean("single");
+
         _drops.clear();
         invalidateWeightedSelection();
-        if (section != null) {
-            for (String itemId : section.getKeys(false)) {
+
+        ConfigurationSection allDropsSection = section.getConfigurationSection("drops");
+        if (allDropsSection != null) {
+            for (String itemId : allDropsSection.getKeys(false)) {
                 Drop drop = new Drop(itemId, 0, 0, 0);
-                ConfigurationSection dropSection = section.getConfigurationSection(itemId);
+                ConfigurationSection dropSection = allDropsSection.getConfigurationSection(itemId);
                 if (drop.load(dropSection, logger)) {
                     _drops.put(itemId, drop);
                 }
@@ -192,16 +195,19 @@ public class DropSet {
 
     // ------------------------------------------------------------------------
     /**
-     * Save all drops to the specified section, with each item corresponding to
-     * one key.
+     * Save all properties and drops to the specified section, with each item
+     * corresponding to one key.
      * 
      * @param parentSection the parent configuration section.
      * @param logger the logger.
      */
     public void save(ConfigurationSection parentSection, Logger logger) {
         ConfigurationSection section = parentSection.createSection(getId());
+        section.set("single", _single);
+
+        ConfigurationSection allDropsSection = section.createSection("drops");
         for (Drop drop : _drops.values()) {
-            drop.save(section, logger);
+            drop.save(allDropsSection, logger);
         }
     }
 
@@ -229,10 +235,6 @@ public class DropSet {
     /**
      * Do all actions associated with a {@link Drop}, including effects and XP.
      * 
-     * Items must be dropped from a task run in the next server tick, because at
-     * the time this method is called, the block has not yet been mined, and its
-     * existence messes with the dropped item physics.
-     * 
      * @param loc the Location of the drop.
      * @param drop describes the drop.
      * @return true if the default vanilla drop should be dropped.
@@ -248,8 +250,7 @@ public class DropSet {
             boolean hasItemStack = (itemStack != null && trySpawnObjective(drop, itemStack, loc));
             if (hasItemStack) {
                 if (itemStack != null && trySpawnObjective(drop, itemStack, loc)) {
-                    Bukkit.getScheduler().runTask(BeastMaster.PLUGIN,
-                                                  () -> loc.getWorld().dropItemNaturally(loc, itemStack));
+                    loc.getWorld().dropItemNaturally(loc, itemStack);
                 }
             }
 

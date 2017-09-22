@@ -289,7 +289,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
             return;
         }
 
-        Location loc = block.getLocation();
+        Location loc = block.getLocation().add(0.5, 0.5, 0.5);
         Zone zone = ZONES.getZone(loc);
         if (zone == null) {
             return;
