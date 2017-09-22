@@ -1,7 +1,9 @@
 package nu.nerd.beastmaster;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Biome;
@@ -12,6 +14,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
@@ -22,6 +25,7 @@ import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import net.sothatsit.blockstore.BlockStoreApi;
 import nu.nerd.beastmaster.commands.BeastItemExecutor;
 import nu.nerd.beastmaster.commands.BeastLootExecutor;
 import nu.nerd.beastmaster.commands.BeastMasterExecutor;
@@ -137,10 +141,21 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * If a player breaks an objective block, do treasure drops and stop that
      * the particle effects.
+     * 
+     * Handle players breaking ore blocks by consulting the most specific loot
+     * table for the applicable Zone/Condition and block type.
+     * 
+     * Don't drop special items for player-placed blocks.
      */
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onBlockBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
+        if (BlockStoreApi.isPlaced(block)) {
+            return;
+        }
+
+        handleBlockBreakCustomDrops(event, block);
+
         Objective objective = OBJECTIVES.getObjective(block);
         if (objective != null) {
             // Prevent the objective break from being logged by LogBlock.
@@ -258,6 +273,43 @@ public class BeastMaster extends JavaPlugin implements Listener {
             // TODO: Implement death drops for mob type.
         }
     } // onEntityDeath
+
+    // ------------------------------------------------------------------------
+    /**
+     * Handle block break in a zone where that block type should drop custom
+     * drops.
+     * 
+     * Only survival mode players should trigger drops.
+     * 
+     * @param event the BlockBreakEvent.
+     * @param block the broken block.
+     */
+    protected void handleBlockBreakCustomDrops(BlockBreakEvent event, Block block) {
+        if (event.getPlayer().getGameMode() != GameMode.SURVIVAL) {
+            return;
+        }
+
+        Location loc = block.getLocation();
+        Zone zone = ZONES.getZone(loc);
+        if (zone == null) {
+            return;
+        }
+
+        DropSet drops = zone.getMiningDrops(block.getType());
+        if (drops == null) {
+            return;
+        }
+
+        boolean dropDefaultItems = drops.generateRandomDrops(loc);
+        if (!dropDefaultItems) {
+            // To cancel the default drops our only option is to cancel
+            // the event and simulate the break.
+            event.setCancelled(true);
+            block.setType(Material.AIR);
+
+            // TODO: log the block break with BlocksHub.
+        }
+    }
 
     // ------------------------------------------------------------------------
     /**

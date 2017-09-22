@@ -15,9 +15,10 @@ import nu.nerd.beastmaster.WeightedSelection;
 
 // ----------------------------------------------------------------------------
 /**
- * Describes the zone of operation of beasts.
+ * A type of {@link Condition} that is predicated on only the Location of an
+ * event in space.
  */
-public class Zone {
+public class Zone extends Condition {
     // ------------------------------------------------------------------------
     /**
      * Constructor.
@@ -39,8 +40,13 @@ public class Zone {
      * @param logger the logger.
      * @return true if the zone was loaded successfully.
      */
+    @Override
     public boolean load(ConfigurationSection section, Logger logger) {
         _id = section.getName();
+
+        if (!super.load(section, logger)) {
+            return false;
+        }
 
         String worldName = section.getString("world");
         _world = (worldName != null) ? Bukkit.getWorld(worldName) : null;
@@ -70,8 +76,11 @@ public class Zone {
      * @param parentSection the parent configuration section.
      * @param logger the logger.
      */
+    @Override
     public void save(ConfigurationSection parentSection, Logger logger) {
         ConfigurationSection section = parentSection.createSection(getId());
+
+        super.save(section, logger);
         section.set("world", _world.getName());
         section.set("centre-x", _centreX);
         section.set("centre-z", _centreZ);
@@ -89,6 +98,7 @@ public class Zone {
      * 
      * @return the programmatic ID of this zone.
      */
+    @Override
     public String getId() {
         return _id;
     }
@@ -106,6 +116,15 @@ public class Zone {
         _centreX = centreX;
         _centreZ = centreZ;
         _radius = radius;
+    }
+
+    // --------------------------------------------------------------------------
+    /**
+     * @see java.util.function.Predicate#test(java.lang.Object)
+     */
+    @Override
+    public boolean test(Location loc) {
+        return contains(loc);
     }
 
     // ------------------------------------------------------------------------

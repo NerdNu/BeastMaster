@@ -7,7 +7,7 @@ website: ${project.url}
 database: true
 main: nu.nerd.beastmaster.BeastMaster
 softdepend: [ Multiverse-Core ]
-depend: [ WorldEdit ]
+depend: [ WorldEdit, BlockStore ]
 
 permissions:
   beastmaster.console:
@@ -66,6 +66,9 @@ commands:
       §e/<command> add-spawn <zone-id> <mob-id> <weight>§f - Add the specified mob as a replacement for hostile spawns in the identified zone with the given relative weight (or modify the weight).
       §e/<command> remove-spawn <zone-id> <mob-id>§f - Disable spawns of the specified mob in the given zone.
       §e/<command> list-spawns <zone-id>§f - List all spawns in the zone with the specified ID.
+      §e/<command> add-block <zone-id> <material> <loot-id>§f - Add a block type to watch for break events. When a block of the specified material is broken, consult the specified loot table to see what drops. The <material> can be a case-insensitive Bukkit material name, or an integer ID.
+      §e/<command> remove-block <zone-id> <material>§f - Remove the custom loot drop for the specified block type. The <material> can be a case-insensitive Bukkit material name, or an integer ID.
+      §e/<command> list-blocks <zone-id>§f - List all block types in the zone that drop special loot, and their corresponding loot tables.
 
   beast-item:
     description: Configure items.
@@ -93,7 +96,10 @@ commands:
       §e/<command> add-drop <loot-id> <item-id> <percentage-chance> <min> [<max>]§f - Create or modify a drop in the loot table the mob, with an item type previously defined by /beast-item, and with the specified percentage chance in the range 0.0 to 100.0 and the specified number of items. If the maximum number is not specified, it defaults to the same as min.
       §e/<command> remove-drop <loot-id> <item-id>§f - Remove the specified item from the possible drops in the loot table.
       §e/<command> list-drops <loot-id>§f - List all possible drops from this loot table.
+      §e/<command> single <loot-id> <yes-or-no>§f - Specifies whether a the loot table will drop a single drop or multiple independent drops. <yes-or-no> is case insensitive and can be one of yes/no/true/false/t/f/on/off. If yes, a single item stack will be selected to drop and drop chances are interpreted as relative preferences. If no, multiple items may drop, according to their drop chances.
       §e/<command> objective <loot-id> <item-id> (<obj-id>|none)§f - Signify that this drop causes an objective to spawn, or not if the objective ID is "none".
+      §e/<command> sound <loot-id> <item-id> <sound> <range> <pitch>§f - NOT YET IMPLEMENTED. Signify that this drop causes a sound to play. <sound> is a sound name from the Bukkit API. <range> is the range of the sound in blocks. <pitch> is playback speed, from 0.5 to 2.0.
+      §e/<command> xp <loot-id> <item-id> <xp>§f - NOT YET IMPLEMENTED. Signify that this drop will be accompanied by a specified amount of XP, or 0 to suppress the XP. NOTE: This option does not affect XP from vanilla default drops.
 
   beast-mob:
     description: Configure mobs.

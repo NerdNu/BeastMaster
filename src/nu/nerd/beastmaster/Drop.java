@@ -3,6 +3,7 @@ package nu.nerd.beastmaster;
 import java.util.logging.Logger;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 
@@ -62,6 +63,93 @@ public class Drop {
 
     // ------------------------------------------------------------------------
     /**
+     * Set the experience to drop.
+     * 
+     * @param experience the amount of XP; use 0 to not drop an orb.
+     */
+    public void setExperience(int experience) {
+        _experience = experience;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the experience to drop, or 0 to not drop an XP orb.
+     * 
+     * @return the experience to drop, or 0 to not drop an XP orb.
+     */
+    public int getExperience() {
+        return _experience;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Set the sound to play when this drop drops.
+     * 
+     * Note that a sound can be played even when the {@link Item} has a null
+     * ItemStack.
+     * 
+     * @param sound the sound to play, or null to play nothing.
+     */
+    public void setSound(Sound sound) {
+        _sound = sound;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the sound to play, or null for silence.
+     * 
+     * @return the sound to play, or null for silence.
+     */
+    public Sound getSound() {
+        return _sound;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Set the sound volume.
+     * 
+     * @param soundVolume sets the range of the sound to approximately
+     *        (15*soundVolume) blocks.
+     */
+
+    public void setSoundVolume(float soundVolume) {
+        _soundVolume = soundVolume;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the volume of the sound, which is approximately the range of the
+     * sound in blocks divided by 15.
+     * 
+     * @return the volume of the sound, which is approximately the range of the
+     *         sound in blocks divided by 15.
+     */
+    public float getSoundVolume() {
+        return _soundVolume;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Set the pitch of the sound.
+     * 
+     * @param soundPitch the pitch (playback speed) in the range [0.5,2.0].
+     */
+    public void setSoundPitch(float soundPitch) {
+        _soundPitch = soundPitch;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the sound pitch (playback speed) in the range [0.5,2.0].
+     * 
+     * @return the sound pitch (playback speed) in the range [0.5,2.0].
+     */
+    public float getSoundPitch() {
+        return _soundPitch;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Load a custom drop from a configuration file section named after the
      * custom item ID.
      * 
@@ -74,6 +162,17 @@ public class Drop {
         _min = section.getInt("min", 1);
         _max = section.getInt("max", Math.max(1, _min));
         _objectiveType = section.getString("objective");
+        _experience = section.getInt("experience");
+        String soundId = section.getString("sound");
+        try {
+            _sound = (soundId != null && soundId.length() > 0) ? Sound.valueOf(soundId)
+                                                               : null;
+        } catch (IllegalArgumentException ex) {
+            _sound = null;
+            logger.severe("drop " + _itemId + " could not load invalid sound " + soundId);
+        }
+        _soundVolume = (float) section.getDouble("sound-volume");
+        _soundPitch = (float) section.getDouble("sound-pitch");
         return true;
     }
 
@@ -90,6 +189,10 @@ public class Drop {
         section.set("min", _min);
         section.set("max", _max);
         section.set("objective", _objectiveType);
+        section.set("experience", _experience);
+        section.set("sound", (_sound != null) ? _sound.toString() : "");
+        section.set("sound-volume", _soundVolume);
+        section.set("sound-pitch", _soundPitch);
     }
 
     // ------------------------------------------------------------------------
@@ -139,7 +242,9 @@ public class Drop {
         s.append(ChatColor.WHITE).append(_dropChance * 100).append("% ");
 
         Item item = BeastMaster.ITEMS.getItem(_itemId);
-        if (!item.isSpecial()) {
+        if (item.isSpecial()) {
+            s.append(ChatColor.YELLOW).append(_itemId);
+        } else {
             if (_min == _max) {
                 s.append(_min);
             } else {
@@ -147,8 +252,11 @@ public class Drop {
             }
             s.append(' ');
             ItemStack itemStack = item.getItemStack();
-            s.append((itemStack == null) ? ChatColor.RED + "nothing"
-                                         : ChatColor.YELLOW + _itemId);
+            if (itemStack == null) {
+                s.append(ChatColor.RED).append("nothing");
+            } else {
+                s.append(ChatColor.YELLOW).append(_itemId);
+            }
         }
         return s.toString();
     }
@@ -210,4 +318,24 @@ public class Drop {
      * drop does not denote an objective.
      */
     protected String _objectiveType;
+
+    /**
+     * The amount of experience to drop, or 0 to not drop an XP orb.
+     */
+    protected int _experience;
+
+    /**
+     * The Sound to play when this drop drops, or null to not play anything.
+     */
+    protected Sound _sound;
+
+    /**
+     * The volume to play the sound. The range is about 15*_soundVolume blocks.
+     */
+    protected float _soundVolume;
+
+    /**
+     * The sound pitch (playback speed) in the range [0.5,2.0].
+     */
+    protected float _soundPitch;
 } // class Drop

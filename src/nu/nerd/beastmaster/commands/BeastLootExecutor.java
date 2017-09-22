@@ -25,7 +25,8 @@ public class BeastLootExecutor extends ExecutorBase {
      */
     public BeastLootExecutor() {
         super("beast-loot", "help", "add", "remove", "info", "list",
-              "add-drop", "remove-drop", "objective", "list-drops");
+              "add-drop", "remove-drop", "list-drops",
+              "objective", "single", "sound", "xp");
     }
 
     // ------------------------------------------------------------------------
@@ -204,6 +205,59 @@ public class BeastLootExecutor extends ExecutorBase {
                 }
                 return true;
 
+            } else if (args[0].equals("list-drops")) {
+                if (args.length != 2) {
+                    Commands.invalidArguments(sender, getName() + " list-drops <loot-id>");
+                    return true;
+                }
+
+                String idArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(idArg);
+                if (dropSet == null) {
+                    Commands.errorNull(sender, "loot table", idArg);
+                    return true;
+                }
+
+                Collection<Drop> allDrops = dropSet.getAllDrops();
+                if (allDrops.isEmpty()) {
+                    sender.sendMessage(ChatColor.GOLD + "Loot table " +
+                                       ChatColor.YELLOW + idArg + ChatColor.GOLD + " has no drops defined.");
+                } else {
+                    sender.sendMessage(ChatColor.GOLD + "Drops of loot table " +
+                                       ChatColor.YELLOW + idArg + ChatColor.GOLD + ":");
+                }
+                for (Drop drop : allDrops) {
+                    sender.sendMessage(drop.toString());
+                }
+                return true;
+
+            } else if (args[0].equals("single")) {
+                if (args.length != 3) {
+                    Commands.invalidArguments(sender, getName() + " single <loot-id> <yes-or-no>");
+                    return true;
+                }
+
+                String idArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(idArg);
+                if (dropSet == null) {
+                    Commands.errorNull(sender, "loot table", idArg);
+                    return true;
+                }
+
+                String yesNoArg = args[2];
+                Boolean single = Commands.parseBoolean(sender, yesNoArg);
+                if (single == null) {
+                    return true;
+                }
+
+                dropSet.setSingle(single);
+                BeastMaster.CONFIG.save();
+                sender.sendMessage(ChatColor.GOLD + "Loot table " + ChatColor.YELLOW + idArg +
+                                   ChatColor.GOLD + " is now configured for " +
+                                   ChatColor.YELLOW + (single ? "single" : "multiple") +
+                                   ChatColor.GOLD + " drop operation.");
+                return true;
+
             } else if (args[0].equals("objective")) {
                 if (args.length != 4) {
                     Commands.invalidArguments(sender, getName() + " objective <loot-id> <item-id> (<obj-id>|none)");
@@ -239,32 +293,6 @@ public class BeastLootExecutor extends ExecutorBase {
                     sender.sendMessage(ChatColor.GOLD + "Set objective on drop " + drop.toString());
                 }
                 BeastMaster.CONFIG.save();
-                return true;
-
-            } else if (args[0].equals("list-drops")) {
-                if (args.length != 2) {
-                    Commands.invalidArguments(sender, getName() + " list-drops <loot-id>");
-                    return true;
-                }
-
-                String idArg = args[1];
-                DropSet dropSet = BeastMaster.LOOTS.getDropSet(idArg);
-                if (dropSet == null) {
-                    Commands.errorNull(sender, "loot table", idArg);
-                    return true;
-                }
-
-                Collection<Drop> allDrops = dropSet.getAllDrops();
-                if (allDrops.isEmpty()) {
-                    sender.sendMessage(ChatColor.GOLD + "Loot table " +
-                                       ChatColor.YELLOW + idArg + ChatColor.GOLD + " has no drops defined.");
-                } else {
-                    sender.sendMessage(ChatColor.GOLD + "Drops of loot table " +
-                                       ChatColor.YELLOW + idArg + ChatColor.GOLD + ":");
-                }
-                for (Drop drop : allDrops) {
-                    sender.sendMessage(drop.toString());
-                }
                 return true;
             }
         }

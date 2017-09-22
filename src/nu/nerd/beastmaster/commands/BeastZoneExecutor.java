@@ -1,15 +1,19 @@
 package nu.nerd.beastmaster.commands;
 
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
 import nu.nerd.beastmaster.BeastMaster;
+import nu.nerd.beastmaster.DropSet;
 import nu.nerd.beastmaster.MobType;
 import nu.nerd.beastmaster.zones.Zone;
 
@@ -24,7 +28,8 @@ public class BeastZoneExecutor extends ExecutorBase {
      */
     public BeastZoneExecutor() {
         super("beast-zone", "help", "add", "remove", "square", "list",
-              "add-spawn", "remove-spawn", "list-spawns");
+              "add-spawn", "remove-spawn", "list-spawns",
+              "add-block", "remove-block", "list-blocks");
     }
 
     // ------------------------------------------------------------------------
@@ -242,6 +247,106 @@ public class BeastZoneExecutor extends ExecutorBase {
                               ChatColor.YELLOW + e.getKey() + ChatColor.WHITE)
                     .collect(Collectors.joining(", ")));
                     sender.sendMessage(s.toString());
+                }
+                return true;
+            } else if (args[0].equals("add-block")) {
+                if (args.length != 4) {
+                    Commands.invalidArguments(sender, getName() + " add-block <zone-id> <material> <loot-id>");
+                    return true;
+                }
+
+                String zoneArg = args[1];
+                Zone zone = BeastMaster.ZONES.getZone(zoneArg);
+                if (zone == null) {
+                    Commands.errorNull(sender, "zone", zoneArg);
+                    return true;
+                }
+
+                Material material = Commands.parseMaterial(sender, args[2]);
+                if (material == null) {
+                    return true;
+                }
+
+                // Allow the loot table for a material to be set even if the
+                // table is not yet defined.
+                String lootArg = args[3];
+                zone.setMiningDropsId(material, lootArg);
+                BeastMaster.CONFIG.save();
+
+                DropSet drops = BeastMaster.LOOTS.getDropSet(lootArg);
+                String dropsDescription = (drops != null) ? drops.getDescription()
+                                                          : ChatColor.RED + lootArg + ChatColor.GOLD + " (not defined)";
+                sender.sendMessage(ChatColor.GOLD + "When " + ChatColor.YELLOW + material +
+                                   ChatColor.GOLD + " is broken in zone " + ChatColor.YELLOW + zoneArg +
+                                   ChatColor.GOLD + " loot will drop from table " + dropsDescription +
+                                   ChatColor.GOLD + ".");
+                return true;
+
+            } else if (args[0].equals("remove-block")) {
+                if (args.length != 3) {
+                    Commands.invalidArguments(sender, getName() + " remove-block <zone-id> <material>");
+                    return true;
+                }
+
+                String zoneArg = args[1];
+                Zone zone = BeastMaster.ZONES.getZone(zoneArg);
+                if (zone == null) {
+                    Commands.errorNull(sender, "zone", zoneArg);
+                    return true;
+                }
+
+                Material material = Commands.parseMaterial(sender, args[2]);
+                if (material == null) {
+                    return true;
+                }
+
+                String oldDropsId = zone.getMiningDropsId(material);
+                DropSet drops = BeastMaster.LOOTS.getDropSet(oldDropsId);
+                String dropsDescription = (drops != null) ? drops.getDescription()
+                                                          : ChatColor.RED + oldDropsId + ChatColor.GOLD + " (not defined)";
+                if (oldDropsId == null) {
+                    sender.sendMessage(ChatColor.RED + "Zone " + zoneArg +
+                                       " has no custom mining drops for " + material + "!");
+                } else {
+                    sender.sendMessage(ChatColor.GOLD + "When " + ChatColor.YELLOW + material +
+                                       ChatColor.GOLD + " is broken in zone " + ChatColor.YELLOW + zoneArg +
+                                       ChatColor.GOLD + " loot will no longer drop from table " + dropsDescription +
+                                       ChatColor.GOLD + ".");
+                }
+                zone.setMiningDropsId(material, null);
+                BeastMaster.CONFIG.save();
+                return true;
+
+            } else if (args[0].equals("list-blocks")) {
+                if (args.length != 2) {
+                    Commands.invalidArguments(sender, getName() + " list-blocks <zone-id>");
+                    return true;
+                }
+
+                String zoneArg = args[1];
+                Zone zone = BeastMaster.ZONES.getZone(zoneArg);
+                if (zone == null) {
+                    Commands.errorNull(sender, "zone", zoneArg);
+                    return true;
+                }
+
+                Set<Entry<Material, String>> allMiningDrops = zone.getAllMiningDrops();
+
+                if (allMiningDrops.isEmpty()) {
+                    sender.sendMessage(ChatColor.GOLD + "Zone " + ChatColor.YELLOW + zoneArg +
+                                       ChatColor.GOLD + " has no configured block drops.");
+                } else {
+                    sender.sendMessage(ChatColor.GOLD + "Block drops in zone " +
+                                       ChatColor.YELLOW + zoneArg +
+                                       ChatColor.GOLD + ": ");
+                    for (Entry<Material, String> entry : allMiningDrops) {
+                        Material material = entry.getKey();
+                        String dropsId = entry.getValue();
+                        DropSet drops = BeastMaster.LOOTS.getDropSet(dropsId);
+                        String dropsDescription = (drops != null) ? drops.getDescription()
+                                                                  : ChatColor.RED + dropsId + ChatColor.GOLD + " (not defined)";
+                        sender.sendMessage(ChatColor.WHITE + material.toString() + ": " + dropsDescription);
+                    }
                 }
                 return true;
             }
