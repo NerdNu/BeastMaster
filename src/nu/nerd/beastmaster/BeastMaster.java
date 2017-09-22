@@ -3,7 +3,6 @@ package nu.nerd.beastmaster;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Biome;
@@ -301,14 +300,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         }
 
         boolean dropDefaultItems = drops.generateRandomDrops(loc);
-        if (!dropDefaultItems) {
-            // To cancel the default drops our only option is to cancel
-            // the event and simulate the break.
-            event.setCancelled(true);
-            block.setType(Material.AIR);
-
-            // TODO: log the block break with BlocksHub.
-        }
+        event.setDropItems(dropDefaultItems);
     }
 
     // ------------------------------------------------------------------------
