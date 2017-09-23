@@ -144,22 +144,24 @@ public class DropSet {
      * Generate randomly selected drops and their accompanying objectives,
      * experience orbs and sound effects.
      * 
+     * @param trigger a description of the event that triggered the drop, for
+     *        logging.
      * @param loc the Location where items will be dropped.
      * @return true if the vanilla default drops should also be dropped by the
      *         caller.
      */
-    public boolean generateRandomDrops(Location loc) {
+    public boolean generateRandomDrops(String trigger, Location loc) {
         if (isSingle()) {
             cacheWeightedSelection();
             Drop drop = _selectionCache.choose();
-            return generateOneDrop(loc, drop);
+            return generateOneDrop(trigger, loc, drop);
 
         } else {
             // An uninitialised drop table (no drops) drops vanilla items.
             boolean dropDefault = _drops.isEmpty() ? true : false;
             for (Drop drop : _drops.values()) {
                 if (Math.random() < drop.getDropChance()) {
-                    dropDefault |= generateOneDrop(loc, drop);
+                    dropDefault |= generateOneDrop(trigger, loc, drop);
                 }
             }
             return dropDefault;
@@ -235,11 +237,13 @@ public class DropSet {
     /**
      * Do all actions associated with a {@link Drop}, including effects and XP.
      * 
+     * @param trigger a description of the event that triggered the drop, for
+     *        logging.
      * @param loc the Location of the drop.
      * @param drop describes the drop.
      * @return true if the default vanilla drop should be dropped.
      */
-    protected boolean generateOneDrop(Location loc, Drop drop) {
+    protected boolean generateOneDrop(String trigger, Location loc, Drop drop) {
         Item item = BeastMaster.ITEMS.getItem(drop.getItemId());
         if (item == Item.NOTHING) {
             return false;
@@ -264,6 +268,12 @@ public class DropSet {
 
                 if (drop.getSound() != null) {
                     loc.getWorld().playSound(loc, drop.getSound(), drop.getSoundVolume(), drop.getSoundPitch());
+                }
+
+                if (drop.isLogged()) {
+                    Logger logger = BeastMaster.PLUGIN.getLogger();
+                    String count = (itemStack != null) ? " x " + itemStack.getAmount() : "";
+                    logger.info(trigger + " @ " + Util.formatLocation(loc) + " --> " + drop.getItemId() + count);
                 }
             }
             return false;

@@ -25,8 +25,8 @@ public class BeastLootExecutor extends ExecutorBase {
      */
     public BeastLootExecutor() {
         super("beast-loot", "help", "add", "remove", "info", "list",
-              "add-drop", "remove-drop", "list-drops",
-              "objective", "single", "sound", "xp");
+              "add-drop", "remove-drop", "list-drops", "single",
+              "objective", "logged", "sound", "xp");
     }
 
     // ------------------------------------------------------------------------
@@ -294,6 +294,39 @@ public class BeastLootExecutor extends ExecutorBase {
                 }
                 BeastMaster.CONFIG.save();
                 return true;
+
+            } else if (args[0].equals("logged")) {
+                if (args.length != 4) {
+                    Commands.invalidArguments(sender, getName() + " logged <loot-id> <item-id> <yes-or-no>");
+                    return true;
+                }
+
+                String idArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(idArg);
+                if (dropSet == null) {
+                    Commands.errorNull(sender, "loot table", idArg);
+                    return true;
+                }
+
+                String itemIdArg = args[2];
+                Drop drop = dropSet.getDrop(itemIdArg);
+                if (drop == null) {
+                    Commands.errorNull(sender, "drop of " + idArg, itemIdArg);
+                    return true;
+                }
+
+                String yesNoArg = args[3];
+                Boolean logged = Commands.parseBoolean(sender, yesNoArg);
+                if (logged == null) {
+                    return true;
+                }
+
+                drop.setLogged(logged);
+                String change = logged ? "Enabled" : "Disabled";
+                sender.sendMessage(ChatColor.GOLD + change + " logging of " + drop.getLongDescription());
+                BeastMaster.CONFIG.save();
+                return true;
+
             }
         }
 

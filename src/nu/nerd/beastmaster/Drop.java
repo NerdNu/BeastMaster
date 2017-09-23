@@ -40,6 +40,26 @@ public class Drop {
 
     // ------------------------------------------------------------------------
     /**
+     * Specify whether this drop should be logged to console when dropped.
+     * 
+     * @param logged if true, log this drop.
+     */
+    public void setLogged(boolean logged) {
+        _logged = logged;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if this drop is logged to console when dropped.
+     * 
+     * @return true if this drop is logged to console when dropped.
+     */
+    public boolean isLogged() {
+        return _logged;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Set the type ID of the objective associated with this drop, or null if
      * this drop does not denote an objective.
      * 
@@ -158,6 +178,7 @@ public class Drop {
      */
     public boolean load(ConfigurationSection section, Logger logger) {
         _itemId = section.getName();
+        _logged = section.getBoolean("logged");
         _dropChance = section.getDouble("chance", 0.0);
         _min = section.getInt("min", 1);
         _max = section.getInt("max", Math.max(1, _min));
@@ -185,6 +206,7 @@ public class Drop {
      */
     public void save(ConfigurationSection parentSection, Logger logger) {
         ConfigurationSection section = parentSection.createSection(_itemId);
+        section.set("logged", _logged);
         section.set("chance", _dropChance);
         section.set("min", _min);
         section.set("max", _max);
@@ -264,6 +286,10 @@ public class Drop {
                 s.append(ChatColor.YELLOW).append(_itemId);
             }
         }
+
+        if (_logged) {
+            s.append(ChatColor.GOLD).append(" (logged)");
+        }
         return s.toString();
     }
 
@@ -298,6 +324,10 @@ public class Drop {
             s.append((itemStack == null) ? ChatColor.RED + "nothing"
                                          : ChatColor.WHITE + Util.getItemDescription(itemStack));
         }
+
+        if (_logged) {
+            s.append(ChatColor.GOLD).append(" (logged)");
+        }
         return s.toString();
     }
 
@@ -317,6 +347,11 @@ public class Drop {
      * The custom item ID.
      */
     protected String _itemId;
+
+    /**
+     * If true, this drop is logged to console when dropped.
+     */
+    protected boolean _logged;
 
     /**
      * Drop chance, [0.0,1.0].

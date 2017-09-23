@@ -299,7 +299,15 @@ public class BeastMaster extends JavaPlugin implements Listener {
             return;
         }
 
-        boolean dropDefaultItems = drops.generateRandomDrops(loc);
+        StringBuilder trigger = new StringBuilder();
+        trigger.append(event.getPlayer().getName());
+        trigger.append(" broke ");
+        trigger.append(block.getType());
+        if (block.getData() != 0) {
+            trigger.append(':').append(block.getData());
+        }
+
+        boolean dropDefaultItems = drops.generateRandomDrops(trigger.toString(), loc);
         event.setDropItems(dropDefaultItems);
     }
 
