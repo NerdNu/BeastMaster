@@ -11,7 +11,7 @@ import org.bukkit.inventory.ItemStack;
 /**
  * Represents a possible item drop.
  */
-public class Drop {
+public class Drop implements Cloneable {
     // ------------------------------------------------------------------------
     /**
      * Constructor.
@@ -26,6 +26,66 @@ public class Drop {
         _dropChance = dropChance;
         _min = min;
         _max = max;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Set the probability of this drop, in the range [0.0,1.0].
+     * 
+     * @param dropChance the drop chance in the range [0.0, 1.0].
+     */
+    public void setDropChance(double dropChance) {
+        _dropChance = dropChance;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the probability of this drop, in the range [0.0,1.0].
+     * 
+     * @return the probability of this drop, in the range [0.0,1.0].
+     */
+    public double getDropChance() {
+        return _dropChance;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Set the minimum number of items in the dropped item stack.
+     * 
+     * @param min the minimum number of items in the dropped item stack.
+     */
+    public void setMinAmount(int min) {
+        _min = min;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the minimum number of items in the dropped item stack.
+     * 
+     * @return the minimum number of items in the dropped item stack.
+     */
+    public int getMinAmount() {
+        return _min;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Set the maximum number of items in the dropped item stack.
+     * 
+     * @param max the minimum number of items in the dropped item stack.
+     */
+    public void setMaxAmount(int max) {
+        _max = max;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the maximum number of items in the dropped item stack.
+     * 
+     * @return the maximum number of items in the dropped item stack.
+     */
+    public int getMaxAmount() {
+        return _max;
     }
 
     // ------------------------------------------------------------------------
@@ -170,65 +230,6 @@ public class Drop {
 
     // ------------------------------------------------------------------------
     /**
-     * Load a custom drop from a configuration file section named after the
-     * custom item ID.
-     * 
-     * @param section the configuration section.
-     * @param logger the logger.
-     */
-    public boolean load(ConfigurationSection section, Logger logger) {
-        _itemId = section.getName();
-        _logged = section.getBoolean("logged");
-        _dropChance = section.getDouble("chance", 0.0);
-        _min = section.getInt("min", 1);
-        _max = section.getInt("max", Math.max(1, _min));
-        _objectiveType = section.getString("objective");
-        _experience = section.getInt("experience");
-        String soundId = section.getString("sound");
-        try {
-            _sound = (soundId != null && soundId.length() > 0) ? Sound.valueOf(soundId)
-                                                               : null;
-        } catch (IllegalArgumentException ex) {
-            _sound = null;
-            logger.severe("drop " + _itemId + " could not load invalid sound " + soundId);
-        }
-        _soundVolume = (float) section.getDouble("sound-volume");
-        _soundPitch = (float) section.getDouble("sound-pitch");
-        return true;
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Save this drop as a child of the specified parent configuration section.
-     * 
-     * @param parentSection the parent configuration section.
-     * @param logger the logger.
-     */
-    public void save(ConfigurationSection parentSection, Logger logger) {
-        ConfigurationSection section = parentSection.createSection(_itemId);
-        section.set("logged", _logged);
-        section.set("chance", _dropChance);
-        section.set("min", _min);
-        section.set("max", _max);
-        section.set("objective", _objectiveType);
-        section.set("experience", _experience);
-        section.set("sound", (_sound != null) ? _sound.toString() : "");
-        section.set("sound-volume", _soundVolume);
-        section.set("sound-pitch", _soundPitch);
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Return the probability of this drop, in the range [0.0,1.0].
-     * 
-     * @return the probability of this drop, in the range [0.0,1.0].
-     */
-    public double getDropChance() {
-        return _dropChance;
-    }
-
-    // ------------------------------------------------------------------------
-    /**
      * Generate a new ItemStack by selecting a random number of items within the
      * configured range.
      *
@@ -278,6 +279,7 @@ public class Drop {
             } else {
                 s.append('[').append(_min).append(',').append(_max).append(']');
             }
+
             s.append(' ');
             ItemStack itemStack = item.getItemStack();
             if (itemStack == null) {
@@ -323,12 +325,44 @@ public class Drop {
             ItemStack itemStack = item.getItemStack();
             s.append((itemStack == null) ? ChatColor.RED + "nothing"
                                          : ChatColor.WHITE + Util.getItemDescription(itemStack));
+
+            if (getExperience() > 0) {
+                s.append(ChatColor.GOLD).append(' ');
+                s.append(ChatColor.YELLOW).append(getExperience());
+                s.append(ChatColor.GOLD).append(" xp");
+            }
+
+            if (getSound() != null) {
+                s.append(' ').append(getSoundDescription());
+            }
         }
 
         if (_logged) {
-            s.append(ChatColor.GOLD).append(" (logged)");
+            s.append(ChatColor.YELLOW).append(" (logged)");
         }
         return s.toString();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return a description of the sound of this drop.
+     * 
+     * @return a description of the sound of this drop.
+     */
+    public String getSoundDescription() {
+        if (getSound() == null) {
+            return ChatColor.YELLOW + "none";
+        } else {
+            StringBuilder s = new StringBuilder();
+            s.append(ChatColor.GOLD).append("sound ");
+            s.append(ChatColor.YELLOW).append(getSound());
+            s.append(ChatColor.GOLD).append(" range ");
+            s.append(ChatColor.YELLOW).append(String.format("%1.1fm", getSoundVolume() * 15));
+            s.append(ChatColor.GOLD).append(" at ");
+            s.append(ChatColor.YELLOW).append(String.format("%1.1f", getSoundPitch()));
+            s.append(ChatColor.GOLD).append('x');
+            return s.toString();
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -340,6 +374,71 @@ public class Drop {
     @Override
     public String toString() {
         return getLongDescription();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return a clone of this Drop.
+     * 
+     * @return a clone of this Drop.
+     */
+    @Override
+    public Drop clone() {
+        try {
+            return (Drop) super.clone();
+        } catch (CloneNotSupportedException ex) {
+            // Never.
+            return null;
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Load a custom drop from a configuration file section named after the
+     * custom item ID.
+     * 
+     * @param section the configuration section.
+     * @param logger the logger.
+     */
+    public boolean load(ConfigurationSection section, Logger logger) {
+        _itemId = section.getName();
+        _logged = section.getBoolean("logged");
+        _dropChance = section.getDouble("chance", 0.0);
+        _min = section.getInt("min", 1);
+        _max = section.getInt("max", Math.max(1, _min));
+        _objectiveType = section.getString("objective");
+        _experience = section.getInt("experience");
+        String soundId = section.getString("sound");
+        try {
+            _sound = (soundId != null && soundId.length() > 0) ? Sound.valueOf(soundId)
+                                                               : null;
+        } catch (IllegalArgumentException ex) {
+            _sound = null;
+            logger.severe("drop " + _itemId + " could not load invalid sound " + soundId);
+        }
+        _soundVolume = (float) section.getDouble("sound-volume");
+        _soundPitch = (float) section.getDouble("sound-pitch");
+        return true;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Save this drop as a child of the specified parent configuration section.
+     * 
+     * @param parentSection the parent configuration section.
+     * @param logger the logger.
+     */
+    public void save(ConfigurationSection parentSection, Logger logger) {
+        ConfigurationSection section = parentSection.createSection(_itemId);
+        section.set("logged", _logged);
+        section.set("chance", _dropChance);
+        section.set("min", _min);
+        section.set("max", _max);
+        section.set("objective", _objectiveType);
+        section.set("experience", _experience);
+        section.set("sound", (_sound != null) ? _sound.toString() : "");
+        section.set("sound-volume", _soundVolume);
+        section.set("sound-pitch", _soundPitch);
     }
 
     // ------------------------------------------------------------------------

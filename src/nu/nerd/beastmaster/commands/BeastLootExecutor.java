@@ -6,6 +6,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
@@ -164,9 +165,19 @@ public class BeastLootExecutor extends ExecutorBase {
                 }
 
                 Drop oldDrop = dropSet.getDrop(itemIdArg);
-                Drop newDrop = new Drop(itemIdArg, chance / 100.0, min, max);
+                Drop newDrop;
+                if (oldDrop == null) {
+                    newDrop = new Drop(itemIdArg, chance / 100.0, min, max);
+                } else {
+                    // Clone all the other fields not specified by this command.
+                    newDrop = oldDrop.clone();
+                    newDrop.setDropChance(chance / 100.0);
+                    newDrop.setMinAmount(min);
+                    newDrop.setMaxAmount(max);
+                }
                 dropSet.addDrop(newDrop);
                 BeastMaster.CONFIG.save();
+
                 if (oldDrop != null) {
                     sender.sendMessage(ChatColor.GOLD + "Replacing " + ChatColor.YELLOW + idArg +
                                        ChatColor.GOLD + " drop:");
@@ -324,6 +335,69 @@ public class BeastLootExecutor extends ExecutorBase {
                 drop.setLogged(logged);
                 String change = logged ? "Enabled" : "Disabled";
                 sender.sendMessage(ChatColor.GOLD + change + " logging of " + drop.getLongDescription());
+                BeastMaster.CONFIG.save();
+                return true;
+
+            } else if (args[0].equals("sound")) {
+                if (args.length != 4 && args.length != 6) {
+                    Commands.invalidArguments(sender, getName() + " sound <loot-id> <item-id> <sound> [<range> <pitch>]");
+                    return true;
+                }
+
+                String idArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(idArg);
+                if (dropSet == null) {
+                    Commands.errorNull(sender, "loot table", idArg);
+                    return true;
+                }
+
+                String itemIdArg = args[2];
+                Drop drop = dropSet.getDrop(itemIdArg);
+                if (drop == null) {
+                    Commands.errorNull(sender, "drop of " + idArg, itemIdArg);
+                    return true;
+                }
+
+                String soundArg = args[3];
+                Sound sound;
+                try {
+                    sound = (soundArg.equalsIgnoreCase("none") ? null : Sound.valueOf(soundArg.toUpperCase()));
+                } catch (IllegalArgumentException ex) {
+                    sender.sendMessage(ChatColor.RED + soundArg + " is not a valid sound.");
+                    return true;
+                }
+
+                Float range = 15.0f;
+                Float pitch = 1.0f;
+                if (args.length == 6) {
+                    String rangeArg = args[4];
+                    range = Commands.parseNumber(rangeArg, Commands::parseFloat,
+                                                 r -> (r > 0.0f),
+                                                 () -> sender.sendMessage(ChatColor.RED + "The range must be a number greater than 0."),
+                                                 null);
+                    if (range == null) {
+                        return true;
+                    }
+
+                    String pitchArg = args[5];
+                    pitch = Commands.parseNumber(pitchArg, Commands::parseFloat,
+                                                 p -> (p >= 0.5f && p <= 2.0f),
+                                                 () -> sender.sendMessage(ChatColor.RED + "The pitch must be in the range 0.5 to 2.0."),
+                                                 null);
+                    if (pitch == null) {
+                        return true;
+                    }
+                }
+
+                drop.setSound(sound);
+                drop.setSoundVolume(range / 15);
+                drop.setSoundPitch(pitch);
+                sender.sendMessage(ChatColor.GOLD + "Changed the drop sound of " +
+                                   ChatColor.YELLOW + drop.getItemId() +
+                                   ChatColor.GOLD + " in table " +
+                                   ChatColor.YELLOW + idArg +
+                                   ChatColor.GOLD + " to " + drop.getSoundDescription() +
+                                   ChatColor.GOLD + ".");
                 BeastMaster.CONFIG.save();
                 return true;
 

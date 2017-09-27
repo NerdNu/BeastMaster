@@ -29,6 +29,7 @@ public class Commands {
      * @param formatError code to run if the argument cannot be parsed as a
      *        number, such that a NumberFormatException was thrown. If null, use
      *        run rangeError instead.
+     * @return the parsed number, or null on error.
      */
     public static <T> T parseNumber(String valueArg,
                                     Function<String, T> parse,
@@ -68,6 +69,9 @@ public class Commands {
      * @param formatError code to run if the argument cannot be parsed as a
      *        number, such that a NumberFormatException was thrown. If null, use
      *        run rangeError instead.
+     * @return an Optional<T> containing the parsed number, or Optional<T>
+     *         containing null if the valueArg is the distinguishedValueArg;
+     *         return null (not an Optional<>) on error.
      */
     public static <T> Optional<T> parseNumberDefaulted(String valueArg,
                                                        String distinguishedValueArg,
@@ -98,6 +102,23 @@ public class Commands {
     @SuppressWarnings("unchecked")
     public static <T> T parseDouble(String s) {
         return (T) new Double(Double.parseDouble(s));
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Parse a string as a Float.
+     *
+     * The generics in here are to convince the compiler that T can be a Float.
+     * Float::parseFloat doesn't cut it as a method reference when passed to
+     * parseDefaulted().
+     * 
+     * @param s the string.
+     * @return a boxed double.
+     * @throws NumberFormatException
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T parseFloat(String s) {
+        return (T) new Float(Float.parseFloat(s));
     }
 
     // ------------------------------------------------------------------------

@@ -99,8 +99,8 @@ commands:
       §e/<command> single <loot-id> <yes-or-no>§f - Specifies whether a the loot table will drop a single drop or multiple independent drops. <yes-or-no> is case insensitive and can be one of yes/no/true/false/t/f/on/off. If yes, a single item stack will be selected to drop and drop chances are interpreted as relative preferences. If no, multiple items may drop, according to their drop chances.
       §e/<command> objective <loot-id> <item-id> (<obj-id>|none)§f - Signify that this drop causes an objective to spawn, or not if the objective ID is "none".
       §e/<command> logged <loot-id> <item-id> <yes-or-no>§f - Enables or disables logging of this drop in the console. <yes-or-no> is case insensitive and can be one of yes/no/true/false/t/f/on/off.
-      §e/<command> sound <loot-id> <item-id> <sound> <range> <pitch>§f - NOT YET IMPLEMENTED. Signify that this drop causes a sound to play. <sound> is a sound name from the Bukkit API. <range> is the range of the sound in blocks. <pitch> is playback speed, from 0.5 to 2.0.
-      §e/<command> xp <loot-id> <item-id> <xp>§f - NOT YET IMPLEMENTED. Signify that this drop will be accompanied by a specified amount of XP, or 0 to suppress the XP. NOTE: This option does not affect XP from vanilla default drops.
+      §e/<command> sound <loot-id> <item-id> <sound> §f[§e<range> <pitch>§f] - Signify that this drop causes a sound to play. <sound> is a sound name from the Bukkit API or "none". <range> is the range of the sound in blocks. <pitch> is playback speed, from 0.5 to 2.0. <range> and <pitch> can be omitted, in which case they default to 15.0 and 1.0, respectively.
+      §e/<command> xp <loot-id> <item-id> <xp>§f - Signify that this drop will be accompanied by a specified amount of XP, or 0 to suppress the XP. NOTE: This option does not affect XP from vanilla default drops.
 
   beast-mob:
     description: Configure mobs.
