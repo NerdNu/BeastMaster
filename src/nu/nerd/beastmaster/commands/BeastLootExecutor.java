@@ -401,6 +401,48 @@ public class BeastLootExecutor extends ExecutorBase {
                 BeastMaster.CONFIG.save();
                 return true;
 
+            } else if (args[0].equals("xp")) {
+                if (args.length != 4) {
+                    Commands.invalidArguments(sender, getName() + " xp <loot-id> <item-id> <xp>");
+                    return true;
+                }
+
+                String idArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(idArg);
+                if (dropSet == null) {
+                    Commands.errorNull(sender, "loot table", idArg);
+                    return true;
+                }
+
+                String itemIdArg = args[2];
+                Drop drop = dropSet.getDrop(itemIdArg);
+                if (drop == null) {
+                    Commands.errorNull(sender, "drop of " + idArg, itemIdArg);
+                    return true;
+                }
+
+                int oldXp = drop.getExperience();
+                String xpArg = args[3];
+                Integer newXp = Commands.parseNumber(xpArg, Commands::parseInt,
+                                                     (x) -> (x >= 0),
+                                                     () -> sender
+                                                     .sendMessage(ChatColor.RED + "The amount of experience must be a non-negative integer."),
+                                                     null);
+                if (newXp == null) {
+                    return true;
+                }
+
+                drop.setExperience(newXp);
+                sender.sendMessage(ChatColor.GOLD + "Changed the dropped XP of " +
+                                   ChatColor.YELLOW + drop.getItemId() +
+                                   ChatColor.GOLD + " in table " +
+                                   ChatColor.YELLOW + idArg +
+                                   ChatColor.GOLD + " from " + ChatColor.YELLOW + oldXp +
+                                   ChatColor.GOLD + " to " + ChatColor.YELLOW + newXp +
+                                   ChatColor.GOLD + ".");
+                BeastMaster.CONFIG.save();
+                return true;
+
             }
         }
 
