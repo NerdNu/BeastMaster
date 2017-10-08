@@ -8,10 +8,14 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.ExperienceOrb;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -146,22 +150,23 @@ public class DropSet {
      * 
      * @param trigger a description of the event that triggered the drop, for
      *        logging.
+     * @param player the player that triggered the drop, or null.
      * @param loc the Location where items will be dropped.
      * @return true if the vanilla default drops should also be dropped by the
      *         caller.
      */
-    public boolean generateRandomDrops(String trigger, Location loc) {
+    public boolean generateRandomDrops(String trigger, Player player, Location loc) {
         if (isSingle()) {
             cacheWeightedSelection();
             Drop drop = _selectionCache.choose();
-            return generateOneDrop(trigger, loc, drop);
+            return generateOneDrop(trigger, player, loc, drop);
 
         } else {
             // An uninitialised drop table (no drops) drops vanilla items.
             boolean dropDefault = _drops.isEmpty() ? true : false;
             for (Drop drop : _drops.values()) {
                 if (Math.random() < drop.getDropChance()) {
-                    dropDefault |= generateOneDrop(trigger, loc, drop);
+                    dropDefault |= generateOneDrop(trigger, player, loc, drop);
                 }
             }
             return dropDefault;
@@ -239,11 +244,12 @@ public class DropSet {
      * 
      * @param trigger a description of the event that triggered the drop, for
      *        logging.
+     * @param player the player that triggered the drop, or null.
      * @param loc the Location of the drop.
      * @param drop describes the drop.
      * @return true if the default vanilla drop should be dropped.
      */
-    protected boolean generateOneDrop(String trigger, Location loc, Drop drop) {
+    protected boolean generateOneDrop(String trigger, Player player, Location loc, Drop drop) {
         Item item = BeastMaster.ITEMS.getItem(drop.getItemId());
         if (item == Item.NOTHING) {
             return false;
@@ -254,7 +260,16 @@ public class DropSet {
             boolean hasItemStack = (itemStack != null && trySpawnObjective(drop, itemStack, loc));
             if (hasItemStack) {
                 if (itemStack != null && trySpawnObjective(drop, itemStack, loc)) {
-                    loc.getWorld().dropItemNaturally(loc, itemStack);
+                    // To avoid drops occasionally spawning in a block and
+                    // warping up to the surface, wait for the next tick and
+                    // check whether the block is actually air. If not air,
+                    // spawn the drop at the player's feet.
+                    Bukkit.getScheduler().scheduleSyncDelayedTask(BeastMaster.PLUGIN, () -> {
+                        Block locBlock = loc.getBlock();
+                        Location revisedLoc = (locBlock != null && locBlock.getType() != Material.AIR &&
+                                               player != null) ? player.getLocation() : loc;
+                        revisedLoc.getWorld().dropItemNaturally(revisedLoc, itemStack);
+                    }, 1);
                 }
             }
 
