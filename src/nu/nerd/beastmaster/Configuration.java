@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.bukkit.configuration.file.FileConfiguration;
 
+import nu.nerd.beastmaster.mobs.MobType;
 import nu.nerd.beastmaster.objectives.ObjectiveType;
 
 // ----------------------------------------------------------------------------

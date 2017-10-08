@@ -14,7 +14,7 @@ import org.bukkit.command.CommandSender;
 
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.DropSet;
-import nu.nerd.beastmaster.MobType;
+import nu.nerd.beastmaster.mobs.MobType;
 import nu.nerd.beastmaster.zones.Zone;
 
 // ----------------------------------------------------------------------------

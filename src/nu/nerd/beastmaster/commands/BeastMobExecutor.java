@@ -10,7 +10,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 
 import nu.nerd.beastmaster.BeastMaster;
-import nu.nerd.beastmaster.MobType;
+import nu.nerd.beastmaster.mobs.MobType;
 import nu.nerd.beastmaster.zones.Zone;
 
 // ----------------------------------------------------------------------------

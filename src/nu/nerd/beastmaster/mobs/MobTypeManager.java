@@ -1,4 +1,4 @@
-package nu.nerd.beastmaster;
+package nu.nerd.beastmaster.mobs;
 
 import java.util.Collection;
 import java.util.HashMap;

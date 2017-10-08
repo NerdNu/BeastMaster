@@ -1,4 +1,4 @@
-package nu.nerd.beastmaster;
+package nu.nerd.beastmaster.mobs;
 
 import java.util.logging.Logger;
 
@@ -10,6 +10,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+
+import nu.nerd.beastmaster.BeastMaster;
 
 // ----------------------------------------------------------------------------
 /**

@@ -32,6 +32,8 @@ import nu.nerd.beastmaster.commands.BeastMobExecutor;
 import nu.nerd.beastmaster.commands.BeastObjectiveExecutor;
 import nu.nerd.beastmaster.commands.BeastZoneExecutor;
 import nu.nerd.beastmaster.commands.ExecutorBase;
+import nu.nerd.beastmaster.mobs.MobType;
+import nu.nerd.beastmaster.mobs.MobTypeManager;
 import nu.nerd.beastmaster.objectives.Objective;
 import nu.nerd.beastmaster.objectives.ObjectiveManager;
 import nu.nerd.beastmaster.objectives.ObjectiveTypeManager;
