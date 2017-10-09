@@ -25,6 +25,11 @@ public class Configuration {
     public boolean DEBUG_REPLACE;
 
     /**
+     * If true, log elapsed times for BlockStore API calls.
+     */
+    public boolean DEBUG_BLOCKSTORE;
+
+    /**
      * Probability, in the range [0.0,1.0] that a plains biome skeleton spawn in
      * the nether environment will be replaced by a wither skeleton.
      */
@@ -39,6 +44,7 @@ public class Configuration {
         FileConfiguration config = BeastMaster.PLUGIN.getConfig();
         DEBUG_CONFIG = config.getBoolean("debug.config");
         DEBUG_REPLACE = config.getBoolean("debug.replace");
+        DEBUG_BLOCKSTORE = config.getBoolean("debug.blockstore");
         CHANCE_WITHER_SKELETON = config.getDouble("chance.wither-skeleton");
 
         Logger logger = BeastMaster.PLUGIN.getLogger();
@@ -51,6 +57,7 @@ public class Configuration {
         if (DEBUG_CONFIG) {
             logger.info("Configuration:");
             logger.info("DEBUG_REPLACE: " + DEBUG_REPLACE);
+            logger.info("DEBUG_BLOCKSTORE: " + DEBUG_BLOCKSTORE);
             logger.info("CHANCE_WITHER_SKELETON: " + CHANCE_WITHER_SKELETON);
             logger.info("ZONES: " + BeastMaster.ZONES.getZones().stream()
             .map(z -> z.getDescription()).collect(Collectors.joining(", ")));

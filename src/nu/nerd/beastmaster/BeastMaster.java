@@ -151,7 +151,16 @@ public class BeastMaster extends JavaPlugin implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onBlockBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
-        if (BlockStoreApi.isPlaced(block)) {
+        long start = System.nanoTime();
+        boolean placed = BlockStoreApi.isPlaced(block);
+        if (CONFIG.DEBUG_BLOCKSTORE) {
+            float elapsedMs = (System.nanoTime() - start) * 1.0e-6f;
+            if (elapsedMs > 10.0f) {
+                getLogger().info("BlockStoreApi.isPlaced() took: " + String.format("%3.2f", elapsedMs));
+            }
+        }
+
+        if (placed) {
             return;
         }
 
