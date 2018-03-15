@@ -1,17 +1,16 @@
 package nu.nerd.beastmaster.commands;
 
-import java.util.Optional;
-import java.util.function.BiConsumer;
-import java.util.function.Predicate;
+import java.util.Arrays;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.EntityType;
 
 import nu.nerd.beastmaster.BeastMaster;
+import nu.nerd.beastmaster.DropType;
+import nu.nerd.beastmaster.Item;
+import nu.nerd.beastmaster.mobs.MobProperty;
 import nu.nerd.beastmaster.mobs.MobType;
-import nu.nerd.beastmaster.zones.Zone;
 
 // ----------------------------------------------------------------------------
 /**
@@ -23,9 +22,10 @@ public class BeastMobExecutor extends ExecutorBase {
      * Default constructor.
      */
     public BeastMobExecutor() {
-        super("beast-mob", "help", "add", "remove", "info", "list",
-              "health", "speed", "baby-fraction");
-        // TODO: Set drop table.
+        super("beast-mob", "help",
+              "add", "remove", "list",
+              "info", "parent",
+              "get", "set", "clear");
     }
 
     // ------------------------------------------------------------------------
@@ -42,12 +42,17 @@ public class BeastMobExecutor extends ExecutorBase {
         if (args.length >= 1) {
             if (args[0].equals("add")) {
                 if (args.length != 3) {
-                    Commands.invalidArguments(sender, getName() + " add <mob-id> <entity-type>");
+                    Commands.invalidArguments(sender, getName() + " add <mob-id> <parent-id>");
                     return true;
                 }
 
                 String idArg = args[1];
-                String entityTypeNameArg = args[2].toUpperCase();
+                String parentIdArg = args[2];
+
+                if (DropType.isDropType(idArg)) {
+                    sender.sendMessage(ChatColor.RED + "You can't use The ID \"" + idArg + "\"; it is reserved.");
+                    return true;
+                }
 
                 MobType mobType = BeastMaster.MOBS.getMobType(idArg);
                 if (mobType != null) {
@@ -55,18 +60,23 @@ public class BeastMobExecutor extends ExecutorBase {
                     return true;
                 }
 
-                EntityType entityType;
-                try {
-                    entityType = EntityType.valueOf(entityTypeNameArg);
-                } catch (IllegalArgumentException ex) {
-                    sender.sendMessage(ChatColor.RED + entityTypeNameArg + " is not a valid mob type!");
+                Item item = BeastMaster.ITEMS.getItem(idArg);
+                if (item != null) {
+                    sender.sendMessage(ChatColor.RED + "An item named \"" + idArg + "\" is already defined. " +
+                                       "Mob types can't have the same ID as an existing item.");
                     return true;
                 }
 
-                mobType = new MobType(idArg, entityType);
+                MobType parentType = BeastMaster.MOBS.getMobType(parentIdArg);
+                if (parentType == null) {
+                    Commands.errorNull(sender, "parent type", idArg);
+                    return true;
+                }
+
+                mobType = new MobType(idArg, parentIdArg);
                 BeastMaster.MOBS.addMobType(mobType);
                 BeastMaster.CONFIG.save();
-                sender.sendMessage(ChatColor.GOLD + "Added a new mob type: " + mobType.getDescription());
+                sender.sendMessage(ChatColor.GOLD + "Added a new mob type: " + mobType.getShortDescription());
                 return true;
 
             } else if (args[0].equals("remove")) {
@@ -75,38 +85,16 @@ public class BeastMobExecutor extends ExecutorBase {
                     return true;
                 }
 
-                String idArg = args[1];
-                MobType mobType = BeastMaster.MOBS.getMobType(idArg);
+                String mobIdArg = args[1];
+                MobType mobType = BeastMaster.MOBS.getMobType(mobIdArg);
                 if (mobType == null) {
-                    Commands.errorNull(sender, "mob type", idArg);
+                    Commands.errorNull(sender, "mob type", mobIdArg);
                     return true;
                 }
 
                 BeastMaster.MOBS.removeMobType(mobType);
-
-                // Also remove the mob type from spawns in all known zones.
-                for (Zone zone : BeastMaster.ZONES.getZones()) {
-                    zone.removeSpawn(mobType.getId());
-                }
-
                 BeastMaster.CONFIG.save();
-                sender.sendMessage(ChatColor.GOLD + "Removed mob type: " + mobType.getDescription());
-                return true;
-
-            } else if (args[0].equals("info")) {
-                if (args.length != 2) {
-                    Commands.invalidArguments(sender, getName() + " info <mob-id>");
-                    return true;
-                }
-
-                String idArg = args[1];
-                MobType mobType = BeastMaster.MOBS.getMobType(idArg);
-                if (mobType == null) {
-                    Commands.errorNull(sender, "mob type", idArg);
-                    return true;
-                }
-
-                sender.sendMessage(ChatColor.GOLD + "Mob type: " + mobType.getDescription());
+                sender.sendMessage(ChatColor.GOLD + "Removed mob type: " + mobType.getShortDescription());
                 return true;
 
             } else if (args[0].equals("list")) {
@@ -115,27 +103,140 @@ public class BeastMobExecutor extends ExecutorBase {
                     return true;
                 }
 
-                sender.sendMessage(ChatColor.GOLD + "Mob types:");
-                for (MobType mobType : BeastMaster.MOBS.getMobTypes()) {
-                    sender.sendMessage(mobType.getDescription());
+                String sep = "";
+                StringBuilder s = new StringBuilder();
+                s.append(ChatColor.GOLD).append("Predefined mob types: ");
+                for (MobType mobType : BeastMaster.MOBS.getPredefinedMobTypes()) {
+                    s.append(ChatColor.GRAY).append(sep);
+                    s.append(ChatColor.YELLOW).append(mobType.getShortDescription());
+                    sep = ", ";
+                }
+                sender.sendMessage(s.toString());
+
+                sender.sendMessage(ChatColor.GOLD + "Custom mob types:");
+                for (MobType mobType : BeastMaster.MOBS.getAllMobTypes()) {
+                    if (mobType.isPredefined()) {
+                        sender.sendMessage(mobType.getShortDescription());
+                    }
                 }
                 return true;
 
-            } else if (args[0].equals("health")) {
-                return handleMobTypeSetProperty(sender, args, "health", "health",
-                                                v -> (v > 0), "more than 0",
-                                                MobType::setHealth);
+            } else if (args[0].equals("info")) {
+                if (args.length != 2) {
+                    Commands.invalidArguments(sender, getName() + " info <mob-id>");
+                    return true;
+                }
 
-            } else if (args[0].equals("speed")) {
-                return handleMobTypeSetProperty(sender, args, "speed", "speed",
-                                                v -> (v > 0), "more than 0",
-                                                MobType::setSpeed);
+                String mobIdArg = args[1];
+                MobType mobType = BeastMaster.MOBS.getMobType(mobIdArg);
+                if (mobType == null) {
+                    Commands.errorNull(sender, "mob type", mobIdArg);
+                    return true;
+                }
 
-            } else if (args[0].equals("baby-fraction")) {
-                return handleMobTypeSetProperty(sender, args, "baby-fraction", "baby mob fraction",
-                                                v -> (v >= 0.0 && v <= 1.0), "in the range [0.0, 1.0]",
-                                                MobType::setBabyFraction);
+                sender.sendMessage(ChatColor.GOLD + "Mob type: " + ChatColor.YELLOW + mobType.getId());
+                for (MobProperty mobProperty : mobType.getAllProperties()) {
+                    showProperty(sender, mobProperty);
+                }
+                return true;
 
+            } else if (args[0].equals("get")) {
+                if (args.length != 3) {
+                    Commands.invalidArguments(sender, getName() + " get <mob-id> <property>");
+                    return true;
+                }
+
+                String mobIdArg = args[1];
+                String propertyArg = args[2];
+
+                MobType mobType = BeastMaster.MOBS.getMobType(mobIdArg);
+                if (mobType == null) {
+                    Commands.errorNull(sender, "mob type", mobIdArg);
+                    return true;
+                }
+
+                MobProperty property = mobType.getProperty(propertyArg);
+                if (property == null) {
+                    Commands.errorNull(sender, "property", propertyArg);
+                    return true;
+                }
+
+                showProperty(sender, property);
+                return true;
+
+            } else if (args[0].equals("set")) {
+                if (args.length < 4) {
+                    Commands.invalidArguments(sender, getName() + " set <mob-id> <property> <value>");
+                    return true;
+                }
+
+                String mobIdArg = args[1];
+                String propertyArg = args[2];
+                String valueArg = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
+
+                MobType mobType = BeastMaster.MOBS.getMobType(mobIdArg);
+                if (mobType == null) {
+                    Commands.errorNull(sender, "mob type", mobIdArg);
+                    return true;
+                }
+
+                if (mobType.isPredefined() &&
+                    MobType.getImmutablePredefinedPropertyNames().contains(propertyArg)) {
+                    sender.sendMessage(ChatColor.RED + "You cannot change the " + propertyArg +
+                                       " property of predefined mob types.");
+                    return true;
+                }
+
+                MobProperty property = mobType.getProperty(propertyArg);
+                if (property == null) {
+                    Commands.errorNull(sender, "property", propertyArg);
+                    return true;
+                }
+
+                Object value;
+                try {
+                    value = property.getType().parse(valueArg);
+                } catch (IllegalArgumentException ex) {
+                    sender.sendMessage(ChatColor.RED + valueArg + " is not a valid value.");
+                    return true;
+                }
+
+                property.setValue(value);
+                sender.sendMessage(ChatColor.GOLD + mobType.getId() + ": " +
+                                   ChatColor.YELLOW + property.getId() +
+                                   ChatColor.WHITE + " = " +
+                                   ChatColor.YELLOW + property.getFormattedValue());
+                BeastMaster.CONFIG.save();
+                return true;
+
+            } else if (args[0].equals("clear")) {
+                if (args.length != 3) {
+                    Commands.invalidArguments(sender, getName() + " clear <mob-id> <property>");
+                    return true;
+                }
+
+                String mobIdArg = args[1];
+                String propertyArg = args[2];
+
+                MobType mobType = BeastMaster.MOBS.getMobType(mobIdArg);
+                if (mobType == null) {
+                    Commands.errorNull(sender, "mob type", mobIdArg);
+                    return true;
+                }
+
+                MobProperty property = mobType.getProperty(propertyArg);
+                if (property == null) {
+                    Commands.errorNull(sender, "property", propertyArg);
+                    return true;
+                }
+
+                property.setValue(null);
+                sender.sendMessage(ChatColor.GOLD + mobType.getId() + ": " +
+                                   ChatColor.YELLOW + property.getId() +
+                                   ChatColor.WHITE + " = " +
+                                   ChatColor.YELLOW + "unset");
+                BeastMaster.CONFIG.save();
+                return true;
             }
         }
 
@@ -144,56 +245,25 @@ public class BeastMobExecutor extends ExecutorBase {
 
     // ------------------------------------------------------------------------
     /**
-     * Handle commands that set properties of a {@link MobType}.
+     * Message the CommandSender the value of the specified MobProprerty
+     * instance.
+     * 
+     * Where the property is unset, the inherited value is shown and the
+     * ancestor MobType from which the property value was inherited is
+     * indicated.
      * 
      * @param sender the command sender.
-     * @param args the command arguments after /beast-mob.
-     * @param expectedCommandArg the subcommand name.
-     * @param propertyName the human-readable name of the property for messages.
-     * @param inRange a predicate that should return true if the value is valid.
-     * @param valueCheckDescription the description of valid values shown in
-     *        error messages.
-     * @param setMethod a reference to the MobType instance method used to set
-     *        the property.
-     * @return the boolean return value of the onCommand() handler.
+     * @param mobProperty the property instance whose value is shown.
      */
-    protected boolean handleMobTypeSetProperty(CommandSender sender, String[] args,
-                                               String expectedCommandArg,
-                                               String propertyName,
-                                               Predicate<Double> inRange,
-                                               String valueCheckDescription,
-                                               BiConsumer<MobType, Double> setMethod) {
-        if (args.length != 3) {
-            Commands.invalidArguments(sender, getName() + " " + expectedCommandArg +
-                                              " <mob-id> (<number>|default)");
-            return true;
-        }
+    protected void showProperty(CommandSender sender, MobProperty mobProperty) {
+        MobType mobType = mobProperty.getMobType();
+        MobProperty derivedProperty = mobType.getDerivedProperty(mobProperty.getId());
 
-        String idArg = args[1];
-        MobType mobType = BeastMaster.MOBS.getMobType(idArg);
-        if (mobType == null) {
-            Commands.errorNull(sender, "mob type", idArg);
-            return true;
-        }
-
-        Runnable rangeError = () -> sender.sendMessage(ChatColor.RED + "The " + propertyName +
-                                                       " value must be " + valueCheckDescription + ".");
-        Runnable formatError = () -> sender.sendMessage(ChatColor.RED + "The " + propertyName +
-                                                        " value must be a number or \"default\".");
-        Optional<Double> optionalValue = Commands.parseNumberDefaulted(args[2], "default",
-                                                                       Commands::parseDouble,
-                                                                       inRange,
-                                                                       rangeError, formatError);
-
-        if (optionalValue != null) {
-            Double value = optionalValue.orElse(null);
-            setMethod.accept(mobType, value);
-            BeastMaster.CONFIG.save();
-            String formattedValue = (value == null) ? "default" : "" + value;
-            sender.sendMessage(ChatColor.GOLD + "The " + propertyName + " of mob type " +
-                               ChatColor.YELLOW + mobType.getId() + ChatColor.GOLD + " is now " +
-                               ChatColor.YELLOW + formattedValue + ChatColor.GOLD + ".");
-        }
-        return true;
+        // Show source of inherited properties only.
+        String source = (mobProperty != derivedProperty) ? derivedProperty.getMobType().getId() + ": "
+                                                         : "";
+        sender.sendMessage(ChatColor.GOLD + mobProperty.getId() + ": " +
+                           ChatColor.WHITE + source +
+                           ChatColor.YELLOW + mobProperty.getFormattedValue());
     }
 } // class BeastMobExecutor

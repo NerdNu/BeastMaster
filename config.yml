@@ -5,7 +5,9 @@ debug:
 
 chance:
   wither-skeleton: 0.8
-  
+
+excluded-entity-types: [ ARMOR_STAND, PLAYER ]
+
 zones: {}
 
 items: {}

@@ -1,13 +1,16 @@
 package nu.nerd.beastmaster.mobs;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
+
+import nu.nerd.beastmaster.BeastMaster;
 
 // ----------------------------------------------------------------------------
 /**
@@ -16,33 +19,84 @@ import org.bukkit.entity.LivingEntity;
 public class MobTypeManager {
     // ------------------------------------------------------------------------
     /**
+     * Return the mob type ID corresponding to the specified EntityType.
+     * 
+     * @param entityType the entity type.
+     * @return the corresponding vanilla MobType's ID.
+     */
+    public static String getMobTypeId(EntityType entityType) {
+        return entityType.name().toLowerCase().replace("_", "");
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Constructor.
+     * 
+     * Registers all of the vanilla mob types.
+     */
+    public MobTypeManager() {
+        addPredefinedTypes();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Return the {@link MobType} with the specified ID, or null if not found.
      * 
+     * @param id the case-insensitive ID.
      * @return the {@link MobType} with the specified ID, or null if not found.
      */
     public MobType getMobType(String id) {
-        return _idToType.get(id);
+        return id != null ? _idToType.get(id.toLowerCase()) : null;
     }
 
     // ------------------------------------------------------------------------
     /**
-     * Return the {@link MobType} of the specified creature, or null if not
-     * found.
+     * Return the MobType corresponding to the specified EntityType.
      * 
-     * @return the {@link MobType} with the specified ID, or null if not found.
+     * @param entityType the entity type.
+     * @return the corresponding vanilla MobType.
      */
-    public MobType getMobType(LivingEntity entity) {
-        return _entityTypeToType.get(entity.getType());
+    public MobType getMobType(EntityType entityType) {
+        return getMobType(getMobTypeId(entityType));
     }
 
     // ------------------------------------------------------------------------
     /**
-     * Return a collection of all {@link MobTypes}.
+     * Return a collection of all {@link MobType}s.
      * 
-     * @return a collection of all {@link MobTypes}.
+     * @return a collection of all {@link MobType}s.
      */
-    public Collection<MobType> getMobTypes() {
+    public Collection<MobType> getAllMobTypes() {
         return _idToType.values();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the set of EntityTypes corresponding to allowed predefined vanilla
+     * MobTypes.
+     * 
+     * @return the set of EntityTypes corresponding to allowed predefined
+     *         vanilla MobTypes.
+     */
+    public Collection<EntityType> getPredefinedEntityTypes() {
+        updateAllowedMobEntityTypes();
+        return _allowedMobEntityTypes.values();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return a collection of the predefined {@link MobType}s.
+     * 
+     * @return a collection of the predefined {@link MobType}s.
+     */
+    public Collection<MobType> getPredefinedMobTypes() {
+        ArrayList<MobType> predefined = new ArrayList<>();
+        for (MobType mobType : getAllMobTypes()) {
+            if (!mobType.isPredefined()) {
+                predefined.add(mobType);
+            }
+        }
+        return predefined;
     }
 
     // ------------------------------------------------------------------------
@@ -52,8 +106,7 @@ public class MobTypeManager {
      * The type should not be previously registered.
      */
     public void addMobType(MobType type) {
-        _idToType.put(type.getId(), type);
-        _entityTypeToType.put(type.getEntityType(), type);
+        _idToType.put(type.getId().toLowerCase(), type);
     }
 
     // ------------------------------------------------------------------------
@@ -63,10 +116,7 @@ public class MobTypeManager {
      * @param id the ID of the type to remove.
      */
     public void removeMobType(String id) {
-        MobType mobType = _idToType.remove(id);
-        if (mobType != null) {
-            _entityTypeToType.remove(mobType.getEntityType());
-        }
+        _idToType.remove(id.toLowerCase());
     }
 
     // ------------------------------------------------------------------------
@@ -87,8 +137,8 @@ public class MobTypeManager {
      * @param logger the logger.
      */
     public void load(FileConfiguration config, Logger logger) {
-        _idToType.clear();
-        _entityTypeToType.clear();
+        _allowedMobEntityTypes = null;
+        addPredefinedTypes();
 
         ConfigurationSection mobsSection = config.getConfigurationSection("mobs");
         if (mobsSection == null) {
@@ -97,7 +147,7 @@ public class MobTypeManager {
 
         for (String id : mobsSection.getKeys(false)) {
             ConfigurationSection section = mobsSection.getConfigurationSection(id);
-            MobType mobType = new MobType(id, null);
+            MobType mobType = new MobType();
             if (mobType.load(section, logger)) {
                 addMobType(mobType);
             }
@@ -106,7 +156,8 @@ public class MobTypeManager {
 
     // ------------------------------------------------------------------------
     /**
-     * Save all the mob types in the plugin configuration.
+     * Save all the mob types in the plugin configuration, except for immutable,
+     * predefined mob types.
      * 
      * @param config the plugin configuration file.
      * @param logger the logger.
@@ -115,23 +166,55 @@ public class MobTypeManager {
         // Create mobs section empty to remove deleted mob types.
         ConfigurationSection mobsSection = config.createSection("mobs");
         for (MobType mobType : _idToType.values()) {
-            mobType.save(mobsSection, logger);
+            if (mobType.isPredefined()) {
+                mobType.save(mobsSection, logger);
+            }
         }
     }
 
     // ------------------------------------------------------------------------
     /**
-     * Map from {@link MobType} ID to instance.
+     * Register the predefined, vanilla mob types.
+     * 
+     * They are added in case-insensitive alphabetic order so that they can be
+     * listed in the same order.
      */
-    protected HashMap<String, MobType> _idToType = new HashMap<>();
+    protected void addPredefinedTypes() {
+        updateAllowedMobEntityTypes();
+
+        _idToType.clear();
+        for (EntityType entityType : _allowedMobEntityTypes.values()) {
+            addMobType(new MobType(getMobTypeId(entityType), entityType, false));
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Update the cached set of EntityTypes corresponding to vanilla MobTypes.
+     */
+    protected void updateAllowedMobEntityTypes() {
+        if (_allowedMobEntityTypes == null) {
+            _allowedMobEntityTypes = new TreeMap<>();
+            for (EntityType entityType : EntityType.values()) {
+                if (entityType.isAlive() &&
+                    !BeastMaster.CONFIG.EXCLUDED_ENTITY_TYPES.contains(entityType)) {
+                    _allowedMobEntityTypes.put(getMobTypeId(entityType), entityType);
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Map from {@link MobType} lower case ID to instance.
+     */
+    protected LinkedHashMap<String, MobType> _idToType = new LinkedHashMap<>();
 
     /**
-     * Map from EntityType to instance.
+     * Map from MobType ID to EntityType of the predefined vanilla mob types.
      * 
-     * This assumes that there is a 1:1 correspondence between EntityType and
-     * custom mob type which is WRONG WRONG WRONG (!) but the best we can do at
-     * short notice without a persistent metadata API (it's 2017! grumble...).
+     * We use a TreeMap<> indexed by mob type ID to ensure sorted order.
      */
-    protected HashMap<EntityType, MobType> _entityTypeToType = new HashMap<>();
+    protected TreeMap<String, EntityType> _allowedMobEntityTypes;
 
 } // class MobTypeManager

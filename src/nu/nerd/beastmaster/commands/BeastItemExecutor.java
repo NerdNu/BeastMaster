@@ -12,12 +12,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import nu.nerd.beastmaster.BeastMaster;
+import nu.nerd.beastmaster.DropType;
 import nu.nerd.beastmaster.Item;
 import nu.nerd.beastmaster.Util;
+import nu.nerd.beastmaster.mobs.MobType;
 
 // ----------------------------------------------------------------------------
 /**
- * Executor for the /best-item command.
+ * Executor for the {@code /beast-item} command.
  */
 public class BeastItemExecutor extends ExecutorBase {
     // ------------------------------------------------------------------------
@@ -46,16 +48,28 @@ public class BeastItemExecutor extends ExecutorBase {
                     return true;
                 }
 
-                if (!checkInGame(sender)) {
+                if (!isInGame(sender)) {
                     return true;
                 }
                 Player player = (Player) sender;
 
                 String idArg = args[1];
+                if (DropType.isDropType(idArg)) {
+                    sender.sendMessage(ChatColor.RED + "You can't use The ID \"" + idArg + "\"; it is reserved.");
+                    return true;
+                }
+
                 Item item = BeastMaster.ITEMS.getItem(idArg);
                 if (item != null) {
                     sender.sendMessage(ChatColor.RED + "An item named \"" + idArg + "\" is already defined. " +
                                        "Use \"/" + getName() + " redefine " + idArg + "\" to redefine the item.");
+                    return true;
+                }
+
+                MobType mobType = BeastMaster.MOBS.getMobType(idArg);
+                if (mobType != null) {
+                    sender.sendMessage(ChatColor.RED + "An mob type named \"" + idArg + "\" is already defined. " +
+                                       "Items can't have the same ID as an existing mob.");
                     return true;
                 }
 
@@ -79,7 +93,7 @@ public class BeastItemExecutor extends ExecutorBase {
                     return true;
                 }
 
-                if (!checkInGame(sender)) {
+                if (!isInGame(sender)) {
                     return true;
                 }
                 Player player = (Player) sender;
@@ -93,12 +107,6 @@ public class BeastItemExecutor extends ExecutorBase {
 
                 ItemStack definition = itemStack.clone();
                 definition.setAmount(1);
-
-                Item oldItem = BeastMaster.ITEMS.getItem(idArg);
-                if (oldItem.isSpecial()) {
-                    sender.sendMessage(ChatColor.RED + "The special item " + idArg + " cannot be redefined.");
-                    return true;
-                }
 
                 BeastMaster.ITEMS.addItem(idArg, definition);
                 BeastMaster.CONFIG.save();
@@ -119,11 +127,6 @@ public class BeastItemExecutor extends ExecutorBase {
                     return true;
                 }
 
-                if (item.isSpecial()) {
-                    sender.sendMessage(ChatColor.RED + "Special items cannot be removed!");
-                    return true;
-                }
-
                 BeastMaster.ITEMS.removeItem(idArg);
                 BeastMaster.CONFIG.save();
                 sender.sendMessage(ChatColor.GOLD + "Item " + ChatColor.YELLOW + idArg + ChatColor.GOLD + " definition removed.");
@@ -135,7 +138,7 @@ public class BeastItemExecutor extends ExecutorBase {
                     return true;
                 }
 
-                if (!checkInGame(sender)) {
+                if (!isInGame(sender)) {
                     return true;
                 }
                 Player player = (Player) sender;
@@ -144,11 +147,6 @@ public class BeastItemExecutor extends ExecutorBase {
                 Item item = BeastMaster.ITEMS.getItem(idArg);
                 if (item == null) {
                     Commands.errorNull(sender, "item", idArg);
-                    return true;
-                }
-
-                if (item.isSpecial()) {
-                    sender.sendMessage(ChatColor.RED + "You can't get special items. They can only be dropped.");
                     return true;
                 }
 
@@ -208,33 +206,12 @@ public class BeastItemExecutor extends ExecutorBase {
 
                 sender.sendMessage(ChatColor.GOLD + "Items:");
                 for (Item item : BeastMaster.ITEMS.getAllItems()) {
-                    if (item.isSpecial()) {
-                        sender.sendMessage(ChatColor.YELLOW + item.getId() +
-                                           ChatColor.WHITE + " (special)");
-                    } else {
-                        sender.sendMessage(ChatColor.YELLOW + item.getId() +
-                                           ChatColor.WHITE + ": " + Util.getItemDescription(item.getItemStack()));
-                    }
+                    sender.sendMessage(ChatColor.YELLOW + item.getId() +
+                                       ChatColor.WHITE + ": " + Util.getItemDescription(item.getItemStack()));
                 }
                 return true;
             }
         }
         return false;
     } // onCommand
-
-    // ------------------------------------------------------------------------
-    /**
-     * Return true if the command sender is a Player (in game).
-     * 
-     * Otherwise, send an error message and return false.
-     * 
-     * @return true if the command sender is a Player (in game).
-     */
-    protected boolean checkInGame(CommandSender sender) {
-        boolean inGame = (sender instanceof Player);
-        if (!inGame) {
-            sender.sendMessage("You must be in-game to use this comamnd.");
-        }
-        return inGame;
-    }
 } // class BeastItemExecutor

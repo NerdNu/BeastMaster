@@ -1,28 +1,17 @@
 package nu.nerd.beastmaster;
 
-import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.BookMeta;
-import org.bukkit.inventory.meta.ItemMeta;
-
-import nu.nerd.beastmaster.objectives.Objective;
-import nu.nerd.beastmaster.objectives.ObjectiveType;
-import nu.nerd.beastmaster.zones.Zone;
 
 // ----------------------------------------------------------------------------
 /**
@@ -83,8 +72,9 @@ public class DropSet {
     /**
      * Remove all drops.
      */
-    public void clear() {
+    public void removeAllDrops() {
         _drops.clear();
+        invalidateWeightedSelection();
     }
 
     // ------------------------------------------------------------------------
@@ -95,7 +85,7 @@ public class DropSet {
      */
     public void addDrop(Drop drop) {
         invalidateWeightedSelection();
-        _drops.put(drop.getItemId(), drop);
+        _drops.put(drop.getId().toLowerCase(), drop);
     }
 
     // ------------------------------------------------------------------------
@@ -107,7 +97,7 @@ public class DropSet {
      */
     public Drop removeDrop(String itemId) {
         invalidateWeightedSelection();
-        return _drops.remove(itemId);
+        return _drops.remove(itemId.toLowerCase());
     }
 
     // ------------------------------------------------------------------------
@@ -119,7 +109,7 @@ public class DropSet {
      * @return the removed drop.
      */
     public Drop removeDrop(Drop drop) {
-        return removeDrop(drop.getItemId());
+        return removeDrop(drop.getId());
     }
 
     // ------------------------------------------------------------------------
@@ -130,7 +120,7 @@ public class DropSet {
      * @return the drop with the specified item ID, or null if not found.
      */
     public Drop getDrop(String itemId) {
-        return _drops.get(itemId);
+        return _drops.get(itemId.toLowerCase());
     }
 
     // ------------------------------------------------------------------------
@@ -141,6 +131,48 @@ public class DropSet {
      */
     public Collection<Drop> getAllDrops() {
         return _drops.values();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return a map from drop to corresponding weight (for the single selection
+     * case).
+     * 
+     * @return a map from drop to corresponding weight
+     */
+    public Map<Drop, Double> getDropWeights() {
+        cacheWeightedSelection();
+
+        Map<Drop, Double> weights = new TreeMap<>();
+        double previousKey = 0;
+        for (Entry<Double, Drop> entry : _selectionCache.entrySet()) {
+            double weight = entry.getKey() - previousKey;
+            previousKey = entry.getKey();
+            weights.put(entry.getValue(), weight);
+        }
+        return weights;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the total of all spawn weights in the zone.
+     * 
+     * @return the total of all spawn weights in the zone.
+     */
+    public double getTotalWeight() {
+        cacheWeightedSelection();
+        return _selectionCache.getTotalWeight();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Select one drop, as if this DropSet {@link #isSingle()}.
+     * 
+     * @return the {@link Drop}.
+     */
+    public Drop chooseOneDrop() {
+        cacheWeightedSelection();
+        return _selectionCache.choose();
     }
 
     // ------------------------------------------------------------------------
@@ -157,16 +189,14 @@ public class DropSet {
      */
     public boolean generateRandomDrops(String trigger, Player player, Location loc) {
         if (isSingle()) {
-            cacheWeightedSelection();
-            Drop drop = _selectionCache.choose();
-            return generateOneDrop(trigger, player, loc, drop);
+            return chooseOneDrop().generate(trigger, player, loc);
 
         } else {
             // An uninitialised drop table (no drops) drops vanilla items.
-            boolean dropDefault = _drops.isEmpty() ? true : false;
+            boolean dropDefault = _drops.isEmpty();
             for (Drop drop : _drops.values()) {
                 if (Math.random() < drop.getDropChance()) {
-                    dropDefault |= generateOneDrop(trigger, player, loc, drop);
+                    dropDefault |= drop.generate(trigger, player, loc);
                 }
             }
             return dropDefault;
@@ -184,17 +214,15 @@ public class DropSet {
     public void load(ConfigurationSection section, Logger logger) {
         _id = section.getName();
         _single = section.getBoolean("single");
-
-        _drops.clear();
-        invalidateWeightedSelection();
+        removeAllDrops();
 
         ConfigurationSection allDropsSection = section.getConfigurationSection("drops");
         if (allDropsSection != null) {
-            for (String itemId : allDropsSection.getKeys(false)) {
-                Drop drop = new Drop(itemId, 0, 0, 0);
-                ConfigurationSection dropSection = allDropsSection.getConfigurationSection(itemId);
+            for (String id : allDropsSection.getKeys(false)) {
+                ConfigurationSection dropSection = allDropsSection.getConfigurationSection(id);
+                Drop drop = new Drop();
                 if (drop.load(dropSection, logger)) {
-                    _drops.put(itemId, drop);
+                    addDrop(drop);
                 }
             }
         }
@@ -238,135 +266,6 @@ public class DropSet {
         return s.toString();
     }
 
-    // --------------------------------------------------------------------------
-    /**
-     * Do all actions associated with a {@link Drop}, including effects and XP.
-     * 
-     * @param trigger a description of the event that triggered the drop, for
-     *        logging.
-     * @param player the player that triggered the drop, or null.
-     * @param loc the Location of the drop.
-     * @param drop describes the drop.
-     * @return true if the default vanilla drop should be dropped.
-     */
-    protected boolean generateOneDrop(String trigger, Player player, Location loc, Drop drop) {
-        Item item = BeastMaster.ITEMS.getItem(drop.getItemId());
-        if (item == Item.NOTHING) {
-            return false;
-        } else if (item == Item.DEFAULT) {
-            return true;
-        } else {
-            ItemStack itemStack = drop.generate();
-            boolean hasItemStack = (itemStack != null && trySpawnObjective(drop, itemStack, loc));
-            if (hasItemStack) {
-                if (itemStack != null && trySpawnObjective(drop, itemStack, loc)) {
-                    // To avoid drops occasionally spawning in a block and
-                    // warping up to the surface, wait for the next tick and
-                    // check whether the block is actually air. If not air,
-                    // spawn the drop at the player's feet.
-                    Bukkit.getScheduler().scheduleSyncDelayedTask(BeastMaster.PLUGIN, () -> {
-                        Block locBlock = loc.getBlock();
-                        Location revisedLoc = (locBlock != null && locBlock.getType() != Material.AIR &&
-                                               player != null) ? player.getLocation() : loc;
-                        revisedLoc.getWorld().dropItemNaturally(revisedLoc, itemStack);
-                    }, 1);
-                }
-            }
-
-            // Play effects and drop XP if the ItemStack dropped or if no
-            // ItemStack is expected.
-            if (hasItemStack || itemStack == null) {
-                if (drop.getExperience() > 0) {
-                    ExperienceOrb orb = loc.getWorld().spawn(loc, ExperienceOrb.class);
-                    orb.setExperience(drop.getExperience());
-                }
-
-                if (drop.getSound() != null) {
-                    loc.getWorld().playSound(loc, drop.getSound(), drop.getSoundVolume(), drop.getSoundPitch());
-                }
-
-                if (drop.isLogged()) {
-                    Logger logger = BeastMaster.PLUGIN.getLogger();
-                    String count = (itemStack != null) ? " x " + itemStack.getAmount() : "";
-                    logger.info(trigger + " @ " + Util.formatLocation(loc) + " --> " + drop.getItemId() + count);
-                }
-            }
-            return false;
-        }
-    } // doDrop
-
-    // --------------------------------------------------------------------------
-    /**
-     * If a drop has an accompanying objective, try to spawn it.
-     * 
-     * @param drop the drop.
-     * @param item the generated dropped item.
-     * @return true if the drop is not an objective drop, or if it is and an
-     *         objective was successfully spawned. (Return false if an objective
-     *         drop failed to spawn an objective.)
-     */
-    protected boolean trySpawnObjective(Drop drop, ItemStack item, Location dropLoc) {
-        String objTypeId = drop.getObjectiveType();
-        if (objTypeId == null) {
-            return true;
-        }
-
-        ObjectiveType objType = BeastMaster.OBJECTIVE_TYPES.getObjectiveType(objTypeId);
-        if (objType == null) {
-            return false;
-        }
-        Zone zone = BeastMaster.ZONES.getZone(dropLoc);
-        if (zone == null) {
-            return false;
-        }
-        Objective obj = BeastMaster.OBJECTIVES.spawnObjective(objType, zone, dropLoc);
-        if (obj != null) {
-            substituteObjectiveText(item, obj.getLocation());
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    // --------------------------------------------------------------------------
-    /**
-     * Substitute formatting parameters into the text of dropped items that are
-     * for objectives.
-     * 
-     * Text substitution is performed on lore and book page text. The
-     * substitution parameters are:
-     * 
-     * @param item the dropped item.
-     * @param loc the location to format into text.
-     */
-    protected void substituteObjectiveText(ItemStack item, Location loc) {
-        ItemMeta meta = item.getItemMeta();
-        if (meta instanceof BookMeta) {
-            BookMeta bookMeta = (BookMeta) meta;
-            ArrayList<String> newPages = new ArrayList<>();
-            for (String page : bookMeta.getPages()) {
-                newPages.add(MessageFormat.format(page,
-                                                  loc.getBlockX(),
-                                                  loc.getBlockY(),
-                                                  loc.getBlockZ()));
-            }
-            bookMeta.setPages(newPages);
-        }
-
-        List<String> lore = meta.getLore();
-        if (lore != null && !lore.isEmpty()) {
-            ArrayList<String> newLore = new ArrayList<>();
-            for (String line : lore) {
-                newLore.add(MessageFormat.format(line,
-                                                 loc.getBlockX(),
-                                                 loc.getBlockY(),
-                                                 loc.getBlockZ()));
-            }
-            meta.setLore(newLore);
-        }
-        item.setItemMeta(meta);
-    }
-
     // ------------------------------------------------------------------------
     /**
      * Cache a {@link WeightedSelection} for use when this
@@ -388,7 +287,7 @@ public class DropSet {
     protected String _id;
 
     /**
-     * Map from item ID to drop.
+     * Map from lower case {@link Drop#getId()} to drop.
      */
     protected HashMap<String, Drop> _drops = new HashMap<>();
 

@@ -50,14 +50,15 @@ public abstract class ExecutorBase implements CommandExecutor, TabCompleter {
      * 
      * If the sender is not in game, tell them that they must be.
      * 
-     * @return true if the sender is in game.
+     * @return true if the sender is in-game.
      */
-    public boolean inGame(CommandSender sender) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("You must be in game to use this command.");
+    public boolean isInGame(CommandSender sender) {
+        boolean inGame = (sender instanceof Player);
+        if (!inGame) {
+            sender.sendMessage("You must be in-game to use this command.");
             return false;
         }
-        return true;
+        return inGame;
     }
 
     // ------------------------------------------------------------------------

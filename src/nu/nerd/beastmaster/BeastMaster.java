@@ -11,16 +11,14 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Monster;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
-import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -32,6 +30,7 @@ import nu.nerd.beastmaster.commands.BeastMobExecutor;
 import nu.nerd.beastmaster.commands.BeastObjectiveExecutor;
 import nu.nerd.beastmaster.commands.BeastZoneExecutor;
 import nu.nerd.beastmaster.commands.ExecutorBase;
+import nu.nerd.beastmaster.mobs.MobProperty;
 import nu.nerd.beastmaster.mobs.MobType;
 import nu.nerd.beastmaster.mobs.MobTypeManager;
 import nu.nerd.beastmaster.objectives.Objective;
@@ -39,6 +38,7 @@ import nu.nerd.beastmaster.objectives.ObjectiveManager;
 import nu.nerd.beastmaster.objectives.ObjectiveTypeManager;
 import nu.nerd.beastmaster.zones.Zone;
 import nu.nerd.beastmaster.zones.ZoneManager;
+import nu.nerd.entitymeta.EntityMeta;
 
 // ----------------------------------------------------------------------------
 /**
@@ -140,6 +140,30 @@ public class BeastMaster extends JavaPlugin implements Listener {
 
     // ------------------------------------------------------------------------
     /**
+     * Spawn a mob of the specified custom mob type.
+     * 
+     * @param loc the Location where the mob spawns.
+     * @param mobType the custom mob type.
+     */
+    public LivingEntity spawnMob(Location loc, MobType mobType) {
+        MobProperty entityTypeProperty = mobType.getDerivedProperty("entity-type");
+        EntityType entityType = (EntityType) entityTypeProperty.getValue();
+        LivingEntity livingEntity = null;
+        if (entityType == null) {
+            getLogger().info("Mob type " + mobType.getId() + " cannot spawn at " + Util.formatLocation(loc) + ": no entity type.");
+        } else {
+            // When _spawningMobType is non-null, we know that custom
+            // (plugin-generated) mob spawns originate from this plugin.
+            // World.spawnEntity() calls into onCreatureSpawn().
+            _spawningMobType = mobType;
+            livingEntity = (LivingEntity) loc.getWorld().spawnEntity(loc, entityType);
+            _spawningMobType = null;
+        }
+        return livingEntity;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * If a player breaks an objective block, do treasure drops and stop that
      * the particle effects.
      * 
@@ -149,7 +173,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
      * Don't drop special items for player-placed blocks.
      */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    public void onBlockBreak(BlockBreakEvent event) {
+    protected void onBlockBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
         long start = System.nanoTime();
         boolean placed = BlockStoreApi.isPlaced(block);
@@ -178,58 +202,78 @@ public class BeastMaster extends JavaPlugin implements Listener {
 
     // ------------------------------------------------------------------------
     /**
-     * In the plains biome in the nether environment, replace the configured
-     * percentage of Skeletons with WitherSkeletons.
+     * When a mob spawns, perform zone-appropriate replacement with custom mob
+     * types.
+     * 
+     * Mobs that are not replaced are customised according to their EntityType.
+     * 
+     * All mobs that go through this process end up with persistent metadata
+     * value "mob-type" set to the ID of their MobType. Note, however, that
+     * CUSTOM spawns from other plugins will not have the "mob-type" metadata.
+     * 
+     * All mobs are tagged with their spawn reason as metadata. I would like to
+     * tag slimes that spawn by splitting according to whether the original
+     * slime came from a spawner, but there's no easy way to find the parent
+     * slime.
      */
     @EventHandler(ignoreCancelled = true)
-    public void onCreatureSpawn(CreatureSpawnEvent event) {
-        // Old PvE Rev 19 code path to make Wither Skeletons spawn in nether
-        // plains biomes following removal from vanilla.
-        Location loc = event.getLocation();
-        World world = loc.getWorld();
-        if (world.getEnvironment() == Environment.NETHER &&
-            loc.getBlock().getBiome() == Biome.PLAINS &&
-            event.getEntityType() == EntityType.SKELETON &&
-            Math.random() < CONFIG.CHANCE_WITHER_SKELETON) {
-            if (CONFIG.DEBUG_REPLACE) {
-                getLogger().info(String.format("Replacing skeleton at (%d, %d, %d, %s) with wither skeleton.",
-                                               loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), loc.getWorld().getName()));
-            }
-            event.getEntity().remove();
-            world.spawnEntity(loc, EntityType.WITHER_SKELETON);
-        }
+    protected void onCreatureSpawn(CreatureSpawnEvent event) {
+        replaceNetherSkeletonSpawn(event);
 
         LivingEntity entity = event.getEntity();
-        Zone zone = ZONES.getZone(loc);
-        if (zone == null || !(entity instanceof Monster)) {
-            return;
-        }
+        // Tag spawn reason. Replacement mobs will have SpawnReason.CUSTOM.
+        EntityMeta.api().set(entity, this, "spawn-reason", event.getSpawnReason().toString());
 
-        // TODO: handling of spawn reasons should be customisable per zone.
-        SpawnReason spawnReason = event.getSpawnReason();
-
-        // Can't handle SpawnReason.CUSTOM by spawning a new mob because
-        // it will create an infinite recursion.
-        if (spawnReason == SpawnReason.DEFAULT ||
-            spawnReason == SpawnReason.NATURAL ||
-            spawnReason == SpawnReason.REINFORCEMENTS ||
-            spawnReason == SpawnReason.SPAWNER ||
-            spawnReason == SpawnReason.INFECTION ||
-            spawnReason == SpawnReason.NETHER_PORTAL ||
-            spawnReason == SpawnReason.CHUNK_GEN ||
-            spawnReason == SpawnReason.VILLAGE_INVASION) {
-
-            String mobTypeId = zone.randomSpawnMobType();
-            if (mobTypeId != null) {
-                // Wholesale replacement of all spawns in the zone at this
-                // stage.
-                // TODO: more nuanced spawn replacement.
-                event.setCancelled(true);
-                entity.remove();
-
-                MobType mobType = MOBS.getMobType(mobTypeId);
-                mobType.spawn(loc);
+        switch (event.getSpawnReason()) {
+        case CUSTOM:
+            // Plugin driven spawns.
+            if (_spawningMobType != null) {
+                _spawningMobType.configureMob(entity);
             }
+            break;
+
+        case DEFAULT:
+        case NATURAL:
+        case REINFORCEMENTS:
+        case INFECTION:
+        case VILLAGE_INVASION:
+        case VILLAGE_DEFENSE:
+        case EGG:
+        case SPAWNER_EGG:
+        case BUILD_SNOWMAN:
+        case BUILD_IRONGOLEM:
+        case BUILD_WITHER:
+        case SILVERFISH_BLOCK:
+        case ENDER_PEARL:
+            // Vanilla spawns.
+            Location loc = event.getLocation();
+            Zone zone = ZONES.getZone(loc);
+            DropSet replacement = zone.getMobReplacementDropSet(entity.getType());
+            if (replacement != null) {
+                Drop drop = replacement.chooseOneDrop();
+                switch (drop.getDropType()) {
+                case DEFAULT:
+                    // Don't change anything.
+                    break;
+                case NOTHING:
+                    entity.remove();
+                    break;
+                case MOB:
+                case ITEM:
+                    entity.remove();
+                    drop.generate("Mob replacement", null, entity.getLocation());
+                    break;
+                }
+            } else {
+                MobType vanillaMobType = MOBS.getMobType(entity.getType());
+                if (vanillaMobType != null) {
+                    vanillaMobType.configureMob(entity);
+                }
+            }
+            break;
+
+        default:
+            break;
         }
     } // onCreatureSpawn
 
@@ -239,48 +283,41 @@ public class BeastMaster extends JavaPlugin implements Listener {
      * without spawning an entire new mob.
      */
     @EventHandler(ignoreCancelled = true)
-    public void onEntityTargetLivingEntity(EntityTargetLivingEntityEvent event) {
-        configureMob(event.getEntity());
+    protected void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+        // TODO: tag mob with transient metadata for tracking looting level.
+        // Just tag the last damager/damage time and check for looting in the
+        // player's hand, a-la vanilla.
     }
 
     // ------------------------------------------------------------------------
     /**
-     * A late attempt to customise custom-spawned mobs from other plugins
-     * without spawning an entire new mob.
+     * Handle entity death of custom mobs by replacing drops.
      */
     @EventHandler(ignoreCancelled = true)
-    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        configureMob(event.getEntity());
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Handle entity death of hostile mobs in zones by replacing drops.
-     * 
-     * TODO: We really need persistent metadata to identify a custom mob type.
-     */
-    @EventHandler(ignoreCancelled = true)
-    public void onEntityDeath(EntityDeathEvent event) {
+    protected void onEntityDeath(EntityDeathEvent event) {
         Entity entity = event.getEntity();
-        if (!(entity instanceof Monster)) {
+        if (!(entity instanceof LivingEntity)) {
             return;
         }
         // Note: Ghasts and Slimes are not Monsters... Players and ArmorStands
         // are LivingEntities. #currentyear
-        Monster monster = (Monster) entity;
-
-        Location loc = monster.getLocation();
-        Zone zone = ZONES.getZone(loc);
-        if (zone == null) {
-            return;
-        }
-
-        // We assume that any mob in a defined zone is an instance of a
-        // custom mob, uniquely identifiable by its EntityType.
-        // To do better than this, we need persistent metadata. *sigh*
-        MobType mobType = MOBS.getMobType(monster);
+        String mobTypeId = (String) EntityMeta.api().get(entity, this, "mob-type");
+        MobType mobType = MOBS.getMobType(mobTypeId);
         if (mobType != null) {
-            // TODO: Implement death drops for mob type.
+            DropSet drops = mobType.getDrops();
+            if (drops != null) {
+                StringBuilder trigger = new StringBuilder();
+                // TODO: get player name from (transient) Metadata
+                Player player = null;
+                trigger.append("<playername>");
+                trigger.append(" killed ");
+                trigger.append(mobTypeId);
+
+                boolean dropDefaultItems = drops.generateRandomDrops(trigger.toString(), player, entity.getLocation());
+                if (!dropDefaultItems) {
+                    event.getDrops().clear();
+                }
+            }
         }
     } // onEntityDeath
 
@@ -324,29 +361,31 @@ public class BeastMaster extends JavaPlugin implements Listener {
 
     // ------------------------------------------------------------------------
     /**
-     * Common code to configure a mob based on zone.
+     * In the plains biome in the nether environment, replace the configured
+     * percentage of Skeletons with WitherSkeletons.
+     * 
+     * This code dates back to PvE Rev 19 when vanilla Minecraft separated
+     * wither skeletons from regular skeltons, breaking wither spawning in
+     * nether plains biomes. It will eventually be obsoleted by more general
+     * BeastMaster mechanisms.
      */
-    protected void configureMob(Entity mob) {
-        if (!(mob instanceof Monster)) {
-            return;
+    protected void replaceNetherSkeletonSpawn(CreatureSpawnEvent event) {
+        // Old PvE Rev 19 code path to make Wither Skeletons spawn in nether
+        // plains biomes following removal from vanilla.
+        Location loc = event.getLocation();
+        World world = loc.getWorld();
+        if (world.getEnvironment() == Environment.NETHER &&
+            loc.getBlock().getBiome() == Biome.PLAINS &&
+            event.getEntityType() == EntityType.SKELETON &&
+            Math.random() < CONFIG.CHANCE_WITHER_SKELETON) {
+            if (CONFIG.DEBUG_REPLACE) {
+                getLogger().info(String.format("Replacing skeleton at (%d, %d, %d, %s) with wither skeleton.",
+                                               loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), loc.getWorld().getName()));
+            }
+            event.getEntity().remove();
+            world.spawnEntity(loc, EntityType.WITHER_SKELETON);
         }
-        Monster monster = (Monster) mob;
-        Location loc = monster.getLocation();
-        Zone zone = ZONES.getZone(loc);
-        if (zone == null) {
-            return;
-        }
-
-        if (monster.getMetadata(MOB_META_KEY).isEmpty()) {
-            // Already customised.
-            return;
-        }
-
-        MobType mobType = MOBS.getMobType(monster);
-        if (mobType != null) {
-            mobType.configureMob(monster);
-        }
-    } // configureMob
+    }
 
     // ------------------------------------------------------------------------
     /**
@@ -361,5 +400,9 @@ public class BeastMaster extends JavaPlugin implements Listener {
     }
 
     // ------------------------------------------------------------------------
-
+    /**
+     * MobType of the currently spawning mob, if spawned as a custom mob via
+     * {@link #spawnMob(Location, EntityType, MobType)}.
+     */
+    protected MobType _spawningMobType;
 } // class BeastMaster

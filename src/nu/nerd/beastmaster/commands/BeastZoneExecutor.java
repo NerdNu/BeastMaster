@@ -1,9 +1,7 @@
 package nu.nerd.beastmaster.commands;
 
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -11,11 +9,14 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.EntityType;
 
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.DropSet;
-import nu.nerd.beastmaster.mobs.MobType;
 import nu.nerd.beastmaster.zones.Zone;
+
+// /<command> replace-mob <zone-id> <entity-type> <loot-id>
+// /<command> list-replacements <zone-id>
 
 // ----------------------------------------------------------------------------
 /**
@@ -28,7 +29,7 @@ public class BeastZoneExecutor extends ExecutorBase {
      */
     public BeastZoneExecutor() {
         super("beast-zone", "help", "add", "remove", "square", "list",
-              "add-spawn", "remove-spawn", "list-spawns",
+              "replace-mob", "list-replacements",
               "add-block", "remove-block", "list-blocks");
     }
 
@@ -147,9 +148,9 @@ public class BeastZoneExecutor extends ExecutorBase {
                 }
                 return true;
 
-            } else if (args[0].equals("add-spawn")) {
+            } else if (args[0].equals("replace-mob")) {
                 if (args.length != 4) {
-                    Commands.invalidArguments(sender, getName() + " add-spawn <zone-id> <mob-id> <weight>");
+                    Commands.invalidArguments(sender, getName() + " replace-mob <zone-id> <entity-type> <loot-id>");
                     return true;
                 }
 
@@ -160,64 +161,33 @@ public class BeastZoneExecutor extends ExecutorBase {
                     return true;
                 }
 
-                String mobIdArg = args[2];
-                MobType mobType = BeastMaster.MOBS.getMobType(mobIdArg);
-                if (mobType == null) {
-                    Commands.errorNull(sender, "mob type", mobIdArg);
-                    return true;
-                }
-
-                String weightArg = args[3];
-                double weight = -1;
+                String entityTypeArg = args[2];
+                EntityType entityType;
                 try {
-                    weight = Double.parseDouble(weightArg);
-                } catch (NumberFormatException ex) {
-                }
-                if (weight <= 0) {
-                    sender.sendMessage(ChatColor.RED + "The weight must be a positive number!");
+                    entityType = EntityType.valueOf(entityTypeArg.toUpperCase());
+                } catch (IllegalArgumentException ex) {
+                    Commands.errorNull(sender, "entity type", entityTypeArg);
                     return true;
                 }
 
-                zone.addSpawn(mobIdArg, weight);
-                BeastMaster.CONFIG.save();
-                double percent = 100 * weight / zone.getTotalWeight();
-                sender.sendMessage(ChatColor.GOLD + "Zone " + ChatColor.YELLOW + zoneArg +
-                                   ChatColor.GOLD + " will spawn mob " + ChatColor.YELLOW + mobIdArg +
-                                   ChatColor.GOLD + " with weight " + ChatColor.YELLOW + weight +
-                                   ChatColor.GOLD + " (" + String.format("%4.2f", percent) + "%).");
-                return true;
-
-            } else if (args[0].equals("remove-spawn")) {
-                if (args.length != 3) {
-                    Commands.invalidArguments(sender, getName() + " remove-spawn <zone-id> <mob-id>");
-                    return true;
-                }
-
-                String zoneArg = args[1];
-                Zone zone = BeastMaster.ZONES.getZone(zoneArg);
-                if (zone == null) {
-                    Commands.errorNull(sender, "zone", zoneArg);
-                    return true;
-                }
-
-                String mobIdArg = args[2];
-                MobType mobType = BeastMaster.MOBS.getMobType(mobIdArg);
-                if (mobType == null) {
-                    Commands.errorNull(sender, "mob type", mobIdArg);
-                    return true;
-                }
-
-                String removedMobId = zone.removeSpawn(mobIdArg);
-                if (removedMobId == null) {
-                    sender.sendMessage(ChatColor.GOLD + "Mob type " + ChatColor.YELLOW + mobIdArg +
-                                       ChatColor.GOLD + " already doesn't spawn in zone " +
-                                       ChatColor.YELLOW + zoneArg + ChatColor.GOLD + ".");
+                String lootIdArg = args[3];
+                if (lootIdArg.equalsIgnoreCase("none")) {
+                    zone.setMobReplacementDropSetId(entityType, null);
+                    sender.sendMessage(ChatColor.GOLD + "Zone " + ChatColor.YELLOW + zoneArg +
+                                       ChatColor.GOLD + " will no longer replace mobs of type " +
+                                       ChatColor.YELLOW + entityType + ChatColor.GOLD + ".");
                 } else {
-                    BeastMaster.CONFIG.save();
-                    sender.sendMessage(ChatColor.GOLD + "Mob type " + ChatColor.YELLOW + mobIdArg +
-                                       ChatColor.GOLD + " will no longer spawn in zone " +
-                                       ChatColor.YELLOW + zoneArg + ChatColor.GOLD + ".");
+                    zone.setMobReplacementDropSetId(entityType, lootIdArg);
+                    boolean lootTableExists = (BeastMaster.LOOTS.getDropSet(lootIdArg) != null);
+                    ChatColor lootTableColour = (lootTableExists ? ChatColor.YELLOW : ChatColor.RED);
+                    sender.sendMessage(ChatColor.GOLD + "Zone " + ChatColor.YELLOW + zoneArg +
+                                       ChatColor.GOLD + " will replace mobs of type " +
+                                       ChatColor.YELLOW + entityType +
+                                       ChatColor.GOLD + " according to loot table " +
+                                       lootTableColour + lootIdArg + ChatColor.GOLD + ".");
                 }
+
+                BeastMaster.CONFIG.save();
                 return true;
 
             } else if (args[0].equals("list-spawns")) {
@@ -233,20 +203,20 @@ public class BeastZoneExecutor extends ExecutorBase {
                     return true;
                 }
 
-                Map<String, Double> spawns = zone.getSpawnWeights();
-                if (spawns.isEmpty()) {
+                if (zone.getAllReplacedEntityTypes().isEmpty()) {
                     sender.sendMessage(ChatColor.GOLD + "Zone " + ChatColor.YELLOW + zoneArg +
-                                       ChatColor.GOLD + " has no configured spawns.");
+                                       ChatColor.GOLD + " doesn't replace any mobs.");
                 } else {
-                    StringBuilder s = new StringBuilder();
-                    s.append(ChatColor.GOLD).append("Spawns in zone ");
-                    s.append(ChatColor.YELLOW).append(zoneArg);
-                    s.append(ChatColor.GOLD).append(": ").append(ChatColor.WHITE);
-                    s.append(spawns.entrySet().stream()
-                    .map(e -> String.format("%4.2f", 100 * e.getValue() / zone.getTotalWeight()) + "% " +
-                              ChatColor.YELLOW + e.getKey() + ChatColor.WHITE)
-                    .collect(Collectors.joining(", ")));
-                    sender.sendMessage(s.toString());
+                    sender.sendMessage(ChatColor.GOLD + "Loot tables replacing mobs in zone " +
+                                       ChatColor.YELLOW + zoneArg +
+                                       ChatColor.GOLD + ":");
+                    for (EntityType entityType : zone.getAllReplacedEntityTypes()) {
+                        String lootId = zone.getMobReplacementDropSetId(entityType);
+                        boolean lootTableExists = (BeastMaster.LOOTS.getDropSet(lootId) != null);
+                        ChatColor lootTableColour = (lootTableExists ? ChatColor.YELLOW : ChatColor.RED);
+                        sender.sendMessage(ChatColor.YELLOW + entityType.name() + ChatColor.WHITE + " -> " +
+                                           lootTableColour + lootId);
+                    }
                 }
                 return true;
             } else if (args[0].equals("add-block")) {

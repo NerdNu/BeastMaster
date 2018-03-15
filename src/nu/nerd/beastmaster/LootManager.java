@@ -6,11 +6,12 @@ import java.util.logging.Logger;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.LivingEntity;
 
 // ----------------------------------------------------------------------------
 /**
  * Manages a collection of all known loot tables.
+ * 
+ * Loot table IDs are compared case-insensitively.
  */
 public class LootManager {
     // ------------------------------------------------------------------------
@@ -20,18 +21,7 @@ public class LootManager {
      * @return the {@link DropSet} with the specified ID, or null if not found.
      */
     public DropSet getDropSet(String id) {
-        return _idToDrops.get(id);
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Return the {@link DropSet} with the specified ID, or null if not found.
-     *
-     * @param id the ID of the drops to find.
-     * @return the {@link DropSet} with the specified ID, or null if not found.
-     */
-    public DropSet getDropSet(LivingEntity entity) {
-        return _idToDrops.get(entity.getType());
+        return id != null ? _idToDrops.get(id.toLowerCase()) : null;
     }
 
     // ------------------------------------------------------------------------
@@ -51,7 +41,7 @@ public class LootManager {
      * The type should not be previously registered.
      */
     public void addDropSet(DropSet drops) {
-        _idToDrops.put(drops.getId(), drops);
+        _idToDrops.put(drops.getId().toLowerCase(), drops);
     }
 
     // ------------------------------------------------------------------------
@@ -61,7 +51,7 @@ public class LootManager {
      * @param id the ID of the type to remove.
      */
     public void removeDropSet(String id) {
-        _idToDrops.remove(id);
+        _idToDrops.remove(id.toLowerCase());
     }
 
     // ------------------------------------------------------------------------
@@ -114,7 +104,7 @@ public class LootManager {
 
     // ------------------------------------------------------------------------
     /**
-     * Map from {@link DropSet} ID to instance.
+     * Map from {@link DropSet} lower-case ID to instance.
      */
     protected HashMap<String, DropSet> _idToDrops = new HashMap<>();
 

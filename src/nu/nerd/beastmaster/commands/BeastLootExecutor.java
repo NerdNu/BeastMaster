@@ -13,11 +13,25 @@ import org.bukkit.command.CommandSender;
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.Drop;
 import nu.nerd.beastmaster.DropSet;
+import nu.nerd.beastmaster.DropType;
 import nu.nerd.beastmaster.objectives.ObjectiveType;
+
+// /<command> add <loot-id> 
+// /<command> remove <loot-id>
+// /<command> info <loot-id>
+// /<command> list
+// /<command> add-drop <loot-id> <drop-type> [<id>] <percentage-chance> [<min>] [<max>] 
+// /<command> remove-drop <loot-id> <id> 
+// /<command> list-drops <loot-id>
+// /<command> single <loot-id> <yes-or-no>
+// /<command> objective <loot-id> <item-id> (<obj-id>|none)
+// /<command> logged <loot-id> <item-id> <yes-or-no>
+// /<command> sound <loot-id> <item-id> <sound> [<range> <pitch>]
+// /<command> xp <loot-id> <item-id> <xp>
 
 // ----------------------------------------------------------------------------
 /**
- * Executor for the /beast-loot command.
+ * Executor for the {@code /beast-loot} command.
  */
 public class BeastLootExecutor extends ExecutorBase {
     // ------------------------------------------------------------------------
@@ -26,8 +40,8 @@ public class BeastLootExecutor extends ExecutorBase {
      */
     public BeastLootExecutor() {
         super("beast-loot", "help", "add", "remove", "info", "list",
-              "add-drop", "remove-drop", "list-drops", "single",
-              "objective", "logged", "sound", "xp");
+              "add-drop", "remove-drop", "list-drops",
+              "single", "objective", "logged", "sound", "xp");
     }
 
     // ------------------------------------------------------------------------
@@ -116,22 +130,37 @@ public class BeastLootExecutor extends ExecutorBase {
                 return true;
 
             } else if (args[0].equals("add-drop")) {
-                if (args.length < 5 || args.length > 6) {
-                    Commands.invalidArguments(sender, getName() + " add-drop <loot-id> <item-id> <percentage-chance> <min> [<max>]");
+                if (args.length < 4 || args.length > 7) {
+                    Commands.invalidArguments(sender, getName() + " add-drop <loot-id> <drop-type> [<id>] <percentage-chance> [<min>] [<max>]");
                     return true;
                 }
 
-                String idArg = args[1];
-                String itemIdArg = args[2];
-                String chanceArg = args[3];
-                String minArg = args[4];
-                String maxArg = (args.length == 6) ? args[5] : null;
-
-                DropSet dropSet = BeastMaster.LOOTS.getDropSet(idArg);
+                String lootIdArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(lootIdArg);
                 if (dropSet == null) {
-                    Commands.errorNull(sender, "loot table", idArg);
+                    Commands.errorNull(sender, "loot table", lootIdArg);
                     return true;
                 }
+
+                String dropTypeArg = args[2];
+                if (!DropType.isDropType(dropTypeArg)) {
+                    sender.sendMessage(ChatColor.RED + dropTypeArg + " is not a valid drop type.");
+                    return true;
+                }
+
+                DropType dropType = DropType.valueOf(dropTypeArg.toUpperCase());
+                int chanceIndex = dropType.usesId() ? 4 : 3;
+                String dropIdArg = dropType.usesId() ? args[3] : dropType.name();
+                String chanceArg = args[chanceIndex];
+                String minArg = "1";
+                if (args.length > chanceIndex + 1) {
+                    if (dropType.usesId()) {
+                        minArg = args[chanceIndex + 1];
+                    } else {
+                        sender.sendMessage(ChatColor.RED + "Min and max arguments are ignored for " + dropType + " drops.");
+                    }
+                }
+                String maxArg = (args.length > chanceIndex + 2 && dropType.usesId()) ? args[chanceIndex + 2] : minArg;
 
                 Double chance = Commands.parseNumber(chanceArg, Commands::parseDouble,
                                                      x -> x >= 0.0 && x <= 100.0,
@@ -150,24 +179,19 @@ public class BeastLootExecutor extends ExecutorBase {
                     return true;
                 }
 
-                Integer max;
-                if (maxArg != null) {
-                    max = Commands.parseNumber(maxArg, Commands::parseInt,
-                                               x -> x >= min,
-                                               () -> sender.sendMessage(ChatColor.RED +
-                                                                        "The maximum number of drops must be at least as many as the minimum number!"),
-                                               null);
-                    if (max == null) {
-                        return true;
-                    }
-                } else {
-                    max = min;
+                Integer max = Commands.parseNumber(maxArg, Commands::parseInt,
+                                                   x -> x >= min,
+                                                   () -> sender.sendMessage(ChatColor.RED +
+                                                                            "The maximum number of drops must be at least as many as the minimum number!"),
+                                                   null);
+                if (max == null) {
+                    return true;
                 }
 
-                Drop oldDrop = dropSet.getDrop(itemIdArg);
+                Drop oldDrop = dropSet.getDrop(dropIdArg);
                 Drop newDrop;
                 if (oldDrop == null) {
-                    newDrop = new Drop(itemIdArg, chance / 100.0, min, max);
+                    newDrop = new Drop(dropType, dropIdArg, chance / 100.0, min, max);
                 } else {
                     // Clone all the other fields not specified by this command.
                     newDrop = oldDrop.clone();
@@ -179,12 +203,12 @@ public class BeastLootExecutor extends ExecutorBase {
                 BeastMaster.CONFIG.save();
 
                 if (oldDrop != null) {
-                    sender.sendMessage(ChatColor.GOLD + "Replacing " + ChatColor.YELLOW + idArg +
+                    sender.sendMessage(ChatColor.GOLD + "Replacing " + ChatColor.YELLOW + lootIdArg +
                                        ChatColor.GOLD + " drop:");
                     sender.sendMessage(ChatColor.GOLD + "Old: " + ChatColor.WHITE + oldDrop.getLongDescription());
                     sender.sendMessage(ChatColor.GOLD + "New: " + ChatColor.WHITE + newDrop.getLongDescription());
                 } else {
-                    sender.sendMessage(ChatColor.GOLD + "Adding " + ChatColor.YELLOW + idArg +
+                    sender.sendMessage(ChatColor.GOLD + "Adding " + ChatColor.YELLOW + lootIdArg +
                                        ChatColor.GOLD + " drop:");
                     sender.sendMessage(ChatColor.WHITE + newDrop.getLongDescription());
                 }
@@ -196,21 +220,21 @@ public class BeastLootExecutor extends ExecutorBase {
                     return true;
                 }
 
-                String idArg = args[1];
-                DropSet dropSet = BeastMaster.LOOTS.getDropSet(idArg);
+                String lootIdArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(lootIdArg);
                 if (dropSet == null) {
-                    Commands.errorNull(sender, "loot table", idArg);
+                    Commands.errorNull(sender, "loot table", lootIdArg);
                     return true;
                 }
 
-                String itemIdArg = args[2];
-                Drop drop = dropSet.removeDrop(itemIdArg);
+                String dropIdArg = args[2];
+                Drop drop = dropSet.removeDrop(dropIdArg);
                 BeastMaster.CONFIG.save();
 
                 if (drop == null) {
-                    sender.sendMessage(ChatColor.RED + "Loot table " + idArg + " has no drop with ID \"" + itemIdArg + "\"!");
+                    sender.sendMessage(ChatColor.RED + "Loot table " + lootIdArg + " has no drop with ID \"" + dropIdArg + "\"!");
                 } else {
-                    sender.sendMessage(ChatColor.GOLD + "Removed " + ChatColor.YELLOW + idArg +
+                    sender.sendMessage(ChatColor.GOLD + "Removed " + ChatColor.YELLOW + lootIdArg +
                                        ChatColor.GOLD + " drop:");
                     sender.sendMessage(drop.getLongDescription());
                 }
@@ -222,20 +246,20 @@ public class BeastLootExecutor extends ExecutorBase {
                     return true;
                 }
 
-                String idArg = args[1];
-                DropSet dropSet = BeastMaster.LOOTS.getDropSet(idArg);
+                String lootIdArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(lootIdArg);
                 if (dropSet == null) {
-                    Commands.errorNull(sender, "loot table", idArg);
+                    Commands.errorNull(sender, "loot table", lootIdArg);
                     return true;
                 }
 
                 Collection<Drop> allDrops = dropSet.getAllDrops();
                 if (allDrops.isEmpty()) {
                     sender.sendMessage(ChatColor.GOLD + "Loot table " +
-                                       ChatColor.YELLOW + idArg + ChatColor.GOLD + " has no drops defined.");
+                                       ChatColor.YELLOW + lootIdArg + ChatColor.GOLD + " has no drops defined.");
                 } else {
                     sender.sendMessage(ChatColor.GOLD + "Drops of loot table " +
-                                       ChatColor.YELLOW + idArg + ChatColor.GOLD + ":");
+                                       ChatColor.YELLOW + lootIdArg + ChatColor.GOLD + ":");
                 }
                 for (Drop drop : allDrops) {
                     sender.sendMessage(drop.getLongDescription());
@@ -248,10 +272,10 @@ public class BeastLootExecutor extends ExecutorBase {
                     return true;
                 }
 
-                String idArg = args[1];
-                DropSet dropSet = BeastMaster.LOOTS.getDropSet(idArg);
+                String lootIdArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(lootIdArg);
                 if (dropSet == null) {
-                    Commands.errorNull(sender, "loot table", idArg);
+                    Commands.errorNull(sender, "loot table", lootIdArg);
                     return true;
                 }
 
@@ -263,7 +287,7 @@ public class BeastLootExecutor extends ExecutorBase {
 
                 dropSet.setSingle(single);
                 BeastMaster.CONFIG.save();
-                sender.sendMessage(ChatColor.GOLD + "Loot table " + ChatColor.YELLOW + idArg +
+                sender.sendMessage(ChatColor.GOLD + "Loot table " + ChatColor.YELLOW + lootIdArg +
                                    ChatColor.GOLD + " is now configured for " +
                                    ChatColor.YELLOW + (single ? "single" : "multiple") +
                                    ChatColor.GOLD + " drop operation.");
@@ -275,17 +299,22 @@ public class BeastLootExecutor extends ExecutorBase {
                     return true;
                 }
 
-                String idArg = args[1];
-                DropSet dropSet = BeastMaster.LOOTS.getDropSet(idArg);
+                String lootIdArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(lootIdArg);
                 if (dropSet == null) {
-                    Commands.errorNull(sender, "loot table", idArg);
+                    Commands.errorNull(sender, "loot table", lootIdArg);
                     return true;
                 }
 
-                String itemIdArg = args[2];
-                Drop drop = dropSet.getDrop(itemIdArg);
+                String dropIdArg = args[2];
+                Drop drop = dropSet.getDrop(dropIdArg);
                 if (drop == null) {
-                    Commands.errorNull(sender, "drop of " + idArg, itemIdArg);
+                    Commands.errorNull(sender, "drop of " + lootIdArg, dropIdArg);
+                    return true;
+                }
+
+                if (drop.getDropType() != DropType.ITEM) {
+                    sender.sendMessage(ChatColor.RED + "Only ITEM drops can have an associated objective.");
                     return true;
                 }
 
@@ -312,17 +341,17 @@ public class BeastLootExecutor extends ExecutorBase {
                     return true;
                 }
 
-                String idArg = args[1];
-                DropSet dropSet = BeastMaster.LOOTS.getDropSet(idArg);
+                String lootIdArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(lootIdArg);
                 if (dropSet == null) {
-                    Commands.errorNull(sender, "loot table", idArg);
+                    Commands.errorNull(sender, "loot table", lootIdArg);
                     return true;
                 }
 
-                String itemIdArg = args[2];
-                Drop drop = dropSet.getDrop(itemIdArg);
+                String dropIdArg = args[2];
+                Drop drop = dropSet.getDrop(dropIdArg);
                 if (drop == null) {
-                    Commands.errorNull(sender, "drop of " + idArg, itemIdArg);
+                    Commands.errorNull(sender, "drop of " + lootIdArg, dropIdArg);
                     return true;
                 }
 
@@ -344,17 +373,17 @@ public class BeastLootExecutor extends ExecutorBase {
                     return true;
                 }
 
-                String idArg = args[1];
-                DropSet dropSet = BeastMaster.LOOTS.getDropSet(idArg);
+                String lootIdArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(lootIdArg);
                 if (dropSet == null) {
-                    Commands.errorNull(sender, "loot table", idArg);
+                    Commands.errorNull(sender, "loot table", lootIdArg);
                     return true;
                 }
 
-                String itemIdArg = args[2];
-                Drop drop = dropSet.getDrop(itemIdArg);
+                String dropIdArg = args[2];
+                Drop drop = dropSet.getDrop(dropIdArg);
                 if (drop == null) {
-                    Commands.errorNull(sender, "drop of " + idArg, itemIdArg);
+                    Commands.errorNull(sender, "drop of " + lootIdArg, dropIdArg);
                     return true;
                 }
 
@@ -393,9 +422,9 @@ public class BeastLootExecutor extends ExecutorBase {
                 drop.setSoundVolume(range / 15);
                 drop.setSoundPitch(pitch);
                 sender.sendMessage(ChatColor.GOLD + "Changed the drop sound of " +
-                                   ChatColor.YELLOW + drop.getItemId() +
+                                   ChatColor.YELLOW + drop.getId() +
                                    ChatColor.GOLD + " in table " +
-                                   ChatColor.YELLOW + idArg +
+                                   ChatColor.YELLOW + lootIdArg +
                                    ChatColor.GOLD + " to " + drop.getSoundDescription() +
                                    ChatColor.GOLD + ".");
                 BeastMaster.CONFIG.save();
@@ -434,7 +463,7 @@ public class BeastLootExecutor extends ExecutorBase {
 
                 drop.setExperience(newXp);
                 sender.sendMessage(ChatColor.GOLD + "Changed the dropped XP of " +
-                                   ChatColor.YELLOW + drop.getItemId() +
+                                   ChatColor.YELLOW + drop.getId() +
                                    ChatColor.GOLD + " in table " +
                                    ChatColor.YELLOW + idArg +
                                    ChatColor.GOLD + " from " + ChatColor.YELLOW + oldXp +
@@ -447,6 +476,7 @@ public class BeastLootExecutor extends ExecutorBase {
         }
 
         return false;
+
     } // onCommand
 
     // ------------------------------------------------------------------------

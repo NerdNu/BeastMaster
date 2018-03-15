@@ -1,31 +1,216 @@
 package nu.nerd.beastmaster;
 
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.ExperienceOrb;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.inventory.meta.ItemMeta;
+
+import nu.nerd.beastmaster.mobs.MobType;
+import nu.nerd.beastmaster.objectives.Objective;
+import nu.nerd.beastmaster.objectives.ObjectiveType;
+import nu.nerd.beastmaster.zones.Zone;
 
 // ----------------------------------------------------------------------------
 /**
  * Represents a possible item drop.
+ * 
+ * TODO: spawn between min and max mobs (if configured), between minR and maxR
+ * and minY and maxY, and in accordance with floating (allows feet off the
+ * ground). floating false and minY > highest block (at most 255) => surface.
  */
 public class Drop implements Cloneable {
     // ------------------------------------------------------------------------
     /**
+     * Constructor for loading from configuration only.
+     */
+    public Drop() {
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Constructor.
      * 
-     * @param itemId the ID of the custom item.
+     * @param dropType the type of the drop.
+     * @param id the ID of the item or mob; ignored for NOTHING and DEFAULT
+     *        drops.
      * @param dropChance the drop chance in the range [0.0, 1.0].
      * @param min the minimum number of drops.
      * @param max the maximum number of drops.
      */
-    public Drop(String itemId, double dropChance, int min, int max) {
-        _itemId = itemId;
+    public Drop(DropType dropType, String id, double dropChance, int min, int max) {
+        _dropType = dropType;
+        _id = (dropType.usesId() ? id : dropType.name());
         _dropChance = dropChance;
         _min = min;
         _max = max;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return a random integer between getMinAmount() and getMaxAmount().
+     * 
+     * @return a random integer between getMinAmount() and getMaxAmount().
+     */
+    public int randomAmount() {
+        return Util.random(getMinAmount(), getMaxAmount());
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Make a new random-sized ItemStack for this drop, which must be of type
+     * {@link DropType#ITEM}.
+     * 
+     * @return the ItemStack.
+     * @throws AssertionError if this is not an item Drop.
+     */
+    public ItemStack randomItemStack() {
+        if (getDropType() != DropType.ITEM) {
+            throw new AssertionError("requested an ItemStack from a non-item Drop");
+        }
+        Item item = BeastMaster.ITEMS.getItem(getId());
+        ItemStack itemStack = item.getItemStack();
+        if (itemStack != null) {
+            itemStack = itemStack.clone();
+            itemStack.setAmount(randomAmount());
+        }
+        return itemStack;
+    }
+
+    // --------------------------------------------------------------------------
+    /**
+     * Do all actions associated with this drop, including effects and XP.
+     * 
+     * If the drop is an item that spawns an objective, then check that the
+     * objective can be spawned before dropping the item.
+     * 
+     * @param trigger a description of the event that triggered the drop, for
+     *        logging.
+     * @param player the player that triggered the drop, or null.
+     * @param loc the Location of the drop.
+     * @return true if the default vanilla drop should be dropped.
+     */
+    public boolean generate(String trigger, Player player, Location loc) {
+        // Invalid mob/item ID or inability to spawn objective makes drop fail.
+        boolean dropSucceeded;
+        String dropDescription;
+
+        switch (getDropType()) {
+        case ITEM: {
+            ItemStack itemStack = randomItemStack();
+            dropSucceeded = (itemStack != null && trySpawnObjective(itemStack, loc));
+            if (dropSucceeded) {
+                // To avoid drops occasionally spawning in a block and
+                // warping up to the surface, wait for the next tick and
+                // check whether the block is actually air. If not air,
+                // spawn the drop at the player's feet.
+                Bukkit.getScheduler().scheduleSyncDelayedTask(BeastMaster.PLUGIN, () -> {
+                    Block locBlock = loc.getBlock();
+                    Location revisedLoc = (locBlock != null && locBlock.getType() != Material.AIR &&
+                                           player != null) ? player.getLocation() : loc;
+                    revisedLoc.getWorld().dropItemNaturally(revisedLoc, itemStack);
+                }, 1);
+            }
+            dropDescription = "ITEM " + getId() + (dropSucceeded ? " x " + itemStack.getAmount() : " (invalid)");
+            break;
+        }
+
+        case MOB: {
+            // TODO: Potentially mobs could spawn in block that comes back.
+            // TODO: Actually need to spawn mobs around the event location.
+
+            // Count the number of successful spawns.
+            int spawnCount = 0;
+            MobType mobType = BeastMaster.MOBS.getMobType(getId());
+            LivingEntity livingEntity = null;
+            if (mobType != null) {
+                for (int i = 0; i < randomAmount(); ++i) {
+                    livingEntity = BeastMaster.PLUGIN.spawnMob(loc, mobType);
+                    if (livingEntity != null) {
+                        ++spawnCount;
+                    }
+                }
+            }
+            dropSucceeded = (spawnCount != 0);
+            dropDescription = "ITEM " + getId() + (dropSucceeded ? " x " + spawnCount : " (invalid)");
+            break;
+        }
+
+        default: // NOTHING or DEFAULT
+            dropDescription = getDropType().toString();
+            dropSucceeded = true;
+            break;
+        }
+
+        if (dropSucceeded) {
+            dropExperience(loc);
+            playSound(loc);
+            if (isLogged()) {
+                Logger logger = BeastMaster.PLUGIN.getLogger();
+                logger.info(trigger + " @ " + Util.formatLocation(loc) + " --> " + dropDescription);
+            }
+        }
+
+        // Trigger the default vanilla drop?
+        return getDropType() == DropType.DEFAULT;
+    } // generate
+
+    // ------------------------------------------------------------------------
+    /**
+     * Play the sound of this drop at the specified Location.
+     * 
+     * @param loc the location.
+     */
+    public void playSound(Location loc) {
+        if (_sound != null) {
+            loc.getWorld().playSound(loc, _sound, _soundVolume, _soundPitch);
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Drop the experience associated with this drop at the specified Location.
+     * 
+     * @param loc the location.
+     */
+    public void dropExperience(Location loc) {
+        if (_experience > 0) {
+            ExperienceOrb orb = loc.getWorld().spawn(loc, ExperienceOrb.class);
+            orb.setExperience(_experience);
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Set the type of the drop.
+     * 
+     * @param dropType the type of the drop.
+     */
+    public void setDropType(DropType dropType) {
+        _dropType = dropType;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the type of the drop.
+     * 
+     * @return the type of the drop.
+     */
+    public DropType getDropType() {
+        return _dropType;
     }
 
     // ------------------------------------------------------------------------
@@ -50,9 +235,9 @@ public class Drop implements Cloneable {
 
     // ------------------------------------------------------------------------
     /**
-     * Set the minimum number of items in the dropped item stack.
+     * Set the minimum number of items or mobs dropped together.
      * 
-     * @param min the minimum number of items in the dropped item stack.
+     * @param min the minimum number of items or mobs dropped together.
      */
     public void setMinAmount(int min) {
         _min = min;
@@ -60,9 +245,9 @@ public class Drop implements Cloneable {
 
     // ------------------------------------------------------------------------
     /**
-     * Return the minimum number of items in the dropped item stack.
+     * Return the minimum number of items or mobs dropped together.
      * 
-     * @return the minimum number of items in the dropped item stack.
+     * @return the minimum number of items or mobs dropped together.
      */
     public int getMinAmount() {
         return _min;
@@ -70,9 +255,9 @@ public class Drop implements Cloneable {
 
     // ------------------------------------------------------------------------
     /**
-     * Set the maximum number of items in the dropped item stack.
+     * Set the maximum number of items or mobs dropped together.
      * 
-     * @param max the minimum number of items in the dropped item stack.
+     * @param max the maximum number of items or mobs dropped together.
      */
     public void setMaxAmount(int max) {
         _max = max;
@@ -80,9 +265,9 @@ public class Drop implements Cloneable {
 
     // ------------------------------------------------------------------------
     /**
-     * Return the maximum number of items in the dropped item stack.
+     * Return the maximum number of items or mobs dropped together.
      * 
-     * @return the maximum number of items in the dropped item stack.
+     * @return the maximum number of items or mobs dropped together.
      */
     public int getMaxAmount() {
         return _max;
@@ -90,12 +275,12 @@ public class Drop implements Cloneable {
 
     // ------------------------------------------------------------------------
     /**
-     * Return the item ID of this drop.
+     * Return the item or mob ID of this drop.
      * 
-     * @return the item ID of this drop.
+     * @return the item or mob ID of this drop.
      */
-    public String getItemId() {
-        return _itemId;
+    public String getId() {
+        return _id;
     }
 
     // ------------------------------------------------------------------------
@@ -230,63 +415,29 @@ public class Drop implements Cloneable {
 
     // ------------------------------------------------------------------------
     /**
-     * Generate a new ItemStack by selecting a random number of items within the
-     * configured range.
-     *
-     * @return the ItemStack.
-     * @throws IllegalArgumentException if the dropped item has one of the
-     *         special item IDs.
-     */
-    public ItemStack generate() {
-        Item item = BeastMaster.ITEMS.getItem(_itemId);
-        if (item == null) {
-            return null;
-        }
-
-        if (item.isSpecial()) {
-            throw new IllegalArgumentException("can't drop special item " + item.getId());
-        }
-
-        ItemStack result = item.getItemStack();
-        if (result != null) {
-            result = result.clone();
-            result.setAmount(Util.random(_min, _max));
-        }
-        return result;
-    }
-
-    // ------------------------------------------------------------------------
-    /**
      * Return a short description of this drop, suitable for display in-line.
      * 
-     * The description does not include a full explanation of the dropped item;
-     * only it's ID.
+     * The description does not include a full explanation of the dropped item
+     * or mob; only its ID.
+     *
+     * Example: 10% [1,3] ITEM steak (logged)
      * 
      * @return a short description of this drop, suitable for display in-line.
      */
     public String getShortDescription() {
         StringBuilder s = new StringBuilder();
         s.append(ChatColor.WHITE).append(_dropChance * 100).append("% ");
+        s.append(getCountDescription());
+        s.append(ChatColor.WHITE).append(_dropType).append(' ');
 
-        Item item = BeastMaster.ITEMS.getItem(_itemId);
-        if (item == null) {
-            s.append(ChatColor.RED).append(_itemId);
-        } else if (item.isSpecial()) {
-            s.append(ChatColor.YELLOW).append(_itemId);
-        } else {
-            if (_min == _max) {
-                s.append(_min);
-            } else {
-                s.append('[').append(_min).append(',').append(_max).append(']');
-            }
-
-            s.append(' ');
-            ItemStack itemStack = item.getItemStack();
-            if (itemStack == null) {
-                s.append(ChatColor.RED).append("nothing");
-            } else {
-                s.append(ChatColor.YELLOW).append(_itemId);
-            }
+        if (_dropType == DropType.ITEM) {
+            Item item = BeastMaster.ITEMS.getItem(_id);
+            s.append((item == null) ? ChatColor.RED : ChatColor.YELLOW);
+            s.append(_id);
+        } else if (_dropType == DropType.MOB) {
+            MobType mobType = BeastMaster.MOBS.getMobType(_id);
+            s.append((mobType == null) ? ChatColor.RED : ChatColor.YELLOW);
+            s.append(_id);
         }
 
         if (_logged) {
@@ -303,42 +454,58 @@ public class Drop implements Cloneable {
      */
     public String getLongDescription() {
         StringBuilder s = new StringBuilder();
-        s.append(ChatColor.YELLOW).append(_itemId).append(": ");
-        if (_objectiveType != null) {
-            s.append(ChatColor.GREEN).append("(objective: ").append(_objectiveType).append(") ");
-        }
         s.append(ChatColor.WHITE).append(_dropChance * 100).append("% ");
+        s.append(getCountDescription());
+        s.append(ChatColor.WHITE).append(_dropType).append(' ');
 
-        Item item = BeastMaster.ITEMS.getItem(_itemId);
-        if (item == null) {
-            s.append(ChatColor.RED).append(_itemId);
-        } else if (item.isSpecial()) {
-            s.append(ChatColor.YELLOW).append(_itemId);
-        } else {
+        if (_dropType == DropType.ITEM) {
+            Item item = BeastMaster.ITEMS.getItem(_id);
+            s.append((item == null) ? ChatColor.RED : ChatColor.YELLOW);
+            s.append(_id);
+
+            // Only items can have an associated objective.
+            if (_objectiveType != null) {
+                s.append(ChatColor.GREEN).append("(objective: ").append(_objectiveType).append(") ");
+            }
+        } else if (_dropType == DropType.MOB) {
+            MobType mobType = BeastMaster.MOBS.getMobType(_id);
+            s.append((mobType == null) ? ChatColor.RED : ChatColor.YELLOW);
+            s.append(_id);
+        }
+
+        if (getExperience() > 0) {
+            s.append(' ');
+            s.append(ChatColor.YELLOW).append(getExperience());
+            s.append(ChatColor.GOLD).append(" xp");
+        }
+
+        if (getSound() != null) {
+            s.append(' ').append(getSoundDescription());
+        }
+
+        if (_logged) {
+            s.append(ChatColor.GOLD).append(" (logged)");
+        }
+        return s.toString();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return a string representing the number of items or mobs dropped, for
+     * presentation to the user.
+     * 
+     * @return a string representing the number of items or mobs dropped, for
+     *         presentation to the user.
+     */
+    public String getCountDescription() {
+        StringBuilder s = new StringBuilder();
+        if (_dropType == DropType.ITEM || _dropType == DropType.MOB) {
             if (_min == _max) {
                 s.append(_min);
             } else {
                 s.append('[').append(_min).append(',').append(_max).append(']');
             }
             s.append(' ');
-
-            ItemStack itemStack = item.getItemStack();
-            s.append((itemStack == null) ? ChatColor.RED + "nothing"
-                                         : ChatColor.WHITE + Util.getItemDescription(itemStack));
-
-            if (getExperience() > 0) {
-                s.append(ChatColor.GOLD).append(' ');
-                s.append(ChatColor.YELLOW).append(getExperience());
-                s.append(ChatColor.GOLD).append(" xp");
-            }
-
-            if (getSound() != null) {
-                s.append(' ').append(getSoundDescription());
-            }
-        }
-
-        if (_logged) {
-            s.append(ChatColor.YELLOW).append(" (logged)");
         }
         return s.toString();
     }
@@ -401,7 +568,14 @@ public class Drop implements Cloneable {
      * @param logger the logger.
      */
     public boolean load(ConfigurationSection section, Logger logger) {
-        _itemId = section.getName();
+        try {
+            // Backwards compatibility: default to ITEM.
+            String type = section.getString("type");
+            _dropType = DropType.valueOf(type != null ? type : "ITEM");
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
+        _id = section.getName();
         _logged = section.getBoolean("logged");
         _dropChance = section.getDouble("chance", 0.0);
         _min = section.getInt("min", 1);
@@ -414,7 +588,7 @@ public class Drop implements Cloneable {
                                                                : null;
         } catch (IllegalArgumentException ex) {
             _sound = null;
-            logger.severe("drop " + _itemId + " could not load invalid sound " + soundId);
+            logger.severe("drop " + _id + " could not load invalid sound " + soundId);
         }
         _soundVolume = (float) section.getDouble("sound-volume");
         _soundPitch = (float) section.getDouble("sound-pitch");
@@ -429,7 +603,8 @@ public class Drop implements Cloneable {
      * @param logger the logger.
      */
     public void save(ConfigurationSection parentSection, Logger logger) {
-        ConfigurationSection section = parentSection.createSection(_itemId);
+        ConfigurationSection section = parentSection.createSection(_id);
+        section.set("type", _dropType.name());
         section.set("logged", _logged);
         section.set("chance", _dropChance);
         section.set("min", _min);
@@ -441,11 +616,87 @@ public class Drop implements Cloneable {
         section.set("sound-pitch", _soundPitch);
     }
 
+    // --------------------------------------------------------------------------
+    /**
+     * If this drop has an accompanying objective, try to spawn it.
+     * 
+     * @param item the generated dropped item.
+     * @return true if the drop is not an objective drop, or if it is and an
+     *         objective was successfully spawned. (Return false if an objective
+     *         drop failed to spawn an objective.)
+     */
+    protected boolean trySpawnObjective(ItemStack item, Location dropLoc) {
+        String objTypeId = getObjectiveType();
+        if (objTypeId == null) {
+            return true;
+        }
+
+        ObjectiveType objType = BeastMaster.OBJECTIVE_TYPES.getObjectiveType(objTypeId);
+        if (objType == null) {
+            return false;
+        }
+        Zone zone = BeastMaster.ZONES.getZone(dropLoc);
+        if (zone == null) {
+            return false;
+        }
+        Objective obj = BeastMaster.OBJECTIVES.spawnObjective(objType, zone, dropLoc);
+        if (obj != null) {
+            substituteObjectiveText(item, obj.getLocation());
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // --------------------------------------------------------------------------
+    /**
+     * Substitute formatting parameters into the text of dropped items that are
+     * for objectives.
+     * 
+     * Text substitution is performed on lore and book page text. The
+     * substitution parameters are:
+     * 
+     * @param item the dropped item.
+     * @param loc the location to format into text.
+     */
+    protected void substituteObjectiveText(ItemStack item, Location loc) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta instanceof BookMeta) {
+            BookMeta bookMeta = (BookMeta) meta;
+            ArrayList<String> newPages = new ArrayList<>();
+            for (String page : bookMeta.getPages()) {
+                newPages.add(MessageFormat.format(page,
+                                                  loc.getBlockX(),
+                                                  loc.getBlockY(),
+                                                  loc.getBlockZ()));
+            }
+            bookMeta.setPages(newPages);
+        }
+
+        List<String> lore = meta.getLore();
+        if (lore != null && !lore.isEmpty()) {
+            ArrayList<String> newLore = new ArrayList<>();
+            for (String line : lore) {
+                newLore.add(MessageFormat.format(line,
+                                                 loc.getBlockX(),
+                                                 loc.getBlockY(),
+                                                 loc.getBlockZ()));
+            }
+            meta.setLore(newLore);
+        }
+        item.setItemMeta(meta);
+    }
+
     // ------------------------------------------------------------------------
     /**
-     * The custom item ID.
+     * The type of the drop.
      */
-    protected String _itemId;
+    protected DropType _dropType;
+
+    /**
+     * The custom item or mob ID.
+     */
+    protected String _id;
 
     /**
      * If true, this drop is logged to console when dropped.

@@ -1,12 +1,15 @@
 package nu.nerd.beastmaster;
 
+import java.util.HashSet;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.EntityType;
 
 import nu.nerd.beastmaster.mobs.MobType;
 import nu.nerd.beastmaster.objectives.ObjectiveType;
+import nu.nerd.beastmaster.zones.Zone;
 
 // ----------------------------------------------------------------------------
 /**
@@ -35,19 +38,33 @@ public class Configuration {
      */
     public double CHANCE_WITHER_SKELETON;
 
+    /**
+     * EntityTypes that cannot be used in custom mob types.
+     */
+    public HashSet<EntityType> EXCLUDED_ENTITY_TYPES = new HashSet<>();
+
     // ------------------------------------------------------------------------
     /**
      * Load the plugin configuration.
      */
     public void reload() {
         BeastMaster.PLUGIN.reloadConfig();
+        Logger logger = BeastMaster.PLUGIN.getLogger();
         FileConfiguration config = BeastMaster.PLUGIN.getConfig();
         DEBUG_CONFIG = config.getBoolean("debug.config");
         DEBUG_REPLACE = config.getBoolean("debug.replace");
         DEBUG_BLOCKSTORE = config.getBoolean("debug.blockstore");
         CHANCE_WITHER_SKELETON = config.getDouble("chance.wither-skeleton");
 
-        Logger logger = BeastMaster.PLUGIN.getLogger();
+        EXCLUDED_ENTITY_TYPES.clear();
+        for (String excluded : config.getStringList("excluded-entity-types")) {
+            try {
+                EXCLUDED_ENTITY_TYPES.add(EntityType.valueOf(excluded));
+            } catch (IllegalArgumentException ex) {
+                logger.info("Invalid excluded entity type: " + excluded);
+            }
+        }
+
         BeastMaster.ITEMS.load(config, logger);
         BeastMaster.ZONES.load(config, logger);
         BeastMaster.MOBS.load(config, logger);
@@ -59,13 +76,16 @@ public class Configuration {
             logger.info("DEBUG_REPLACE: " + DEBUG_REPLACE);
             logger.info("DEBUG_BLOCKSTORE: " + DEBUG_BLOCKSTORE);
             logger.info("CHANCE_WITHER_SKELETON: " + CHANCE_WITHER_SKELETON);
+
+            logger.info("EXCLUDED_ENTITY_TYPES: " + EXCLUDED_ENTITY_TYPES.stream()
+            .map(EntityType::toString).collect(Collectors.joining(", ")));
+
             logger.info("ZONES: " + BeastMaster.ZONES.getZones().stream()
-            .map(z -> z.getDescription()).collect(Collectors.joining(", ")));
+            .map(Zone::getDescription).collect(Collectors.joining(", ")));
 
             logger.info("ITEMS: ");
             for (Item item : BeastMaster.ITEMS.getAllItems()) {
-                logger.info(item.getId() + (item.isSpecial() ? " (special): " : ": ") +
-                            Util.getItemDescription(item.getItemStack()));
+                logger.info(item.getId() + ": " + Util.getItemDescription(item.getItemStack()));
             }
 
             logger.info("LOOTS: ");
@@ -74,8 +94,8 @@ public class Configuration {
             }
 
             logger.info("MOBS: ");
-            for (MobType mobType : BeastMaster.MOBS.getMobTypes()) {
-                logger.info(mobType.getDescription());
+            for (MobType mobType : BeastMaster.MOBS.getAllMobTypes()) {
+                logger.info(mobType.getShortDescription());
             }
 
             logger.info("OBJECTIVE_TYPES: ");
