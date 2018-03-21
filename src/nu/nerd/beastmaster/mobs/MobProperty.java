@@ -4,7 +4,7 @@ import java.util.function.BiConsumer;
 import java.util.logging.Logger;
 
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Creature;
+import org.bukkit.entity.LivingEntity;
 
 // ----------------------------------------------------------------------------
 /**
@@ -23,7 +23,7 @@ public class MobProperty {
      * @param configureMob the code to execute to configure this property on a
      *        mob.
      */
-    public MobProperty(String id, IDataType type, BiConsumer<Creature, Logger> configureMob) {
+    public MobProperty(String id, IDataType type, BiConsumer<LivingEntity, Logger> configureMob) {
         _id = id;
         _type = type;
         _configureMob = configureMob;
@@ -130,8 +130,10 @@ public class MobProperty {
      * @param mob the mob.
      * @param logger used to log errors or warnings.
      */
-    public void configureMob(Creature mob, Logger logger) {
-        _configureMob.accept(mob, logger);
+    public void configureMob(LivingEntity mob, Logger logger) {
+        if (getValue() != null) {
+            _configureMob.accept(mob, logger);
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -183,7 +185,7 @@ public class MobProperty {
     /**
      * The code to execute to configure this property on a mob.
      */
-    protected BiConsumer<Creature, Logger> _configureMob;
+    protected BiConsumer<LivingEntity, Logger> _configureMob;
 
     /**
      * The mob type that owns the property.

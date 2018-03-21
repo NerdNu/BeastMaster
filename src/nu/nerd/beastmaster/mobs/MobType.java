@@ -268,10 +268,10 @@ public class MobType {
     public void configureMob(LivingEntity mob) {
         EntityMeta.api().set(mob, BeastMaster.PLUGIN, "mob-type", getId());
 
-        AttributeInstance maxHealth = mob.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-        maxHealth.setBaseValue((Double) getDerivedProperty("health").getValue());
-        AttributeInstance speed = mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
-        speed.setBaseValue((Double) getDerivedProperty("speed").getValue());
+        getDerivedProperty("health").configureMob(mob, null);
+        getDerivedProperty("speed").configureMob(mob, null);
+
+        MobProperty speedProperty = getDerivedProperty("speed");
 
         // // Prevent mobs from picking up items, since MA is despawning them.
         // mob.setCanPickupItems(false);
@@ -344,14 +344,27 @@ public class MobType {
         addProperty(new MobProperty("parent-type", DataType.STRING, null));
         addProperty(new MobProperty("entity-type", DataType.ENTITY_TYPE, null));
         addProperty(new MobProperty("drops", DataType.STRING, null));
-        addProperty(new MobProperty("health", DataType.DOUBLE, null));
-        addProperty(new MobProperty("speed", DataType.DOUBLE, null));
+
+        // Note: configureMob() lambdas only called if property value non-null.
+        addProperty(new MobProperty("health", DataType.DOUBLE,
+            (mob, logger) -> {
+                AttributeInstance maxHealth = mob.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                maxHealth.setBaseValue((Double) getDerivedProperty("health").getValue());
+            }));
+        addProperty(new MobProperty("speed", DataType.DOUBLE,
+            (mob, logger) -> {
+                AttributeInstance speed = mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+                speed.setBaseValue((Double) getDerivedProperty("speed").getValue());
+            }));
 
         // TODO: can-pick-up
         // TODO: xp property to override that in onEntityDeath().
         // TODO: helmet, chestplate, leggings, boots, main-hand, off-hand.
         // TODO: drop chances for armour and weapons.
         // TODO: use AIR to signify clearing the default armour/weapon.
+        // TODO: Disguise property.
+        // TODO: glow property.
+        // TODO: contact potion effects.
     }
 
     // ------------------------------------------------------------------------
