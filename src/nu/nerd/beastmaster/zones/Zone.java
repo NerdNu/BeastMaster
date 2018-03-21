@@ -112,10 +112,12 @@ public class Zone extends Condition {
         _radius = section.getInt("radius");
 
         ConfigurationSection replacements = section.getConfigurationSection("replacements");
-        for (String entityTypeName : replacements.getKeys(false)) {
-            try {
-                setMobReplacementDropSetId(EntityType.valueOf(entityTypeName), replacements.getString(entityTypeName));
-            } catch (IllegalArgumentException ex) {
+        if (replacements != null) {
+            for (String entityTypeName : replacements.getKeys(false)) {
+                try {
+                    setMobReplacementDropSetId(EntityType.valueOf(entityTypeName), replacements.getString(entityTypeName));
+                } catch (IllegalArgumentException ex) {
+                }
             }
         }
         return true;
