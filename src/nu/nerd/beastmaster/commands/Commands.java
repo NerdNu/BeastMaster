@@ -257,7 +257,8 @@ public class Commands {
      * @return true if the argument count was correct.
      */
     public static void invalidArguments(CommandSender sender, String usage) {
-        sender.sendMessage(ChatColor.RED + "Invalid arguments. Usage: /" + usage);
+        sender.sendMessage(ChatColor.RED + "Invalid arguments.");
+        sender.sendMessage(ChatColor.RED + "Usage: /" + usage);
     }
 
     // ------------------------------------------------------------------------

@@ -81,7 +81,12 @@ public class Drop implements Cloneable {
         if (getDropType() != DropType.ITEM) {
             throw new AssertionError("requested an ItemStack from a non-item Drop");
         }
+
         Item item = BeastMaster.ITEMS.getItem(getId());
+        if (item == null) {
+            return null;
+        }
+
         ItemStack itemStack = item.getItemStack();
         if (itemStack != null) {
             itemStack = itemStack.clone();
@@ -454,9 +459,9 @@ public class Drop implements Cloneable {
      */
     public String getLongDescription() {
         StringBuilder s = new StringBuilder();
-        s.append(ChatColor.WHITE).append(_dropChance * 100).append("% ");
-        s.append(getCountDescription());
-        s.append(ChatColor.WHITE).append(_dropType).append(' ');
+        s.append(ChatColor.YELLOW).append(_dropChance * 100).append("% ");
+        s.append(ChatColor.WHITE).append(getCountDescription());
+        s.append(ChatColor.GOLD).append(_dropType).append(' ');
 
         if (_dropType == DropType.ITEM) {
             Item item = BeastMaster.ITEMS.getItem(_id);

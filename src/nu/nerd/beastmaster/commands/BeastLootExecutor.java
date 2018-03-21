@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -124,9 +125,9 @@ public class BeastLootExecutor extends ExecutorBase {
                 }
 
                 sender.sendMessage(ChatColor.GOLD + "Loot tables:");
-                for (DropSet dropSet : BeastMaster.LOOTS.getDropSets()) {
-                    sender.sendMessage(dropSet.getDescription());
-                }
+                sender.sendMessage(BeastMaster.LOOTS.getDropSets().stream()
+                .map((dropSet) -> ChatColor.YELLOW + dropSet.getId())
+                .collect(Collectors.joining(ChatColor.WHITE + ", ")));
                 return true;
 
             } else if (args[0].equals("add-drop")) {

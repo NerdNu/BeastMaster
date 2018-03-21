@@ -313,7 +313,7 @@ public class BeastZoneExecutor extends ExecutorBase {
                         Material material = entry.getKey();
                         String dropsId = entry.getValue();
                         DropSet drops = BeastMaster.LOOTS.getDropSet(dropsId);
-                        String dropsDescription = (drops != null) ? drops.getDescription()
+                        String dropsDescription = (drops != null) ? ChatColor.YELLOW + dropsId
                                                                   : ChatColor.RED + dropsId + ChatColor.GOLD + " (not defined)";
                         sender.sendMessage(ChatColor.WHITE + material.toString() + ": " + dropsDescription);
                     }
