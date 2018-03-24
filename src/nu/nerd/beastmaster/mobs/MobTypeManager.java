@@ -92,7 +92,7 @@ public class MobTypeManager {
     public Collection<MobType> getPredefinedMobTypes() {
         ArrayList<MobType> predefined = new ArrayList<>();
         for (MobType mobType : getAllMobTypes()) {
-            if (!mobType.isPredefined()) {
+            if (mobType.isPredefined()) {
                 predefined.add(mobType);
             }
         }
@@ -149,6 +149,11 @@ public class MobTypeManager {
             ConfigurationSection section = mobsSection.getConfigurationSection(id);
             MobType mobType = new MobType();
             if (mobType.load(section, logger)) {
+                if (_idToType.containsKey(mobType.getId())) {
+                    // If mobType already defined, it is a predefined type
+                    // added by addPredefinedTypes().
+                    mobType._predefined = true;
+                }
                 addMobType(mobType);
             }
         }
@@ -166,9 +171,7 @@ public class MobTypeManager {
         // Create mobs section empty to remove deleted mob types.
         ConfigurationSection mobsSection = config.createSection("mobs");
         for (MobType mobType : _idToType.values()) {
-            if (mobType.isPredefined()) {
-                mobType.save(mobsSection, logger);
-            }
+            mobType.save(mobsSection, logger);
         }
     }
 
@@ -184,7 +187,7 @@ public class MobTypeManager {
 
         _idToType.clear();
         for (EntityType entityType : _allowedMobEntityTypes.values()) {
-            addMobType(new MobType(getMobTypeId(entityType), entityType, false));
+            addMobType(new MobType(getMobTypeId(entityType), entityType, true));
         }
     }
 

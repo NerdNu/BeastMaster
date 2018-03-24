@@ -1,6 +1,7 @@
 package nu.nerd.beastmaster.commands;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -103,19 +104,14 @@ public class BeastMobExecutor extends ExecutorBase {
                     return true;
                 }
 
-                String sep = "";
-                StringBuilder s = new StringBuilder();
-                s.append(ChatColor.GOLD).append("Predefined mob types: ");
-                for (MobType mobType : BeastMaster.MOBS.getPredefinedMobTypes()) {
-                    s.append(ChatColor.GRAY).append(sep);
-                    s.append(ChatColor.YELLOW).append(mobType.getShortDescription());
-                    sep = ", ";
-                }
-                sender.sendMessage(s.toString());
+                sender.sendMessage(ChatColor.GOLD + "Predefined mob types: " +
+                                   BeastMaster.MOBS.getPredefinedMobTypes().stream()
+                                   .map(MobType::getShortDescription)
+                                   .collect(Collectors.joining(ChatColor.WHITE + ", ")));
 
                 sender.sendMessage(ChatColor.GOLD + "Custom mob types:");
                 for (MobType mobType : BeastMaster.MOBS.getAllMobTypes()) {
-                    if (mobType.isPredefined()) {
+                    if (!mobType.isPredefined()) {
                         sender.sendMessage(mobType.getShortDescription());
                     }
                 }
@@ -143,6 +139,7 @@ public class BeastMobExecutor extends ExecutorBase {
             } else if (args[0].equals("get")) {
                 if (args.length != 3) {
                     Commands.invalidArguments(sender, getName() + " get <mob-id> <property>");
+                    listPropertyIds(sender);
                     return true;
                 }
 
@@ -158,6 +155,7 @@ public class BeastMobExecutor extends ExecutorBase {
                 MobProperty property = mobType.getProperty(propertyArg);
                 if (property == null) {
                     Commands.errorNull(sender, "property", propertyArg);
+                    listPropertyIds(sender);
                     return true;
                 }
 
@@ -167,6 +165,7 @@ public class BeastMobExecutor extends ExecutorBase {
             } else if (args[0].equals("set")) {
                 if (args.length < 4) {
                     Commands.invalidArguments(sender, getName() + " set <mob-id> <property> <value>");
+                    listPropertyIds(sender);
                     return true;
                 }
 
@@ -190,6 +189,7 @@ public class BeastMobExecutor extends ExecutorBase {
                 MobProperty property = mobType.getProperty(propertyArg);
                 if (property == null) {
                     Commands.errorNull(sender, "property", propertyArg);
+                    listPropertyIds(sender);
                     return true;
                 }
 
@@ -242,6 +242,19 @@ public class BeastMobExecutor extends ExecutorBase {
 
         return false;
     } // onCommand
+
+    // ------------------------------------------------------------------------
+    /**
+     * List all valid property IDs.
+     * 
+     * @param sender the command sender to message.
+     */
+    protected void listPropertyIds(CommandSender sender) {
+        sender.sendMessage(ChatColor.GOLD + "Valid property names are: " +
+                           MobType.getAllPropertyIds().stream()
+                           .map(id -> ChatColor.YELLOW + id)
+                           .collect(Collectors.joining(ChatColor.WHITE + ", ")));
+    }
 
     // ------------------------------------------------------------------------
     /**

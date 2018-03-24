@@ -11,11 +11,13 @@ import org.bukkit.ChatColor;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Ageable;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.DropSet;
+import nu.nerd.beastmaster.Item;
 import nu.nerd.entitymeta.EntityMeta;
 
 // ----------------------------------------------------------------------------
@@ -169,6 +171,17 @@ public class MobType {
 
     // ------------------------------------------------------------------------
     /**
+     * Return the set of all property IDs.
+     * 
+     * @return the set of all property IDs.
+     */
+    public static Set<String> getAllPropertyIds() {
+        // All mobs have the same properties. Choose zombie, arbitarily.
+        return BeastMaster.MOBS.getMobType("zombie")._properties.keySet();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Return the property of this mob type with the specified ID.
      * 
      * Note that this method does not consider property values inherited from
@@ -268,23 +281,9 @@ public class MobType {
     public void configureMob(LivingEntity mob) {
         EntityMeta.api().set(mob, BeastMaster.PLUGIN, "mob-type", getId());
 
-        getDerivedProperty("health").configureMob(mob, null);
-        getDerivedProperty("speed").configureMob(mob, null);
-
-        MobProperty speedProperty = getDerivedProperty("speed");
-
-        // // Prevent mobs from picking up items, since MA is despawning them.
-        // mob.setCanPickupItems(false);
-        //
-        // // Clear default armour.
-        // mob.getEquipment().clear();
-        // if (_babyFraction != null && mob instanceof Ageable) {
-        // Ageable ageable = (Ageable) mob;
-        // ageable.setAdult();
-        // if (Math.random() < _babyFraction) {
-        // ageable.setBaby();
-        // }
-        // }
+        for (String propertyId : getAllPropertyIds()) {
+            getDerivedProperty(propertyId).configureMob(mob, null);
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -298,7 +297,7 @@ public class MobType {
      */
     public String getShortDescription() {
         StringBuilder desc = new StringBuilder();
-        if (isPredefined()) {
+        if (!isPredefined()) {
             desc.append(ChatColor.WHITE).append("id: ");
             desc.append(ChatColor.YELLOW).append(getId());
             desc.append(ChatColor.WHITE).append(", parent-type: ");
@@ -350,25 +349,146 @@ public class MobType {
             (mob, logger) -> {
                 AttributeInstance maxHealth = mob.getAttribute(Attribute.GENERIC_MAX_HEALTH);
                 maxHealth.setBaseValue((Double) getDerivedProperty("health").getValue());
+                mob.setHealth(maxHealth.getBaseValue());
             }));
         addProperty(new MobProperty("speed", DataType.DOUBLE,
             (mob, logger) -> {
                 AttributeInstance speed = mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
                 speed.setBaseValue((Double) getDerivedProperty("speed").getValue());
             }));
+        addProperty(new MobProperty("pick-up-percent", DataType.DOUBLE,
+            (mob, logger) -> {
+                mob.setCanPickupItems(Math.random() * 100 < (Double) getDerivedProperty("pick-up-percent").getValue());
+            }));
+        addProperty(new MobProperty("baby-percent", DataType.DOUBLE,
+            (mob, logger) -> {
+                if (mob instanceof Ageable) {
+                    boolean isBaby = (Math.random() * 100 < (Double) getDerivedProperty("baby-percent").getValue());
+                    if (isBaby) {
+                        ((Ageable) mob).setBaby();
+                    } else {
+                        ((Ageable) mob).setAdult();
+                    }
+                }
+            }));
+        addProperty(new MobProperty("glowing", DataType.BOOLEAN,
+            (mob, logger) -> {
+                mob.setGlowing((Boolean) getDerivedProperty("glowing").getValue());
+            }));
+        addProperty(new MobProperty("name", DataType.STRING,
+            (mob, logger) -> {
+                mob.setCustomName(ChatColor.translateAlternateColorCodes('&', (String) getDerivedProperty("name").getValue()));
+            }));
+        addProperty(new MobProperty("show-name-plate", DataType.BOOLEAN,
+            (mob, logger) -> {
+                mob.setCustomNameVisible((Boolean) getDerivedProperty("show-name-plate").getValue());
+            }));
+        addProperty(new MobProperty("breath-seconds", DataType.INTEGER,
+            (mob, logger) -> {
+                int ticks = 20 * (Integer) getDerivedProperty("breath-seconds").getValue();
+                mob.setMaximumAir(ticks);
+                mob.setRemainingAir(ticks);
+            }));
+        addProperty(new MobProperty("helmet", DataType.STRING,
+            (mob, logger) -> {
+                String itemId = (String) getDerivedProperty("helmet").getValue();
+                Item item = BeastMaster.ITEMS.getItem(itemId);
+                if (item != null) {
+                    mob.getEquipment().setHelmet(item.getItemStack().clone());
+                }
+            }));
+        addProperty(new MobProperty("helmet-drop-percent", DataType.DOUBLE,
+            (mob, logger) -> {
+                double percent = (Double) getDerivedProperty("helmet-drop-percent").getValue();
+                mob.getEquipment().setHelmetDropChance((float) percent / 100);
+            }));
+        addProperty(new MobProperty("chest-plate", DataType.STRING,
+            (mob, logger) -> {
+                String itemId = (String) getDerivedProperty("chest-plate").getValue();
+                Item item = BeastMaster.ITEMS.getItem(itemId);
+                if (item != null) {
+                    mob.getEquipment().setChestplate(item.getItemStack().clone());
+                }
+            }));
+        addProperty(new MobProperty("chest-plate-drop-percent", DataType.DOUBLE,
+            (mob, logger) -> {
+                double percent = (Double) getDerivedProperty("chest-plate-drop-percent").getValue();
+                mob.getEquipment().setChestplateDropChance((float) percent / 100);
+            }));
+        addProperty(new MobProperty("leggings", DataType.STRING,
+            (mob, logger) -> {
+                String itemId = (String) getDerivedProperty("leggings").getValue();
+                Item item = BeastMaster.ITEMS.getItem(itemId);
+                if (item != null) {
+                    mob.getEquipment().setLeggings(item.getItemStack().clone());
+                }
+            }));
+        addProperty(new MobProperty("leggings-drop-percent", DataType.DOUBLE,
+            (mob, logger) -> {
+                double percent = (Double) getDerivedProperty("leggings-drop-percent").getValue();
+                mob.getEquipment().setLeggingsDropChance((float) percent / 100);
+            }));
+        addProperty(new MobProperty("boots", DataType.STRING,
+            (mob, logger) -> {
+                String itemId = (String) getDerivedProperty("boots").getValue();
+                Item item = BeastMaster.ITEMS.getItem(itemId);
+                if (item != null) {
+                    mob.getEquipment().setBoots(item.getItemStack().clone());
+                }
+            }));
+        addProperty(new MobProperty("boots-drop-percent", DataType.DOUBLE,
+            (mob, logger) -> {
+                double percent = (Double) getDerivedProperty("boots-drop-percent").getValue();
+                mob.getEquipment().setBootsDropChance((float) percent / 100);
+            }));
+        addProperty(new MobProperty("main-hand", DataType.STRING,
+            (mob, logger) -> {
+                String itemId = (String) getDerivedProperty("main-hand").getValue();
+                Item item = BeastMaster.ITEMS.getItem(itemId);
+                if (item != null) {
+                    mob.getEquipment().setItemInMainHand(item.getItemStack().clone());
+                }
+            }));
+        addProperty(new MobProperty("main-hand-drop-percent", DataType.DOUBLE,
+            (mob, logger) -> {
+                double percent = (Double) getDerivedProperty("main-hand-drop-percent").getValue();
+                mob.getEquipment().setItemInMainHandDropChance((float) percent / 100);
+            }));
+        addProperty(new MobProperty("off-hand", DataType.STRING,
+            (mob, logger) -> {
+                String itemId = (String) getDerivedProperty("off-hand").getValue();
+                Item item = BeastMaster.ITEMS.getItem(itemId);
+                if (item != null) {
+                    mob.getEquipment().setItemInOffHand(item.getItemStack().clone());
+                }
+            }));
+        addProperty(new MobProperty("off-hand-drop-percent", DataType.DOUBLE,
+            (mob, logger) -> {
+                double percent = (Double) getDerivedProperty("off-hand-drop-percent").getValue();
+                mob.getEquipment().setItemInOffHandDropChance((float) percent / 100);
+            }));
 
-        // TODO: can-pick-up
+        // TODO: baby fraction property
+        // if (_babyFraction != null && mob instanceof Ageable) {
+        // Ageable ageable = (Ageable) mob;
+        // ageable.setAdult();
+        // if (Math.random() < _babyFraction) {
+        // ageable.setBaby();
+        // }
+        // }
+
+        // TODO: attack damage, attack speed, flying speed, follow range.
         // TODO: xp property to override that in onEntityDeath().
-        // TODO: helmet, chestplate, leggings, boots, main-hand, off-hand.
-        // TODO: drop chances for armour and weapons.
         // TODO: use AIR to signify clearing the default armour/weapon.
         // TODO: Disguise property.
-        // TODO: glow property.
         // TODO: contact potion effects.
+        // TODO: particle effect tracking mob.
     }
 
     // ------------------------------------------------------------------------
-
+    /**
+     * The set of property names that are immutable for predefined Mob Types.
+     */
     protected static HashSet<String> IMMUTABLE_PREDEFINED_PROPERTIES = new HashSet<>();
     static {
         IMMUTABLE_PREDEFINED_PROPERTIES.addAll(Arrays.asList("parent-type", "entity-type"));

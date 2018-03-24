@@ -131,7 +131,7 @@ public class MobProperty {
      * @param logger used to log errors or warnings.
      */
     public void configureMob(LivingEntity mob, Logger logger) {
-        if (getValue() != null) {
+        if (getValue() != null && _configureMob != null) {
             _configureMob.accept(mob, logger);
         }
     }
