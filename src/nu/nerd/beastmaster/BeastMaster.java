@@ -454,6 +454,14 @@ public class BeastMaster extends JavaPlugin implements Listener {
     protected boolean canFit(Entity entity) {
         int height = (int) Math.ceil(entity.getHeight());
         int width = (int) Math.ceil(entity.getWidth());
+
+        // For 1x1 mobs, assume that they are spawning in the block just broken.
+        // Just let them spawn, even though the block is still there until the
+        // end of the tick.
+        if (width == 1 && height == 1) {
+            return true;
+        }
+
         Block feetBlock = entity.getLocation().getBlock();
         for (int y = height - 1; y >= 0; --y) {
             for (int x = -width / 2; x <= width / 2; ++x) {
