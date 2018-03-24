@@ -347,14 +347,37 @@ public class MobType {
         // Note: configureMob() lambdas only called if property value non-null.
         addProperty(new MobProperty("health", DataType.DOUBLE,
             (mob, logger) -> {
-                AttributeInstance maxHealth = mob.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-                maxHealth.setBaseValue((Double) getDerivedProperty("health").getValue());
-                mob.setHealth(maxHealth.getBaseValue());
+                AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+                attribute.setBaseValue((Double) getDerivedProperty("health").getValue());
+                mob.setHealth(attribute.getBaseValue());
+            }));
+        addProperty(new MobProperty("experience", DataType.INTEGER, null));
+        addProperty(new MobProperty("follow-range", DataType.DOUBLE,
+            (mob, logger) -> {
+                AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_FOLLOW_RANGE);
+                attribute.setBaseValue((Double) getDerivedProperty("follow-range").getValue());
+            }));
+        addProperty(new MobProperty("attack-damage", DataType.DOUBLE,
+            (mob, logger) -> {
+                AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
+                attribute.setBaseValue((Double) getDerivedProperty("attack-damage").getValue());
+            }));
+        addProperty(new MobProperty("attack-speed", DataType.DOUBLE,
+            (mob, logger) -> {
+                AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+                attribute.setBaseValue((Double) getDerivedProperty("attack-speed").getValue());
             }));
         addProperty(new MobProperty("speed", DataType.DOUBLE,
             (mob, logger) -> {
-                AttributeInstance speed = mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
-                speed.setBaseValue((Double) getDerivedProperty("speed").getValue());
+                AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+                attribute.setBaseValue((Double) getDerivedProperty("speed").getValue());
+            }));
+        addProperty(new MobProperty("flying-speed", DataType.DOUBLE,
+            (mob, logger) -> {
+                AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_FLYING_SPEED);
+                if (attribute != null) {
+                    attribute.setBaseValue((Double) getDerivedProperty("flying-speed").getValue());
+                }
             }));
         addProperty(new MobProperty("pick-up-percent", DataType.DOUBLE,
             (mob, logger) -> {
@@ -468,17 +491,6 @@ public class MobType {
                 mob.getEquipment().setItemInOffHandDropChance((float) percent / 100);
             }));
 
-        // TODO: baby fraction property
-        // if (_babyFraction != null && mob instanceof Ageable) {
-        // Ageable ageable = (Ageable) mob;
-        // ageable.setAdult();
-        // if (Math.random() < _babyFraction) {
-        // ageable.setBaby();
-        // }
-        // }
-
-        // TODO: attack damage, attack speed, flying speed, follow range.
-        // TODO: xp property to override that in onEntityDeath().
         // TODO: use AIR to signify clearing the default armour/weapon.
         // TODO: Disguise property.
         // TODO: contact potion effects.

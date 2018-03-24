@@ -1,5 +1,7 @@
 package nu.nerd.beastmaster;
 
+import java.util.List;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -12,6 +14,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -20,6 +23,7 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import net.sothatsit.blockstore.BlockStoreApi;
@@ -284,9 +288,23 @@ public class BeastMaster extends JavaPlugin implements Listener {
      */
     @EventHandler(ignoreCancelled = true)
     protected void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        // TODO: tag mob with transient metadata for tracking looting level.
-        // Just tag the last damager/damage time and check for looting in the
-        // player's hand, a-la vanilla.
+        Entity entity = event.getEntity();
+
+        boolean isPlayerAttack = false;
+        if (event.getDamager() instanceof Player) {
+            isPlayerAttack = true;
+            Player player = (Player) event.getDamager();
+        } else if (event.getDamager() instanceof Projectile) {
+            Projectile projectile = (Projectile) event.getDamager();
+            if (projectile.getShooter() instanceof Player) {
+                isPlayerAttack = true;
+            }
+        }
+
+        // Tag mobs hurt by players with the damage time stamp.
+        if (isPlayerAttack) {
+            entity.setMetadata(PLAYER_DAMAGE_TIME_KEY, new FixedMetadataValue(this, new Long(entity.getWorld().getFullTime())));
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -316,6 +334,17 @@ public class BeastMaster extends JavaPlugin implements Listener {
                 boolean dropDefaultItems = drops.generateRandomDrops(trigger.toString(), player, entity.getLocation());
                 if (!dropDefaultItems) {
                     event.getDrops().clear();
+                }
+            }
+
+            Long damageTime = getPlayerDamageTime(entity);
+            if (damageTime != null) {
+                Location loc = entity.getLocation();
+                if (loc.getWorld().getFullTime() - damageTime < PLAYER_DAMAGE_TICKS) {
+                    MobProperty experience = mobType.getDerivedProperty("experience");
+                    if (experience.getValue() != null) {
+                        event.setDroppedExp((Integer) experience.getValue());
+                    }
                 }
             }
         }
@@ -389,6 +418,26 @@ public class BeastMaster extends JavaPlugin implements Listener {
 
     // ------------------------------------------------------------------------
     /**
+     * Return the world time when a player damaged the specified entity, if
+     * stored as a PLAYER_DAMAGE_TIME_KEY metadata value, or null if that didn't
+     * happen.
+     *
+     * @param entity the entity (mob).
+     * @return the damage time stamp as Long, or null.
+     */
+    protected Long getPlayerDamageTime(Entity entity) {
+        List<MetadataValue> playerDamageTime = entity.getMetadata(PLAYER_DAMAGE_TIME_KEY);
+        if (playerDamageTime.size() > 0) {
+            MetadataValue value = playerDamageTime.get(0);
+            if (value.value() instanceof Long) {
+                return (Long) value.value();
+            }
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Add the specified CommandExecutor and set it as its own TabCompleter.
      * 
      * @param executor the CommandExecutor.
@@ -400,6 +449,19 @@ public class BeastMaster extends JavaPlugin implements Listener {
     }
 
     // ------------------------------------------------------------------------
+    /**
+     * Metadata name used for metadata stored on mobs to record last damage time
+     * (Long) by a player.
+     */
+    protected static final String PLAYER_DAMAGE_TIME_KEY = "BM_PlayerDamageTime";
+
+    /**
+     * Time in ticks (1/20ths of a second) for which player attack damage
+     * "sticks" to a mob. The time between the last player damage on a mob and
+     * its death must be less than this for it to drop special stuff.
+     */
+    protected static final int PLAYER_DAMAGE_TICKS = 100;
+
     /**
      * MobType of the currently spawning mob, if spawned as a custom mob via
      * {@link #spawnMob(Location, EntityType, MobType)}.
