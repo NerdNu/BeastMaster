@@ -131,8 +131,12 @@ public class BeastMobExecutor extends ExecutorBase {
                 }
 
                 sender.sendMessage(ChatColor.GOLD + "Mob type: " + ChatColor.YELLOW + mobType.getId());
-                for (MobProperty mobProperty : mobType.getAllProperties()) {
-                    showProperty(sender, mobProperty);
+                for (String propertyId : MobType.getAllPropertyIds()) {
+                    MobProperty mobProperty = mobType.getDerivedProperty(propertyId);
+                    // Don't list unset properties.
+                    if (mobProperty.getValue() != null) {
+                        showProperty(sender, mobProperty);
+                    }
                 }
                 return true;
 
