@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.logging.Logger;
 
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.inventory.ItemStack;
@@ -16,6 +17,16 @@ import org.bukkit.inventory.ItemStack;
  * Items hold an immutable reference to an ItemStack.
  */
 public class ItemManager {
+    // ------------------------------------------------------------------------
+    /**
+     * Default constructor.
+     * 
+     * Adds predefined items.
+     */
+    public ItemManager() {
+        addPredefinedItems();
+    }
+
     // ------------------------------------------------------------------------
     /**
      * Return the set of all defined Items.
@@ -75,6 +86,7 @@ public class ItemManager {
      */
     public void load(FileConfiguration config, Logger logger) {
         _items.clear();
+        addPredefinedItems();
 
         ConfigurationSection items = config.getConfigurationSection("items");
         for (String itemId : items.getKeys(false)) {
@@ -99,6 +111,15 @@ public class ItemManager {
         for (Item item : _items.values()) {
             itemsSection.set(item.getId(), item.getItemStack());
         }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Pre-define some items.
+     */
+    protected void addPredefinedItems() {
+        // Define AIR as a way to clear mob equipment slots.
+        addItem("AIR", new ItemStack(Material.AIR, 1));
     }
 
     // ------------------------------------------------------------------------
