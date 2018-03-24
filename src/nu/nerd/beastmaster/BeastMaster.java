@@ -5,6 +5,7 @@ import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Biome;
@@ -232,7 +233,11 @@ public class BeastMaster extends JavaPlugin implements Listener {
         case CUSTOM:
             // Plugin driven spawns.
             if (_spawningMobType != null) {
-                _spawningMobType.configureMob(entity);
+                if (canFit(entity)) {
+                    _spawningMobType.configureMob(entity);
+                } else {
+                    entity.remove();
+                }
             }
             break;
 
@@ -434,6 +439,33 @@ public class BeastMaster extends JavaPlugin implements Listener {
             }
         }
         return null;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if the specified entity can fit at its spawn location.
+     * 
+     * This check is important when replacing mobs, because the replacement may
+     * be larger than the mob it replaced and may suffocate. Mobs that don't fit
+     * are simply removed.
+     * 
+     * @return true if the specified entity can fit at its spawn location.
+     */
+    protected boolean canFit(Entity entity) {
+        int height = (int) Math.ceil(entity.getHeight());
+        int width = (int) Math.ceil(entity.getWidth());
+        Block feetBlock = entity.getLocation().getBlock();
+        for (int y = height - 1; y >= 0; --y) {
+            for (int x = -width / 2; x <= width / 2; ++x) {
+                for (int z = -width / 2; z <= width / 2; ++z) {
+                    Block block = feetBlock.getRelative(x, y, z);
+                    if (block != null && block.getType() != Material.AIR) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     // ------------------------------------------------------------------------
