@@ -431,9 +431,9 @@ public class Drop implements Cloneable {
      */
     public String getShortDescription() {
         StringBuilder s = new StringBuilder();
-        s.append(ChatColor.WHITE).append(_dropChance * 100).append("% ");
-        s.append(getCountDescription());
-        s.append(ChatColor.WHITE).append(_dropType).append(' ');
+        s.append(ChatColor.WHITE).append(getChanceDescription());
+        s.append(ChatColor.YELLOW).append(getCountDescription());
+        s.append(ChatColor.GOLD).append(_dropType).append(' ');
 
         if (_dropType == DropType.ITEM) {
             Item item = BeastMaster.ITEMS.getItem(_id);
@@ -459,8 +459,8 @@ public class Drop implements Cloneable {
      */
     public String getLongDescription() {
         StringBuilder s = new StringBuilder();
-        s.append(ChatColor.YELLOW).append(_dropChance * 100).append("% ");
-        s.append(ChatColor.WHITE).append(getCountDescription());
+        s.append(ChatColor.WHITE).append(getChanceDescription());
+        s.append(ChatColor.YELLOW).append(getCountDescription());
         s.append(ChatColor.GOLD).append(_dropType).append(' ');
 
         if (_dropType == DropType.ITEM) {
@@ -477,19 +477,39 @@ public class Drop implements Cloneable {
             s.append((mobType == null) ? ChatColor.RED : ChatColor.YELLOW);
             s.append(_id);
         }
-
-        if (getExperience() > 0) {
-            s.append(' ');
-            s.append(ChatColor.YELLOW).append(getExperience());
-            s.append(ChatColor.GOLD).append(" xp");
-        }
-
-        if (getSound() != null) {
-            s.append(' ').append(getSoundDescription());
-        }
-
         if (_logged) {
             s.append(ChatColor.GOLD).append(" (logged)");
+        }
+
+        if (getExperience() > 0 || getSound() != null) {
+            s.append("\n    ");
+
+            if (getExperience() > 0) {
+                s.append(' ');
+                s.append(ChatColor.GOLD).append("xp ");
+                s.append(ChatColor.YELLOW).append(getExperience());
+            }
+
+            if (getSound() != null) {
+                s.append(' ').append(getSoundDescription());
+            }
+        }
+        return s.toString();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return a description of the chance of this drop.
+     * 
+     * @return a description of the chance of this drop.
+     */
+    public String getChanceDescription() {
+        StringBuilder s = new StringBuilder();
+        if (_dropChance <= 0.01) {
+            int tries = (int) Math.round(1.0 / _dropChance);
+            s.append("1 in ").append(tries).append(' ');
+        } else {
+            s.append(_dropChance * 100).append("% ");
         }
         return s.toString();
     }
