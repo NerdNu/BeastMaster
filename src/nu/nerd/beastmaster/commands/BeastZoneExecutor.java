@@ -190,9 +190,9 @@ public class BeastZoneExecutor extends ExecutorBase {
                 BeastMaster.CONFIG.save();
                 return true;
 
-            } else if (args[0].equals("list-spawns")) {
+            } else if (args[0].equals("list-replacements")) {
                 if (args.length != 2) {
-                    Commands.invalidArguments(sender, getName() + " list-spawns <zone-id>");
+                    Commands.invalidArguments(sender, getName() + " list-replacements <zone-id>");
                     return true;
                 }
 

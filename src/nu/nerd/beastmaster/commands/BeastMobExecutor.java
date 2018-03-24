@@ -132,11 +132,7 @@ public class BeastMobExecutor extends ExecutorBase {
 
                 sender.sendMessage(ChatColor.GOLD + "Mob type: " + ChatColor.YELLOW + mobType.getId());
                 for (String propertyId : MobType.getAllPropertyIds()) {
-                    MobProperty mobProperty = mobType.getDerivedProperty(propertyId);
-                    // Don't list unset properties.
-                    if (mobProperty.getValue() != null) {
-                        showProperty(sender, mobProperty);
-                    }
+                    showProperty(sender, mobType, propertyId, false);
                 }
                 return true;
 
@@ -163,7 +159,7 @@ public class BeastMobExecutor extends ExecutorBase {
                     return true;
                 }
 
-                showProperty(sender, property);
+                showProperty(sender, mobType, propertyArg, true);
                 return true;
 
             } else if (args[0].equals("set")) {
@@ -262,25 +258,30 @@ public class BeastMobExecutor extends ExecutorBase {
 
     // ------------------------------------------------------------------------
     /**
-     * Message the CommandSender the value of the specified MobProprerty
-     * instance.
+     * Message the CommandSender the value of the specified mob property.
      * 
      * Where the property is unset, the inherited value is shown and the
      * ancestor MobType from which the property value was inherited is
      * indicated.
      * 
      * @param sender the command sender.
-     * @param mobProperty the property instance whose value is shown.
+     * @param mobType the type of the mob.
+     * @param propertyId the ID of the property whose value is shown.
+     * @param showUnset if true, show the values of properties that have not
+     *        been set (are null); otherwise don't show those.
      */
-    protected void showProperty(CommandSender sender, MobProperty mobProperty) {
-        MobType mobType = mobProperty.getMobType();
-        MobProperty derivedProperty = mobType.getDerivedProperty(mobProperty.getId());
+    protected void showProperty(CommandSender sender, MobType mobType,
+                                String propertyId, boolean showUnset) {
+        MobProperty property = mobType.getProperty(propertyId);
+        MobProperty derivedProperty = mobType.getDerivedProperty(propertyId);
 
-        // Show source of inherited properties only.
-        String source = (mobProperty != derivedProperty) ? derivedProperty.getMobType().getId() + ": "
-                                                         : "";
-        sender.sendMessage(ChatColor.GOLD + mobProperty.getId() + ": " +
-                           ChatColor.WHITE + source +
-                           ChatColor.YELLOW + mobProperty.getFormattedValue());
+        if (derivedProperty.getValue() != null || showUnset) {
+            // Show source of inherited properties only.
+            String source = (property != derivedProperty) ? derivedProperty.getMobType().getId() + ": "
+                                                          : "";
+            sender.sendMessage(ChatColor.GOLD + property.getId() + ": " +
+                               ChatColor.WHITE + source +
+                               ChatColor.YELLOW + derivedProperty.getFormattedValue());
+        }
     }
 } // class BeastMobExecutor
