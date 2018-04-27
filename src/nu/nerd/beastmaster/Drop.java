@@ -126,7 +126,7 @@ public class Drop implements Cloneable {
                     Block locBlock = loc.getBlock();
                     Location revisedLoc = (locBlock != null && locBlock.getType() != Material.AIR &&
                                            player != null) ? player.getLocation() : loc;
-                    revisedLoc.getWorld().dropItemNaturally(revisedLoc, itemStack);
+                    revisedLoc.getWorld().dropItem(revisedLoc, itemStack);
                 }, 1);
             }
             dropDescription = "ITEM " + getId() + (dropSucceeded ? " x " + itemStack.getAmount() : " (invalid)");
