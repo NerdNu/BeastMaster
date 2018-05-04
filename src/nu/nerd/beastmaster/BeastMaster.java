@@ -23,6 +23,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -165,6 +166,19 @@ public class BeastMaster extends JavaPlugin implements Listener {
             _spawningMobType = null;
         }
         return livingEntity;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * When a world is loaded, ensure that a top-level zone for that world
+     * exists.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onWorldLoad(WorldLoadEvent event) {
+        World world = event.getWorld();
+        if (ZONES.getZone(world.getName()) == null) {
+            ZONES.addZone(new Zone(world.getName(), world));
+        }
     }
 
     // ------------------------------------------------------------------------

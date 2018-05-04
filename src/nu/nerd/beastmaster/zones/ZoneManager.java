@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
@@ -19,11 +20,11 @@ public class ZoneManager {
     /**
      * Return the zone with the specified name.
      * 
-     * @param name the zone name.
+     * @param name the case insensitive zone name.
      * @return the zone.
      */
     public Zone getZone(String id) {
-        return _idToZone.get(id);
+        return _idToZone.get(id.toLowerCase());
     }
 
     // ------------------------------------------------------------------------
@@ -56,7 +57,7 @@ public class ZoneManager {
      *        manager.
      */
     public void addZone(Zone zone) {
-        _idToZone.put(zone.getId(), zone);
+        _idToZone.put(zone.getId().toLowerCase(), zone);
 
         ArrayList<Zone> worldZones = _worldToZones.get(zone.getWorld());
         if (worldZones == null) {
@@ -74,7 +75,7 @@ public class ZoneManager {
      * @param zone the zone.
      */
     public void removeZone(Zone zone) {
-        _idToZone.remove(zone.getId());
+        _idToZone.remove(zone.getId().toLowerCase());
 
         ArrayList<Zone> worldZones = _worldToZones.get(zone.getWorld());
         worldZones.remove(zone);
@@ -129,6 +130,13 @@ public class ZoneManager {
                 addZone(zone);
             }
         }
+
+        // Add in default zones for any worlds not mentioned in the config.
+        for (World world : Bukkit.getWorlds()) {
+            if (getZone(world.getName()) == null) {
+                addZone(new Zone(world.getName(), world));
+            }
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -148,7 +156,7 @@ public class ZoneManager {
 
     // ------------------------------------------------------------------------
     /**
-     * Map from zone ID to corresponding zones.
+     * Map from lower cased zone ID to corresponding zones.
      */
     protected HashMap<String, Zone> _idToZone = new HashMap<>();
 
