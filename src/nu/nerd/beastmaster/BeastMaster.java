@@ -271,26 +271,28 @@ public class BeastMaster extends JavaPlugin implements Listener {
             // Vanilla spawns.
             Location loc = event.getLocation();
             Zone zone = ZONES.getZone(loc);
-            DropSet replacement = zone.getMobReplacementDropSet(entity.getType());
-            if (replacement != null) {
-                Drop drop = replacement.chooseOneDrop();
-                switch (drop.getDropType()) {
-                case DEFAULT:
-                    // Don't change anything.
-                    break;
-                case NOTHING:
-                    entity.remove();
-                    break;
-                case MOB:
-                case ITEM:
-                    entity.remove();
-                    drop.generate("Mob replacement", null, entity.getLocation());
-                    break;
-                }
-            } else {
-                MobType vanillaMobType = MOBS.getMobType(entity.getType());
-                if (vanillaMobType != null) {
-                    vanillaMobType.configureMob(entity);
+            if (zone != null) {
+                DropSet replacement = zone.getMobReplacementDropSet(entity.getType());
+                if (replacement != null) {
+                    Drop drop = replacement.chooseOneDrop();
+                    switch (drop.getDropType()) {
+                    case DEFAULT:
+                        // Don't change anything.
+                        break;
+                    case NOTHING:
+                        entity.remove();
+                        break;
+                    case MOB:
+                    case ITEM:
+                        entity.remove();
+                        drop.generate("Mob replacement", null, entity.getLocation());
+                        break;
+                    }
+                } else {
+                    MobType vanillaMobType = MOBS.getMobType(entity.getType());
+                    if (vanillaMobType != null) {
+                        vanillaMobType.configureMob(entity);
+                    }
                 }
             }
             break;
