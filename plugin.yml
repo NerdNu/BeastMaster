@@ -107,6 +107,8 @@ commands:
       §e/<command> logged <loot-id> <item-id> <yes-or-no>§f - Enables or disables logging of this drop in the console. <yes-or-no> is case insensitive and can be one of yes/no/true/false/t/f/on/off.
       §e/<command> sound <loot-id> <item-id> <sound> §f[§e<range> <pitch>§f] - Signify that this drop causes a sound to play. <sound> is a sound name from the Bukkit API or "none". <range> is the range of the sound in blocks. <pitch> is playback speed, from 0.5 to 2.0. <range> and <pitch> can be omitted, in which case they default to 15.0 and 1.0, respectively.
       §e/<command> xp <loot-id> <item-id> <xp>§f - Signify that this drop will be accompanied by a specified amount of XP, or 0 to suppress the XP. NOTE: This option does not affect XP from vanilla default drops.
+      §e/<command> invulnerable <loot-id> <yes-or-no>§f - Controls whether the specified drop is invulnerable. <yes-or-no> is case insensitive and can be one of yes/no/true/false/t/f/on/off.
+      §e/<command> glowing <loot-id> <yes-or-no>§f - Controls whether the specified drop is glowing. (Default drops are not affected.) <yes-or-no> is case insensitive and can be one of yes/no/true/false/t/f/on/off.
 
   beast-mob:
     description: Configure mobs.

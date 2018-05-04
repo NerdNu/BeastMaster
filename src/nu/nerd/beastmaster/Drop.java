@@ -126,7 +126,9 @@ public class Drop implements Cloneable {
                     Block locBlock = loc.getBlock();
                     Location revisedLoc = (locBlock != null && locBlock.getType() != Material.AIR &&
                                            player != null) ? player.getLocation() : loc;
-                    revisedLoc.getWorld().dropItem(revisedLoc, itemStack);
+                    org.bukkit.entity.Item item = revisedLoc.getWorld().dropItem(revisedLoc, itemStack);
+                    item.setInvulnerable(isInvulnerable());
+                    item.setGlowing(isGlowing());
                 }, 1);
             }
             dropDescription = "ITEM " + getId() + (dropSucceeded ? " x " + itemStack.getAmount() : " (invalid)");
@@ -146,6 +148,8 @@ public class Drop implements Cloneable {
                     livingEntity = BeastMaster.PLUGIN.spawnMob(loc, mobType);
                     if (livingEntity != null) {
                         ++spawnCount;
+                        livingEntity.setInvulnerable(isInvulnerable());
+                        livingEntity.setGlowing(isGlowing());
                     }
                 }
             }
@@ -420,6 +424,46 @@ public class Drop implements Cloneable {
 
     // ------------------------------------------------------------------------
     /**
+     * Specify whether this drop is invulnerable.
+     * 
+     * @param invulnerable if true, the drop is invulnerable.
+     */
+    public void setInvulnerable(boolean invulnerable) {
+        _invulnerable = invulnerable;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if this drop is invulnerable.
+     * 
+     * @return true if this drop is invulnerable.
+     */
+    public boolean isInvulnerable() {
+        return _invulnerable;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Specify whether this drop is glowing.
+     * 
+     * @param invulnerable if true, the drop is glowing.
+     */
+    public void setGlowing(boolean glowing) {
+        _glowing = glowing;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if this drop is glowing.
+     * 
+     * @return true if this drop is glowing.
+     */
+    public boolean isGlowing() {
+        return _glowing;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Return a short description of this drop, suitable for display in-line.
      * 
      * The description does not include a full explanation of the dropped item
@@ -481,7 +525,7 @@ public class Drop implements Cloneable {
             s.append(ChatColor.GOLD).append(" (logged)");
         }
 
-        if (getExperience() > 0 || getSound() != null) {
+        if (getExperience() > 0 || getSound() != null || isInvulnerable() || isGlowing()) {
             s.append("\n    ");
 
             if (getExperience() > 0) {
@@ -492,6 +536,14 @@ public class Drop implements Cloneable {
 
             if (getSound() != null) {
                 s.append(' ').append(getSoundDescription());
+            }
+
+            if (isGlowing()) {
+                s.append(ChatColor.GOLD).append(" glowing");
+            }
+
+            if (isInvulnerable()) {
+                s.append(ChatColor.GOLD).append(" invulnerable");
             }
         }
         return s.toString();
@@ -617,6 +669,8 @@ public class Drop implements Cloneable {
         }
         _soundVolume = (float) section.getDouble("sound-volume");
         _soundPitch = (float) section.getDouble("sound-pitch");
+        _invulnerable = section.getBoolean("invulnerable");
+        _glowing = section.getBoolean("glowing");
         return true;
     }
 
@@ -639,6 +693,8 @@ public class Drop implements Cloneable {
         section.set("sound", (_sound != null) ? _sound.toString() : "");
         section.set("sound-volume", _soundVolume);
         section.set("sound-pitch", _soundPitch);
+        section.set("invulnerable", _invulnerable);
+        section.set("glowing", _glowing);
     }
 
     // --------------------------------------------------------------------------
@@ -768,4 +824,15 @@ public class Drop implements Cloneable {
      * The sound pitch (playback speed) in the range [0.5,2.0].
      */
     protected float _soundPitch;
+
+    /**
+     * If true, this drop is invulnerable.
+     */
+    protected boolean _invulnerable;
+
+    /**
+     * If true, this drop glows.
+     */
+    protected boolean _glowing;
+
 } // class Drop

@@ -17,19 +17,6 @@ import nu.nerd.beastmaster.DropSet;
 import nu.nerd.beastmaster.DropType;
 import nu.nerd.beastmaster.objectives.ObjectiveType;
 
-// /<command> add <loot-id> 
-// /<command> remove <loot-id>
-// /<command> info <loot-id>
-// /<command> list
-// /<command> add-drop <loot-id> <drop-type> [<id>] <percentage-chance> [<min>] [<max>] 
-// /<command> remove-drop <loot-id> <id> 
-// /<command> list-drops <loot-id>
-// /<command> single <loot-id> <yes-or-no>
-// /<command> objective <loot-id> <item-id> (<obj-id>|none)
-// /<command> logged <loot-id> <item-id> <yes-or-no>
-// /<command> sound <loot-id> <item-id> <sound> [<range> <pitch>]
-// /<command> xp <loot-id> <item-id> <xp>
-
 // ----------------------------------------------------------------------------
 /**
  * Executor for the {@code /beast-loot} command.
@@ -42,7 +29,8 @@ public class BeastLootExecutor extends ExecutorBase {
     public BeastLootExecutor() {
         super("beast-loot", "help", "add", "remove", "info", "list",
               "add-drop", "remove-drop", "list-drops",
-              "single", "objective", "logged", "sound", "xp");
+              "single", "objective", "logged", "sound", "xp",
+              "invulnerable", "glowing");
     }
 
     // ------------------------------------------------------------------------
@@ -152,6 +140,11 @@ public class BeastLootExecutor extends ExecutorBase {
                 DropType dropType = DropType.valueOf(dropTypeArg.toUpperCase());
                 int chanceIndex = dropType.usesId() ? 4 : 3;
                 String dropIdArg = dropType.usesId() ? args[3] : dropType.name();
+                if (chanceIndex >= args.length) {
+                    Commands.invalidArguments(sender, getName() + " add-drop <loot-id> <drop-type> [<id>] <percentage-chance> [<min>] [<max>]");
+                    return true;
+                }
+
                 String chanceArg = args[chanceIndex];
                 String minArg = "1";
                 if (args.length > chanceIndex + 1) {
@@ -473,6 +466,69 @@ public class BeastLootExecutor extends ExecutorBase {
                 BeastMaster.CONFIG.save();
                 return true;
 
+            } else if (args[0].equals("invulnerable")) {
+                if (args.length != 4) {
+                    Commands.invalidArguments(sender, getName() + " invulnerable <loot-id> <item-id> <yes-or-no>");
+                    return true;
+                }
+
+                String lootIdArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(lootIdArg);
+                if (dropSet == null) {
+                    Commands.errorNull(sender, "loot table", lootIdArg);
+                    return true;
+                }
+
+                String dropIdArg = args[2];
+                Drop drop = dropSet.getDrop(dropIdArg);
+                if (drop == null) {
+                    Commands.errorNull(sender, "drop of " + lootIdArg, dropIdArg);
+                    return true;
+                }
+
+                String yesNoArg = args[3];
+                Boolean flag = Commands.parseBoolean(sender, yesNoArg);
+                if (flag == null) {
+                    return true;
+                }
+
+                drop.setInvulnerable(flag);
+                String change = flag ? "Enabled" : "Disabled";
+                sender.sendMessage(ChatColor.GOLD + change + " invulnerability of " + drop.getLongDescription());
+                BeastMaster.CONFIG.save();
+                return true;
+
+            } else if (args[0].equals("glowing")) {
+                if (args.length != 4) {
+                    Commands.invalidArguments(sender, getName() + " glowing <loot-id> <item-id> <yes-or-no>");
+                    return true;
+                }
+
+                String lootIdArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(lootIdArg);
+                if (dropSet == null) {
+                    Commands.errorNull(sender, "loot table", lootIdArg);
+                    return true;
+                }
+
+                String dropIdArg = args[2];
+                Drop drop = dropSet.getDrop(dropIdArg);
+                if (drop == null) {
+                    Commands.errorNull(sender, "drop of " + lootIdArg, dropIdArg);
+                    return true;
+                }
+
+                String yesNoArg = args[3];
+                Boolean flag = Commands.parseBoolean(sender, yesNoArg);
+                if (flag == null) {
+                    return true;
+                }
+
+                drop.setGlowing(flag);
+                String change = flag ? "Enabled" : "Disabled";
+                sender.sendMessage(ChatColor.GOLD + change + " glow effect of " + drop.getLongDescription());
+                BeastMaster.CONFIG.save();
+                return true;
             }
         }
 
