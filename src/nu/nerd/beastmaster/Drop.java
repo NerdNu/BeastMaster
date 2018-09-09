@@ -1,10 +1,9 @@
 package nu.nerd.beastmaster;
 
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
-
+import nu.nerd.beastmaster.mobs.MobType;
+import nu.nerd.beastmaster.objectives.Objective;
+import nu.nerd.beastmaster.objectives.ObjectiveType;
+import nu.nerd.beastmaster.zones.Zone;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -19,10 +18,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import nu.nerd.beastmaster.mobs.MobType;
-import nu.nerd.beastmaster.objectives.Objective;
-import nu.nerd.beastmaster.objectives.ObjectiveType;
-import nu.nerd.beastmaster.zones.Zone;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
 
 // ----------------------------------------------------------------------------
 /**
@@ -97,6 +96,29 @@ public class Drop implements Cloneable {
 
     // --------------------------------------------------------------------------
     /**
+     * Drops an item naturally near a player with a short delay.
+     *
+     * @param loc the location.
+     * @param player the player.
+     * @param itemStack the item.
+     */
+    private void doDrop(Location loc, Player player, ItemStack itemStack) {
+        // To avoid drops occasionally spawning in a block and
+        // warping up to the surface, wait for the next tick and
+        // check whether the block is actually air. If not air,
+        // spawn the drop at the player's feet.
+        Bukkit.getScheduler().scheduleSyncDelayedTask(BeastMaster.PLUGIN, () -> {
+            Block locBlock = loc.getBlock();
+            Location revisedLoc = (locBlock != null && locBlock.getType() != Material.AIR &&
+                                           player != null) ? player.getLocation() : loc;
+            org.bukkit.entity.Item item = revisedLoc.getWorld().dropItem(revisedLoc, itemStack);
+            item.setInvulnerable(isInvulnerable());
+            item.setGlowing(isGlowing());
+        }, 1);
+    }
+
+    // --------------------------------------------------------------------------
+    /**
      * Do all actions associated with this drop, including effects and XP.
      * 
      * If the drop is an item that spawns an objective, then check that the
@@ -118,18 +140,12 @@ public class Drop implements Cloneable {
             ItemStack itemStack = randomItemStack();
             dropSucceeded = (itemStack != null && trySpawnObjective(itemStack, loc));
             if (dropSucceeded) {
-                // To avoid drops occasionally spawning in a block and
-                // warping up to the surface, wait for the next tick and
-                // check whether the block is actually air. If not air,
-                // spawn the drop at the player's feet.
-                Bukkit.getScheduler().scheduleSyncDelayedTask(BeastMaster.PLUGIN, () -> {
-                    Block locBlock = loc.getBlock();
-                    Location revisedLoc = (locBlock != null && locBlock.getType() != Material.AIR &&
-                                           player != null) ? player.getLocation() : loc;
-                    org.bukkit.entity.Item item = revisedLoc.getWorld().dropItem(revisedLoc, itemStack);
-                    item.setInvulnerable(isInvulnerable());
-                    item.setGlowing(isGlowing());
-                }, 1);
+                if (isDirect()) {
+                    // PlayerInventory#addItem returns a HashMap detailing items that failed to add.
+                    player.getInventory().addItem(itemStack).values().forEach(i -> doDrop(loc, player, i));
+                } else {
+                    doDrop(loc, player, itemStack);
+                }
             }
             dropDescription = "ITEM " + getId() + (dropSucceeded ? " x " + itemStack.getAmount() : " (invalid)");
             break;
@@ -446,7 +462,7 @@ public class Drop implements Cloneable {
     /**
      * Specify whether this drop is glowing.
      * 
-     * @param invulnerable if true, the drop is glowing.
+     * @param glowing if true, the drop is glowing.
      */
     public void setGlowing(boolean glowing) {
         _glowing = glowing;
@@ -460,6 +476,29 @@ public class Drop implements Cloneable {
      */
     public boolean isGlowing() {
         return _glowing;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Specify whether this drop should be put into the player's inventory.
+     *
+     * @param direct if true, the drop is directly put into the player's
+     *               inventory.
+     */
+    public void setDirect(boolean direct) {
+        _directToInventory = direct;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if this drop should be directly put into the player's
+     * inventory.
+     *
+     * @return true if this drop should be directly put into the player's
+     * inventory.
+     */
+    public boolean isDirect() {
+        return _directToInventory;
     }
 
     // ------------------------------------------------------------------------
@@ -525,7 +564,7 @@ public class Drop implements Cloneable {
             s.append(ChatColor.GOLD).append(" (logged)");
         }
 
-        if (getExperience() > 0 || getSound() != null || isInvulnerable() || isGlowing()) {
+        if (getExperience() > 0 || getSound() != null || isInvulnerable() || isGlowing() || isDirect()) {
             s.append("\n    ");
 
             if (getExperience() > 0) {
@@ -545,6 +584,11 @@ public class Drop implements Cloneable {
             if (isInvulnerable()) {
                 s.append(ChatColor.GOLD).append(" invulnerable");
             }
+
+            if (isDirect()) {
+                s.append(ChatColor.GOLD).append(" direct-to-inv");
+            }
+
         }
         return s.toString();
     }
@@ -671,6 +715,7 @@ public class Drop implements Cloneable {
         _soundPitch = (float) section.getDouble("sound-pitch");
         _invulnerable = section.getBoolean("invulnerable");
         _glowing = section.getBoolean("glowing");
+        _directToInventory = section.getBoolean("direct-to-inventory");
         return true;
     }
 
@@ -695,6 +740,7 @@ public class Drop implements Cloneable {
         section.set("sound-pitch", _soundPitch);
         section.set("invulnerable", _invulnerable);
         section.set("glowing", _glowing);
+        section.set("direct-to-inventory", _directToInventory);
     }
 
     // --------------------------------------------------------------------------
@@ -834,5 +880,10 @@ public class Drop implements Cloneable {
      * If true, this drop glows.
      */
     protected boolean _glowing;
+
+    /**
+     * If true, this drop will be placed directly in the player's inventory instead of dropping naturally.
+     */
+    protected boolean _directToInventory;
 
 } // class Drop

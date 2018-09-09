@@ -1,21 +1,20 @@
 package nu.nerd.beastmaster.commands;
 
-import java.util.Collection;
-import java.util.Optional;
-import java.util.function.BiConsumer;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import org.bukkit.ChatColor;
-import org.bukkit.Sound;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.Drop;
 import nu.nerd.beastmaster.DropSet;
 import nu.nerd.beastmaster.DropType;
 import nu.nerd.beastmaster.objectives.ObjectiveType;
+import org.bukkit.ChatColor;
+import org.bukkit.Sound;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+
+import java.util.Collection;
+import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 // ----------------------------------------------------------------------------
 /**
@@ -30,7 +29,7 @@ public class BeastLootExecutor extends ExecutorBase {
         super("beast-loot", "help", "add", "remove", "info", "list",
               "add-drop", "remove-drop", "list-drops",
               "single", "objective", "logged", "sound", "xp",
-              "invulnerable", "glowing");
+              "invulnerable", "glowing", "direct");
     }
 
     // ------------------------------------------------------------------------
@@ -527,6 +526,37 @@ public class BeastLootExecutor extends ExecutorBase {
                 drop.setGlowing(flag);
                 String change = flag ? "Enabled" : "Disabled";
                 sender.sendMessage(ChatColor.GOLD + change + " glow effect of " + drop.getLongDescription());
+                BeastMaster.CONFIG.save();
+                return true;
+            } else if (args[0].equals("direct")) {
+                if (args.length != 4) {
+                    Commands.invalidArguments(sender, getName() + " direct <loot-id> <item-id> <yes-or-no>");
+                    return true;
+                }
+
+                String lootIdArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(lootIdArg);
+                if (dropSet == null) {
+                    Commands.errorNull(sender, "loot table", lootIdArg);
+                    return true;
+                }
+
+                String dropIdArg = args[2];
+                Drop drop = dropSet.getDrop(dropIdArg);
+                if (drop == null) {
+                    Commands.errorNull(sender, "drop of " + lootIdArg, dropIdArg);
+                    return true;
+                }
+
+                String yesNoArg = args[3];
+                Boolean flag = Commands.parseBoolean(sender, yesNoArg);
+                if (flag == null) {
+                    return true;
+                }
+
+                drop.setDirect(flag);
+                String change = flag ? "Enabled" : "Disabled";
+                sender.sendMessage(ChatColor.GOLD + change + " direct drop flag of " + drop.getLongDescription());
                 BeastMaster.CONFIG.save();
                 return true;
             }

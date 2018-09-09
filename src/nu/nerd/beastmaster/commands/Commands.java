@@ -1,14 +1,14 @@
 package nu.nerd.beastmaster.commands;
 
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.command.CommandSender;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.command.CommandSender;
 
 // ----------------------------------------------------------------------------
 /**
@@ -140,28 +140,16 @@ public class Commands {
 
     // ------------------------------------------------------------------------
     /**
-     * Parse a Material, specified as either a case-insensitive name, or an
-     * integer.
+     * Parse a Material, specified as either a case-insensitive name.
      * 
      * @param sender the ComamndSender.
-     * @param materialArg the command argument containing the material name or
-     *        number.
+     * @param materialArg the command argument containing the material name.
      * @return the Material
      */
     public static Material parseMaterial(CommandSender sender, String materialArg) {
-        Material material;
-        try {
-            // Note: number out of range => null.
-            material = Material.getMaterial(Integer.parseInt(materialArg));
-        } catch (NumberFormatException ex) {
-            try {
-                material = Material.valueOf(materialArg.toUpperCase());
-            } catch (IllegalArgumentException ex2) {
-                material = null;
-            }
-        }
+        Material material = Material.getMaterial(materialArg.toUpperCase());
         if (material == null) {
-            sender.sendMessage(ChatColor.RED + materialArg + " is not a valid material name or number.");
+            sender.sendMessage(ChatColor.RED + materialArg + " is not a valid material name.");
         }
         return material;
     }

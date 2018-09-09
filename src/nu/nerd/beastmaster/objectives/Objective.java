@@ -1,16 +1,15 @@
 package nu.nerd.beastmaster.objectives;
 
-import org.bukkit.Effect;
+import nu.nerd.beastmaster.BeastMaster;
+import nu.nerd.beastmaster.Util;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-
-import nu.nerd.beastmaster.BeastMaster;
-import nu.nerd.beastmaster.Util;
 
 // ----------------------------------------------------------------------------
 /**
@@ -83,13 +82,12 @@ public class Objective {
             }
         }
 
-        World.Spigot spigot = _location.getWorld().spigot();
-        spigot.playEffect(_location,
-                          Effect.TILE_BREAK, Material.GLOWSTONE.getId(), 0,
-                          _objectiveType.getParticleRadius(),
-                          _objectiveType.getParticleRadius(),
-                          _objectiveType.getParticleRadius(), 0,
-                          _objectiveType.getParticleCount(), 16);
+        _location.getWorld().spawnParticle(Particle.BLOCK_CRACK, _location,
+                                                                 _objectiveType.getParticleCount(),
+                                                                 _objectiveType.getParticleRadius(),
+                                                                 _objectiveType.getParticleRadius(),
+                                                                 _objectiveType.getParticleRadius(),
+                                                                 Material.GLOWSTONE);
 
         for (Entity entity : _location.getWorld().getNearbyEntities(_location, 2, 2, 2)) {
             if (entity instanceof Player) {
