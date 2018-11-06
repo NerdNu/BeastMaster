@@ -1,15 +1,23 @@
 package nu.nerd.beastmaster.objectives;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map.Entry;
-
+import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.EmptyClipboardException;
+import com.sk89q.worldedit.LocalSession;
+import com.sk89q.worldedit.MaxChangedBlocksException;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitWorld;
+import com.sk89q.worldedit.bukkit.WorldEditPlugin;
+import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
+import com.sk89q.worldedit.math.transform.AffineTransform;
+import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.util.io.Closer;
+import com.sk89q.worldedit.world.DataException;
+import nu.nerd.beastmaster.BeastMaster;
+import nu.nerd.beastmaster.Util;
+import nu.nerd.beastmaster.zones.Zone;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -17,17 +25,17 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.util.Vector;
 
-import com.sk89q.worldedit.CuboidClipboard;
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.MaxChangedBlocksException;
-import com.sk89q.worldedit.WorldEdit;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
-import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import com.sk89q.worldedit.world.DataException;
-
-import nu.nerd.beastmaster.BeastMaster;
-import nu.nerd.beastmaster.Util;
-import nu.nerd.beastmaster.zones.Zone;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
 
 // ----------------------------------------------------------------------------
 /**
@@ -91,7 +99,7 @@ public class ObjectiveManager {
      * @param objectiveType the objective type.
      * @param zone the zone whose limits will be obeyed when placing the
      *        objective.
-     * @param dropLocation the location where a drop triggered the objective's
+     * @param deathLocation the location where a drop triggered the objective's
      *        spawning.
      * @return a new Objective if fewer have been spawned than the limit, a
      *         reference to the oldest objective still in the world old if the
@@ -141,7 +149,7 @@ public class ObjectiveManager {
      *         Block.
      */
     public Objective getObjective(Block block) {
-        if (block.getType() == Material.SKULL) {
+        if (block.getType() == Material.LEGACY_SKULL) { // TODO
             Objective objective = _blockToObjective.get(block);
             if (objective != null) {
                 return objective;
@@ -238,16 +246,39 @@ public class ObjectiveManager {
      * @param copyEntities if true, paste entities from the schematic into the
      *        world.
      */
-    @SuppressWarnings("deprecation")
     protected void pasteSchematic(File file, Location loc, Vector offset, boolean copyAir, boolean copyEntities)
     throws DataException, IOException, MaxChangedBlocksException {
         WorldEdit we = getWorldEdit();
         EditSession es = we.getEditSessionFactory().getEditSession(new BukkitWorld(loc.getWorld()), -1);
 
-        // There doesn't seem to be any non-deprecated way to do this.
-        CuboidClipboard cc = CuboidClipboard.loadSchematic(file);
-        cc.rotate2D(90 * Util.randomInt(4));
-        cc.paste(es, toWEVector(loc.clone().add(offset)), !copyAir, copyEntities);
+        ClipboardFormat format = ClipboardFormats.findByFile(file);
+        if (format == null) {
+            return;
+        }
+        try (Closer closer = Closer.create()) {
+            FileInputStream fileInputStream = closer.register(new FileInputStream(file));
+            BufferedInputStream bufferedInputSteam = closer.register(new BufferedInputStream(fileInputStream));
+            ClipboardReader reader = closer.register(format.getReader(bufferedInputSteam));
+            Clipboard clipboard = reader.read();
+
+            ClipboardHolder holder = new ClipboardHolder(clipboard);
+            LocalSession localSession = new LocalSession();
+
+            AffineTransform transform = new AffineTransform();
+            transform.rotateY(90 * Util.randomInt(4));
+            holder.setTransform(transform);
+
+            localSession.setClipboard(holder);
+
+            try {
+                localSession.getClipboard().createPaste(es)
+                                           .to(toWEVector(loc.clone().add(offset)))
+                                           .ignoreAirBlocks(!copyAir)
+                                           .build();
+            } catch (EmptyClipboardException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     // ------------------------------------------------------------------------

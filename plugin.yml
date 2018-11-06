@@ -8,6 +8,7 @@ database: true
 main: nu.nerd.beastmaster.BeastMaster
 softdepend: [ Multiverse-Core ]
 depend: [ WorldEdit, BlockStore, EntityMeta ]
+api-version: 1.13
 
 permissions:
   beastmaster.console:

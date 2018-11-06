@@ -16,6 +16,9 @@ hs_err_pid*
 .settings
 .classpath
 
+# IntelliJ stuff:
+.idea
+
 # Build:
 /classes/
 target/
