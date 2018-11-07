@@ -1,30 +1,5 @@
 package nu.nerd.beastmaster.objectives;
 
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.EmptyClipboardException;
-import com.sk89q.worldedit.LocalSession;
-import com.sk89q.worldedit.MaxChangedBlocksException;
-import com.sk89q.worldedit.WorldEdit;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
-import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import com.sk89q.worldedit.extent.clipboard.Clipboard;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
-import com.sk89q.worldedit.math.transform.AffineTransform;
-import com.sk89q.worldedit.session.ClipboardHolder;
-import com.sk89q.worldedit.util.io.Closer;
-import com.sk89q.worldedit.world.DataException;
-import nu.nerd.beastmaster.BeastMaster;
-import nu.nerd.beastmaster.Util;
-import nu.nerd.beastmaster.zones.Zone;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.util.Vector;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -36,6 +11,34 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.util.Vector;
+
+import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.EmptyClipboardException;
+import com.sk89q.worldedit.LocalSession;
+import com.sk89q.worldedit.MaxChangedBlocksException;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitWorld;
+import com.sk89q.worldedit.bukkit.WorldEditPlugin;
+import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.math.transform.AffineTransform;
+import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.util.io.Closer;
+import com.sk89q.worldedit.world.DataException;
+
+import nu.nerd.beastmaster.BeastMaster;
+import nu.nerd.beastmaster.Util;
+import nu.nerd.beastmaster.zones.Zone;
 
 // ----------------------------------------------------------------------------
 /**
@@ -272,9 +275,9 @@ public class ObjectiveManager {
 
             try {
                 localSession.getClipboard().createPaste(es)
-                                           .to(toWEVector(loc.clone().add(offset)))
-                                           .ignoreAirBlocks(!copyAir)
-                                           .build();
+                .to(toWEVector(loc.clone().add(offset)))
+                .ignoreAirBlocks(!copyAir)
+                .build();
             } catch (EmptyClipboardException e) {
                 e.printStackTrace();
             }
@@ -288,8 +291,8 @@ public class ObjectiveManager {
      * @param loc the location.
      * @return the Vector.
      */
-    com.sk89q.worldedit.Vector toWEVector(Location loc) {
-        return new com.sk89q.worldedit.Vector(loc.getX(), loc.getY(), loc.getZ());
+    protected BlockVector3 toWEVector(Location loc) {
+        return BlockVector3.at(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
     }
 
     // ------------------------------------------------------------------------
