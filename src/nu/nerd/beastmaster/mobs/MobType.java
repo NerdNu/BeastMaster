@@ -490,6 +490,12 @@ public class MobType {
                 double percent = (Double) getDerivedProperty("off-hand-drop-percent").getValue();
                 mob.getEquipment().setItemInOffHandDropChance((float) percent / 100);
             }));
+        // Added after custom name => will clear PersistenceRequired NBT.
+        addProperty(new MobProperty("can-despawn", DataType.BOOLEAN,
+            (mob, logger) -> {
+                boolean canDespawn = (Boolean) getDerivedProperty("can-despawn").getValue();
+                mob.setRemoveWhenFarAway(canDespawn);
+            }));
 
         // TODO: use AIR to signify clearing the default armour/weapon.
         // TODO: Disguise property.
