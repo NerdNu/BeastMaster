@@ -94,12 +94,13 @@ commands:
       §e/<command> info <loot-id>§f - Describe the specified loot table.
       §e/<command> list§f - List all loot tables.
       §e/<command> add-drop <loot-id> <drop-type> [<id>] <percentage-chance> [<min>] [<max>]§f 
-        - Create or modify a drop in the loot table. The <drop-type> can be
-          nothing, default, item or mob; item and mob types require the <id>
-          of the item or mob type to be specified. <percentage-chance> is
-          probability of the chance from 0.0 to 100.0. <min> is the number
-          of dropped items or mobs, and defaults to 1. <max> is the maximum
-          number of dropped items or mobs and defaults to <min>.
+        - Create or modify a drop in the loot table. The <drop-type>
+          can be nothing, default, item or mob; item and mob types
+          require the <id> of the item or mob type to be specified.
+          <percentage-chance> is probability of the chance from 0.0
+          to 100.0. <min> is the number of dropped items or mobs, 
+          and defaults to 1. <max> is the maximum number of dropped
+          items or mobs and defaults to <min>.
       §e/<command> remove-drop <loot-id> <id>§f - Remove the 
         specified drop from the possible drops in the loot table.
       §e/<command> list-drops <loot-id>§f - List all possible drops from this loot table.
