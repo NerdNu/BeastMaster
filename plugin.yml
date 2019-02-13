@@ -124,6 +124,8 @@ commands:
       §e/<command> get <mob-id> <property>§f - Get the configured value of the specified property of the mob type.
       §e/<command> set <mob-id> <property> <value>§f - Set the configured value of the specified property of the mob type. The value "default" sets the property to that inherited from the parent mob type.
       §e/<command> clear <mob-id> <property>§f - Clear the specified property of the mob type, so that it will be inherited from the parent type.
+      §e/<command> spawn <mob-id> (here|there|<world> <x> <y> <z>)§f - Spawn a mob of the specified mob type either "here" (player location), "there" (where the player is looking) or at explicitly specified coordinates in a named world. A player must be in-game to use the "here" or "there" variants.
+      §e/<command> statue <mob-id> (here|there|<world> <x> <y> <z>)§f - Spawn a mob of the specified mob type, as with §e/<command> spawn ...§f, but the spawned mob will have no AI and will therefore not move.
       
   beast-obj:
     description: Configure objectives.

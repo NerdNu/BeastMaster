@@ -150,8 +150,13 @@ public class BeastMaster extends JavaPlugin implements Listener {
      * 
      * @param loc the Location where the mob spawns.
      * @param mobType the custom mob type.
+     * @param checkCanFit if true, the available space at the location is
+     *        checked to see if it can accomodate the mob, and if not, the mob
+     *        is removed.
+     * @return the new LivingEntity, or null if it could not fit or an invalid
+     *         type was specified.
      */
-    public LivingEntity spawnMob(Location loc, MobType mobType) {
+    public LivingEntity spawnMob(Location loc, MobType mobType, boolean checkCanFit) {
         MobProperty entityTypeProperty = mobType.getDerivedProperty("entity-type");
         EntityType entityType = (EntityType) entityTypeProperty.getValue();
         LivingEntity livingEntity = null;
@@ -162,7 +167,13 @@ public class BeastMaster extends JavaPlugin implements Listener {
             // (plugin-generated) mob spawns originate from this plugin.
             // World.spawnEntity() calls into onCreatureSpawn().
             _spawningMobType = mobType;
+            _spawningCheckCanFit = checkCanFit;
             livingEntity = (LivingEntity) loc.getWorld().spawnEntity(loc, entityType);
+
+            // Check if removed because it can't fit.
+            if (!livingEntity.isValid()) {
+                livingEntity = null;
+            }
             _spawningMobType = null;
         }
         return livingEntity;
@@ -247,7 +258,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         case CUSTOM:
             // Plugin driven spawns.
             if (_spawningMobType != null) {
-                if (canFit(entity)) {
+                if (!_spawningCheckCanFit || canFit(entity)) {
                     _spawningMobType.configureMob(entity);
                 } else {
                     entity.remove();
@@ -304,8 +315,8 @@ public class BeastMaster extends JavaPlugin implements Listener {
 
     // ------------------------------------------------------------------------
     /**
-     * A late attempt to customise custom-spawned mobs from other plugins
-     * without spawning an entire new mob.
+     * Tag mobs hurt by players with the time stamp of the damage event to
+     * facilitate custom dropped XP.
      */
     @EventHandler(ignoreCancelled = true)
     protected void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
@@ -314,7 +325,6 @@ public class BeastMaster extends JavaPlugin implements Listener {
         boolean isPlayerAttack = false;
         if (event.getDamager() instanceof Player) {
             isPlayerAttack = true;
-            Player player = (Player) event.getDamager();
         } else if (event.getDamager() instanceof Projectile) {
             Projectile projectile = (Projectile) event.getDamager();
             if (projectile.getShooter() instanceof Player) {
@@ -519,8 +529,27 @@ public class BeastMaster extends JavaPlugin implements Listener {
     protected static final int PLAYER_DAMAGE_TICKS = 100;
 
     /**
-     * MobType of the currently spawning mob, if spawned as a custom mob via
-     * {@link #spawnMob(Location, EntityType, MobType)}.
+     * When spawning a custom mob via
+     * {@link #spawnMob(Location, EntityType, MobType)} we need to record the
+     * MobType of the custom mob so that the entity can be configured
+     * accordingly. BeastMaster.spawnMob() calls World.spawnEntity() which
+     * triggers a function call to onCreatureSpawn(), which then consults this
+     * field only in the event of SpawnReason.CUSTOM. This field is then cleared
+     * to null to prevent BeastMaster from attempting custom configuration of
+     * mobs spawned by other plugins.
      */
     protected MobType _spawningMobType;
+
+    /**
+     * If true, and if _spawningMobType is non-null, then a size check is made
+     * on mobs with SpawnReason.CUSTOM and those that don't fit the available
+     * space at their spawn location are removed.
+     * 
+     * The size check is there to gracefully handle replacement of naturally
+     * spawned mobs with different size mobs. However, when spawnMob() is called
+     * because of the /beast-mob spawn or /beast-mob statue commands, the size
+     * check should be suppressed to avoid the confusion of nothing spawning as
+     * a result.
+     */
+    protected boolean _spawningCheckCanFit;
 } // class BeastMaster

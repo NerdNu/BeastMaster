@@ -3,13 +3,24 @@ package nu.nerd.beastmaster.commands;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.FluidCollisionMode;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Vector;
 
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.DropType;
 import nu.nerd.beastmaster.Item;
+import nu.nerd.beastmaster.Util;
 import nu.nerd.beastmaster.mobs.MobProperty;
 import nu.nerd.beastmaster.mobs.MobType;
 
@@ -26,7 +37,7 @@ public class BeastMobExecutor extends ExecutorBase {
         super("beast-mob", "help",
               "add", "remove", "list",
               "info", "parent",
-              "get", "set", "clear");
+              "get", "set", "clear", "spawn", "statue");
     }
 
     // ------------------------------------------------------------------------
@@ -237,11 +248,137 @@ public class BeastMobExecutor extends ExecutorBase {
                                    ChatColor.YELLOW + "unset");
                 BeastMaster.CONFIG.save();
                 return true;
+
+            } else if (args[0].equals("spawn") || args[0].equals("statue")) {
+                return onCommandSpawnOrStatue(sender, args);
             }
         }
 
         return false;
     } // onCommand
+
+    // --------------------------------------------------------------------------
+    /**
+     * Parse the "spawn" and "statue" sub-commands.
+     * 
+     * Separated into its own method because it's such a long lump of code.
+     * 
+     * @param sender the command sender.
+     * @param args the command arguments.
+     * @return true if the command was handled by this method.
+     */
+    protected boolean onCommandSpawnOrStatue(CommandSender sender, String[] args) {
+        final String USAGE = getName() + " " + args[0] + " <mob-id> here|there|<world> <x> <y> <z>";
+        if (args.length != 3 && args.length != 6) {
+            Commands.invalidArguments(sender, USAGE);
+            return true;
+        }
+
+        String mobIdArg = args[1];
+        String locFirstArg = args[2];
+
+        MobType mobType = BeastMaster.MOBS.getMobType(mobIdArg);
+        if (mobType == null) {
+            Commands.errorNull(sender, "mob type", mobIdArg);
+            return true;
+        }
+
+        Location spawnLoc = null;
+        if (locFirstArg.equals("here") || locFirstArg.equals("there")) {
+            if (args.length != 3) {
+                Commands.invalidArguments(sender, USAGE);
+                return true;
+            }
+
+            if (!isInGame(sender)) {
+                return true;
+            }
+            Player player = (Player) sender;
+
+            if (locFirstArg.equals("here")) {
+                spawnLoc = player.getLocation();
+            } else {
+                // "spawn there" subcommand.
+                final int MAX_DISTANCE = 64;
+                // Note: vitally important to start ray from eye.
+                Location playerLoc = player.getEyeLocation();
+                World world = playerLoc.getWorld();
+                RayTraceResult ray = world.rayTraceBlocks(playerLoc,
+                                                          playerLoc.getDirection(),
+                                                          MAX_DISTANCE,
+                                                          FluidCollisionMode.NEVER,
+                                                          true);
+
+                Block hitBlock = ray.getHitBlock();
+                if (hitBlock == null) {
+                    sender.sendMessage(ChatColor.RED + "You can't spawn a mob there. There is no solid block, or it's more than " +
+                                       MAX_DISTANCE + " blocks away.");
+                    return true;
+                }
+
+                // Offset the mob by a small fraction of a block in the
+                // direction of the hit block face, to put it in a spawnable
+                // gap.
+                final double DELTA = 0.001;
+                Vector hitPos = ray.getHitPosition();
+                BlockFace hitFace = ray.getHitBlockFace();
+                spawnLoc = new Location(world,
+                    hitPos.getX() + hitFace.getModX() * DELTA,
+                    hitPos.getY() + hitFace.getModY() * DELTA,
+                    hitPos.getZ() + hitFace.getModZ() * DELTA);
+            }
+        } else {
+            // Mob spawn location is <world> <x> <y> <z> parsed from args.
+            if (args.length != 6) {
+                Commands.invalidArguments(sender, USAGE);
+                return true;
+            }
+
+            String worldArg = locFirstArg;
+            String xArg = args[3], yArg = args[4], zArg = args[5];
+
+            World world = Bukkit.getWorld(worldArg);
+            if (world == null) {
+                sender.sendMessage(ChatColor.RED + "Invalid world name: " + worldArg + ".");
+                return true;
+            }
+
+            Double x = Commands.parseNumber(xArg, Double::parseDouble, v -> true, null, () -> {
+                sender.sendMessage(ChatColor.RED + "Invalid X coordinate: " + xArg);
+            });
+            if (x == null) {
+                return true;
+            }
+            // Allow Y coordinates way up in the sky, for funsies.
+            Double y = Commands.parseNumber(yArg, Double::parseDouble, v -> (v >= 0 && v <= 512),
+                                            () -> {
+                                                sender.sendMessage(ChatColor.RED + "The Y coordinate must be in the range [0,512].");
+                                            },
+                                            () -> {
+                                                sender.sendMessage(ChatColor.RED + "Invalid Y coordinate: " + yArg);
+                                            });
+            if (y == null) {
+                return true;
+            }
+            Double z = Commands.parseNumber(zArg, Double::parseDouble, v -> true, null, () -> {
+                sender.sendMessage(ChatColor.RED + "Invalid Z coordinate: " + zArg);
+            });
+            if (z == null) {
+                return true;
+            }
+
+            spawnLoc = new Location(world, x, y, z);
+        }
+
+        boolean isStatue = args[0].equals("statue");
+        LivingEntity mob = BeastMaster.PLUGIN.spawnMob(spawnLoc, mobType, false);
+        mob.setAI(!isStatue);
+        sender.sendMessage(ChatColor.GOLD + "Spawned " + ChatColor.YELLOW + mobType.getId() +
+                           ChatColor.GOLD + (isStatue ? " statue" : "") + " at " +
+                           ChatColor.YELLOW + Util.formatLocation(spawnLoc) +
+                           ChatColor.GOLD + ".");
+        return true;
+    } // onCommandSpawnOrStatue
 
     // ------------------------------------------------------------------------
     /**

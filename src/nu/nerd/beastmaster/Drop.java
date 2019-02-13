@@ -1,9 +1,10 @@
 package nu.nerd.beastmaster;
 
-import nu.nerd.beastmaster.mobs.MobType;
-import nu.nerd.beastmaster.objectives.Objective;
-import nu.nerd.beastmaster.objectives.ObjectiveType;
-import nu.nerd.beastmaster.zones.Zone;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -18,10 +19,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
+import nu.nerd.beastmaster.mobs.MobType;
+import nu.nerd.beastmaster.objectives.Objective;
+import nu.nerd.beastmaster.objectives.ObjectiveType;
+import nu.nerd.beastmaster.zones.Zone;
 
 // ----------------------------------------------------------------------------
 /**
@@ -110,7 +111,7 @@ public class Drop implements Cloneable {
         Bukkit.getScheduler().scheduleSyncDelayedTask(BeastMaster.PLUGIN, () -> {
             Block locBlock = loc.getBlock();
             Location revisedLoc = (locBlock != null && locBlock.getType() != Material.AIR &&
-                                           player != null) ? player.getLocation() : loc;
+                                   player != null) ? player.getLocation() : loc;
             org.bukkit.entity.Item item = revisedLoc.getWorld().dropItem(revisedLoc, itemStack);
             item.setInvulnerable(isInvulnerable());
             item.setGlowing(isGlowing());
@@ -141,7 +142,8 @@ public class Drop implements Cloneable {
             dropSucceeded = (itemStack != null && trySpawnObjective(itemStack, loc));
             if (dropSucceeded) {
                 if (isDirect()) {
-                    // PlayerInventory#addItem returns a HashMap detailing items that failed to add.
+                    // PlayerInventory#addItem returns a HashMap detailing items
+                    // that failed to add.
                     player.getInventory().addItem(itemStack).values().forEach(i -> doDrop(loc, player, i));
                 } else {
                     doDrop(loc, player, itemStack);
@@ -161,7 +163,7 @@ public class Drop implements Cloneable {
             LivingEntity livingEntity = null;
             if (mobType != null) {
                 for (int i = 0; i < randomAmount(); ++i) {
-                    livingEntity = BeastMaster.PLUGIN.spawnMob(loc, mobType);
+                    livingEntity = BeastMaster.PLUGIN.spawnMob(loc, mobType, true);
                     if (livingEntity != null) {
                         ++spawnCount;
                         livingEntity.setInvulnerable(isInvulnerable());
@@ -483,7 +485,7 @@ public class Drop implements Cloneable {
      * Specify whether this drop should be put into the player's inventory.
      *
      * @param direct if true, the drop is directly put into the player's
-     *               inventory.
+     *        inventory.
      */
     public void setDirect(boolean direct) {
         _directToInventory = direct;
@@ -495,7 +497,7 @@ public class Drop implements Cloneable {
      * inventory.
      *
      * @return true if this drop should be directly put into the player's
-     * inventory.
+     *         inventory.
      */
     public boolean isDirect() {
         return _directToInventory;
@@ -882,7 +884,8 @@ public class Drop implements Cloneable {
     protected boolean _glowing;
 
     /**
-     * If true, this drop will be placed directly in the player's inventory instead of dropping naturally.
+     * If true, this drop will be placed directly in the player's inventory
+     * instead of dropping naturally.
      */
     protected boolean _directToInventory;
 
