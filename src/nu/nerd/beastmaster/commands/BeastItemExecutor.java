@@ -68,7 +68,7 @@ public class BeastItemExecutor extends ExecutorBase {
 
                 MobType mobType = BeastMaster.MOBS.getMobType(idArg);
                 if (mobType != null) {
-                    sender.sendMessage(ChatColor.RED + "An mob type named \"" + idArg + "\" is already defined. " +
+                    sender.sendMessage(ChatColor.RED + "A mob type named \"" + idArg + "\" is already defined. " +
                                        "Items can't have the same ID as an existing mob.");
                     return true;
                 }
