@@ -8,15 +8,19 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.inventory.ItemStack;
 
 import nu.nerd.beastmaster.BeastMaster;
+import nu.nerd.beastmaster.Drop;
 import nu.nerd.beastmaster.DropSet;
+import nu.nerd.beastmaster.DropType;
 import nu.nerd.beastmaster.Item;
 import nu.nerd.entitymeta.EntityMeta;
 
@@ -414,10 +418,10 @@ public class MobType {
             }));
         addProperty(new MobProperty("helmet", DataType.STRING,
             (mob, logger) -> {
-                String itemId = (String) getDerivedProperty("helmet").getValue();
-                Item item = BeastMaster.ITEMS.getItem(itemId);
-                if (item != null) {
-                    mob.getEquipment().setHelmet(item.getItemStack().clone());
+                String id = (String) getDerivedProperty("helmet").getValue();
+                ItemStack itemStack = getEquipmentItem(id);
+                if (itemStack != null) {
+                    mob.getEquipment().setHelmet(itemStack);
                 }
             }));
         addProperty(new MobProperty("helmet-drop-percent", DataType.DOUBLE,
@@ -427,10 +431,10 @@ public class MobType {
             }));
         addProperty(new MobProperty("chest-plate", DataType.STRING,
             (mob, logger) -> {
-                String itemId = (String) getDerivedProperty("chest-plate").getValue();
-                Item item = BeastMaster.ITEMS.getItem(itemId);
-                if (item != null) {
-                    mob.getEquipment().setChestplate(item.getItemStack().clone());
+                String id = (String) getDerivedProperty("chest-plate").getValue();
+                ItemStack itemStack = getEquipmentItem(id);
+                if (itemStack != null) {
+                    mob.getEquipment().setChestplate(itemStack);
                 }
             }));
         addProperty(new MobProperty("chest-plate-drop-percent", DataType.DOUBLE,
@@ -440,10 +444,10 @@ public class MobType {
             }));
         addProperty(new MobProperty("leggings", DataType.STRING,
             (mob, logger) -> {
-                String itemId = (String) getDerivedProperty("leggings").getValue();
-                Item item = BeastMaster.ITEMS.getItem(itemId);
-                if (item != null) {
-                    mob.getEquipment().setLeggings(item.getItemStack().clone());
+                String id = (String) getDerivedProperty("leggings").getValue();
+                ItemStack itemStack = getEquipmentItem(id);
+                if (itemStack != null) {
+                    mob.getEquipment().setLeggings(itemStack);
                 }
             }));
         addProperty(new MobProperty("leggings-drop-percent", DataType.DOUBLE,
@@ -453,10 +457,10 @@ public class MobType {
             }));
         addProperty(new MobProperty("boots", DataType.STRING,
             (mob, logger) -> {
-                String itemId = (String) getDerivedProperty("boots").getValue();
-                Item item = BeastMaster.ITEMS.getItem(itemId);
-                if (item != null) {
-                    mob.getEquipment().setBoots(item.getItemStack().clone());
+                String id = (String) getDerivedProperty("boots").getValue();
+                ItemStack itemStack = getEquipmentItem(id);
+                if (itemStack != null) {
+                    mob.getEquipment().setBoots(itemStack);
                 }
             }));
         addProperty(new MobProperty("boots-drop-percent", DataType.DOUBLE,
@@ -466,10 +470,10 @@ public class MobType {
             }));
         addProperty(new MobProperty("main-hand", DataType.STRING,
             (mob, logger) -> {
-                String itemId = (String) getDerivedProperty("main-hand").getValue();
-                Item item = BeastMaster.ITEMS.getItem(itemId);
-                if (item != null) {
-                    mob.getEquipment().setItemInMainHand(item.getItemStack().clone());
+                String id = (String) getDerivedProperty("main-hand").getValue();
+                ItemStack itemStack = getEquipmentItem(id);
+                if (itemStack != null) {
+                    mob.getEquipment().setItemInMainHand(itemStack);
                 }
             }));
         addProperty(new MobProperty("main-hand-drop-percent", DataType.DOUBLE,
@@ -479,10 +483,10 @@ public class MobType {
             }));
         addProperty(new MobProperty("off-hand", DataType.STRING,
             (mob, logger) -> {
-                String itemId = (String) getDerivedProperty("off-hand").getValue();
-                Item item = BeastMaster.ITEMS.getItem(itemId);
-                if (item != null) {
-                    mob.getEquipment().setItemInOffHand(item.getItemStack().clone());
+                String id = (String) getDerivedProperty("off-hand").getValue();
+                ItemStack itemStack = getEquipmentItem(id);
+                if (itemStack != null) {
+                    mob.getEquipment().setItemInOffHand(itemStack);
                 }
             }));
         addProperty(new MobProperty("off-hand-drop-percent", DataType.DOUBLE,
@@ -501,6 +505,39 @@ public class MobType {
         // TODO: Disguise property.
         // TODO: contact potion effects.
         // TODO: particle effect tracking mob.
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return an equipment ItemStack to apply to a mob in
+     * {@link #configureMob(LivingEntity)}.
+     * 
+     * Mob properties corresponding to equipment items (helmet, chest-plate,
+     * leggings, boots, main-hand, off-hand) are Strings that are interpreted as
+     * either the ID of a {@link DropSet} or the ID of an {@link Item}. This
+     * method attempts to look up the DropSet first, and if one with the
+     * specified ID doesn't exist, the ID is interpreted as that of an Item.
+     * 
+     * @param id the ID of the DropSet or Item to generate.
+     * @return the equipment as an ItemStack, or null if the equipment should
+     *         not change (be default).
+     */
+    protected ItemStack getEquipmentItem(String id) {
+        DropSet drops = BeastMaster.LOOTS.getDropSet(id);
+        if (drops != null) {
+            Drop drop = drops.chooseOneDrop();
+            if (drop != null) {
+                if (drop.getDropType() == DropType.NOTHING) {
+                    return new ItemStack(Material.AIR);
+                } else if (drop.getDropType() == DropType.ITEM) {
+                    return drop.randomItemStack();
+                }
+            }
+            return null;
+        } else {
+            Item item = BeastMaster.ITEMS.getItem(id);
+            return (item != null) ? item.getItemStack().clone() : null;
+        }
     }
 
     // ------------------------------------------------------------------------
