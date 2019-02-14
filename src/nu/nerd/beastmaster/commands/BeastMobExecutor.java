@@ -8,7 +8,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -308,9 +307,7 @@ public class BeastMobExecutor extends ExecutorBase {
                                                           MAX_DISTANCE,
                                                           FluidCollisionMode.NEVER,
                                                           true);
-
-                Block hitBlock = ray.getHitBlock();
-                if (hitBlock == null) {
+                if (ray == null) {
                     sender.sendMessage(ChatColor.RED + "You can't spawn a mob there. There is no solid block, or it's more than " +
                                        MAX_DISTANCE + " blocks away.");
                     return true;
