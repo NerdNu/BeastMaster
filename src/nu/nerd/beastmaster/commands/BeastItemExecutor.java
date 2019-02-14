@@ -207,7 +207,9 @@ public class BeastItemExecutor extends ExecutorBase {
                 }
 
                 sender.sendMessage(ChatColor.GOLD + "Items:");
-                for (Item item : BeastMaster.ITEMS.getAllItems()) {
+                ArrayList<Item> allItems = new ArrayList<>(BeastMaster.ITEMS.getAllItems());
+                allItems.sort((i1, i2) -> i1.getId().compareTo(i2.getId()));
+                for (Item item : allItems) {
                     sender.sendMessage(ChatColor.YELLOW + item.getId() +
                                        ChatColor.WHITE + ": " + Util.getItemDescription(item.getItemStack()));
                 }

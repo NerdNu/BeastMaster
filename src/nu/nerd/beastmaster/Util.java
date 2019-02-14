@@ -88,7 +88,7 @@ public class Util {
                 }
             }
 
-            if (meta.getDisplayName() != null) {
+            if (meta.getDisplayName() != null && !meta.getDisplayName().isEmpty()) {
                 description.append(" named \"").append(meta.getDisplayName()).append("\"").append(ChatColor.WHITE);
             }
 
