@@ -368,9 +368,44 @@ public class BeastMaster extends JavaPlugin implements Listener {
                 }
             }
 
+            // Drop head, armour and hand items with non-vanilla code if
+            // those drop percent properties are set. This is a work around for
+            // a presumed Spigot bug wherein NBT drop HandItemDropChances and
+            // ArmorDropChances values are negative despite the Bukkit API
+            // drop chances being sane. Bukkit API drop chances are therefore
+            // set 0 in MobType when the properties are set.
+            // If the entity has a MobType, it's a LivingEntity.
+            LivingEntity mob = (LivingEntity) entity;
+            Location loc = mob.getLocation();
+            World world = loc.getWorld();
+
+            Double helmetPercent = (Double) mobType.getDerivedProperty("helmet-drop-percent").getValue();
+            if (helmetPercent != null && Util.random() < helmetPercent / 100) {
+                world.dropItem(loc, mob.getEquipment().getHelmet());
+            }
+            Double chestPercent = (Double) mobType.getDerivedProperty("chest-plate-drop-percent").getValue();
+            if (chestPercent != null && Util.random() < chestPercent / 100) {
+                world.dropItem(loc, mob.getEquipment().getChestplate());
+            }
+            Double leggingsPercent = (Double) mobType.getDerivedProperty("leggings-drop-percent").getValue();
+            if (leggingsPercent != null && Util.random() < leggingsPercent / 100) {
+                world.dropItem(loc, mob.getEquipment().getLeggings());
+            }
+            Double bootsPercent = (Double) mobType.getDerivedProperty("boots-drop-percent").getValue();
+            if (bootsPercent != null && Util.random() < bootsPercent / 100) {
+                world.dropItem(loc, mob.getEquipment().getBoots());
+            }
+            Double mainHandPercent = (Double) mobType.getDerivedProperty("main-hand-drop-percent").getValue();
+            if (mainHandPercent != null && Util.random() < mainHandPercent / 100) {
+                world.dropItem(loc, mob.getEquipment().getItemInMainHand());
+            }
+            Double offHandPercent = (Double) mobType.getDerivedProperty("off-hand-drop-percent").getValue();
+            if (offHandPercent != null && Util.random() < offHandPercent / 100) {
+                world.dropItem(loc, mob.getEquipment().getItemInOffHand());
+            }
+
             Long damageTime = getPlayerDamageTime(entity);
             if (damageTime != null) {
-                Location loc = entity.getLocation();
                 if (loc.getWorld().getFullTime() - damageTime < PLAYER_DAMAGE_TICKS) {
                     MobProperty experience = mobType.getDerivedProperty("experience");
                     if (experience.getValue() != null) {

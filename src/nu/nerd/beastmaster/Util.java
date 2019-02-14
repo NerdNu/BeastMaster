@@ -202,6 +202,16 @@ public class Util {
 
     // ------------------------------------------------------------------------
     /**
+     * Return a random double in the range [0.0,1.0).
+     *
+     * @return a random double in the range [0.0,1.0).
+     */
+    public static double random() {
+        return _random.nextDouble();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Random number generator.
      */
     protected static Random _random = new Random();
