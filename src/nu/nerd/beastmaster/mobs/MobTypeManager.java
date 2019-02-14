@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.TreeMap;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -85,18 +86,31 @@ public class MobTypeManager {
 
     // ------------------------------------------------------------------------
     /**
-     * Return a collection of the predefined {@link MobType}s.
+     * Return a sorted ArrayList<> of the predefined {@link MobType}s.
      * 
-     * @return a collection of the predefined {@link MobType}s.
+     * Predefined MobTypes are pre-sorted by ID, so returning them sorted is a
+     * zero-cost operation.
+     * 
+     * NOTE: the current implementation of Collectors.toList() returns an
+     * ArrayList. I'm assuming that won't change.
+     * 
+     * @return a sorted ArrayList<> of the predefined {@link MobType}s.
      */
-    public Collection<MobType> getPredefinedMobTypes() {
-        ArrayList<MobType> predefined = new ArrayList<>();
-        for (MobType mobType : getAllMobTypes()) {
-            if (mobType.isPredefined()) {
-                predefined.add(mobType);
-            }
-        }
-        return predefined;
+    public ArrayList<MobType> getPredefinedMobTypes() {
+        return (ArrayList<MobType>) getAllMobTypes().stream().filter(MobType::isPredefined).collect(Collectors.toList());
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return an unsorted ArrayList<> of the custom {@link MobType}s.
+     * 
+     * NOTE: the current implementation of Collectors.toList() returns an
+     * ArrayList. I'm assuming that won't change.
+     * 
+     * @return an unsorted ArrayList<> of the custom {@link MobType}s.
+     */
+    public ArrayList<MobType> getCustomMobTypes() {
+        return (ArrayList<MobType>) getAllMobTypes().stream().filter(t -> !t.isPredefined()).collect(Collectors.toList());
     }
 
     // ------------------------------------------------------------------------

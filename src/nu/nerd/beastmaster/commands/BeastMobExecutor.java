@@ -1,5 +1,6 @@
 package nu.nerd.beastmaster.commands;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -80,7 +81,8 @@ public class BeastMobExecutor extends ExecutorBase {
 
                 MobType parentType = BeastMaster.MOBS.getMobType(parentIdArg);
                 if (parentType == null) {
-                    Commands.errorNull(sender, "parent type", idArg);
+                    Commands.errorNull(sender, "parent type", parentIdArg);
+                    sender.sendMessage(ChatColor.RED + "Run \"/beast-mob list\" to see valid parent types.");
                     return true;
                 }
 
@@ -120,10 +122,10 @@ public class BeastMobExecutor extends ExecutorBase {
                                    .collect(Collectors.joining(ChatColor.WHITE + ", ")));
 
                 sender.sendMessage(ChatColor.GOLD + "Custom mob types:");
-                for (MobType mobType : BeastMaster.MOBS.getAllMobTypes()) {
-                    if (!mobType.isPredefined()) {
-                        sender.sendMessage(mobType.getShortDescription());
-                    }
+                ArrayList<MobType> customMobTypes = BeastMaster.MOBS.getCustomMobTypes();
+                customMobTypes.sort((t1, t2) -> t1.getId().compareTo(t2.getId()));
+                for (MobType mobType : customMobTypes) {
+                    sender.sendMessage(mobType.getShortDescription());
                 }
                 return true;
 
