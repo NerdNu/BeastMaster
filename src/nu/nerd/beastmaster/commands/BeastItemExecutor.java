@@ -1,6 +1,7 @@
 package nu.nerd.beastmaster.commands;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import org.bukkit.ChatColor;
@@ -10,6 +11,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.DropType;
@@ -27,7 +29,7 @@ public class BeastItemExecutor extends ExecutorBase {
      * Constructor.
      */
     public BeastItemExecutor() {
-        super("beast-item", "help", "define", "redefine", "remove", "get", "list");
+        super("beast-item", "help", "define", "redefine", "remove", "get", "list", "name", "lore");
     }
 
     // ------------------------------------------------------------------------
@@ -208,6 +210,73 @@ public class BeastItemExecutor extends ExecutorBase {
                 for (Item item : BeastMaster.ITEMS.getAllItems()) {
                     sender.sendMessage(ChatColor.YELLOW + item.getId() +
                                        ChatColor.WHITE + ": " + Util.getItemDescription(item.getItemStack()));
+                }
+                return true;
+
+            } else if (args[0].equals("name")) {
+                if (args.length < 1) {
+                    Commands.invalidArguments(sender, getName() + " name [<text>]");
+                    return true;
+                }
+
+                if (!isInGame(sender)) {
+                    return true;
+                }
+                Player player = (Player) sender;
+
+                ItemStack itemStack = player.getInventory().getItemInMainHand();
+                if (itemStack == null || itemStack.getType() == Material.AIR) {
+                    sender.sendMessage(ChatColor.RED + "Hold the object to rename as an item in your main hand!");
+                    return true;
+                }
+
+                String nameArg = ChatColor.translateAlternateColorCodes('&', String.join(" ", Arrays.copyOfRange(args, 1, args.length)));
+                ItemMeta meta = itemStack.getItemMeta();
+                meta.setDisplayName(nameArg);
+                itemStack.setItemMeta(meta);
+                player.getInventory().setItemInMainHand(itemStack);
+
+                if (nameArg.isEmpty()) {
+                    sender.sendMessage(ChatColor.GOLD + "The item in your main hand has had its name cleared.");
+                } else {
+                    sender.sendMessage(ChatColor.GOLD + "The item in your main hand is now named:\n" +
+                                       ChatColor.WHITE + nameArg);
+
+                }
+                return true;
+
+            } else if (args[0].equals("lore")) {
+                if (args.length < 1) {
+                    Commands.invalidArguments(sender, getName() + " lore [<text>]");
+                    return true;
+                }
+
+                if (!isInGame(sender)) {
+                    return true;
+                }
+                Player player = (Player) sender;
+
+                ItemStack itemStack = player.getInventory().getItemInMainHand();
+                if (itemStack == null || itemStack.getType() == Material.AIR) {
+                    sender.sendMessage(ChatColor.RED + "Hold the object to modify as an item in your main hand!");
+                    return true;
+                }
+
+                String loreTextArg = ChatColor.translateAlternateColorCodes('&', String.join(" ", Arrays.copyOfRange(args, 1, args.length)))
+                .replace('|', '\n')
+                .replaceAll("\n\n", "|");
+                ArrayList<String> loreList = loreTextArg.isEmpty() ? null : new ArrayList<>(Arrays.asList(loreTextArg.split("\n")));
+
+                ItemMeta meta = itemStack.getItemMeta();
+                meta.setLore(loreList);
+                itemStack.setItemMeta(meta);
+                player.getInventory().setItemInMainHand(itemStack);
+
+                if (loreTextArg.isEmpty()) {
+                    sender.sendMessage(ChatColor.GOLD + "The item in your main hand has had its lore cleared.");
+                } else {
+                    sender.sendMessage(ChatColor.GOLD + "The item in your main hand is now lored:\n" +
+                                       ChatColor.WHITE + loreTextArg);
                 }
                 return true;
             }
