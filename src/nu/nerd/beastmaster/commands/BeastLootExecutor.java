@@ -1,20 +1,22 @@
 package nu.nerd.beastmaster.commands;
 
-import nu.nerd.beastmaster.BeastMaster;
-import nu.nerd.beastmaster.Drop;
-import nu.nerd.beastmaster.DropSet;
-import nu.nerd.beastmaster.DropType;
-import nu.nerd.beastmaster.objectives.ObjectiveType;
-import org.bukkit.ChatColor;
-import org.bukkit.Sound;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import org.bukkit.ChatColor;
+import org.bukkit.Sound;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+
+import nu.nerd.beastmaster.BeastMaster;
+import nu.nerd.beastmaster.Drop;
+import nu.nerd.beastmaster.DropSet;
+import nu.nerd.beastmaster.DropType;
+import nu.nerd.beastmaster.objectives.ObjectiveType;
 
 // ----------------------------------------------------------------------------
 /**
@@ -112,7 +114,9 @@ public class BeastLootExecutor extends ExecutorBase {
                 }
 
                 sender.sendMessage(ChatColor.GOLD + "Loot tables:");
-                sender.sendMessage(BeastMaster.LOOTS.getDropSets().stream()
+                ArrayList<DropSet> sortedDropSets = new ArrayList<>(BeastMaster.LOOTS.getDropSets());
+                sortedDropSets.sort((s1, s2) -> s1.getId().compareTo(s2.getId()));
+                sender.sendMessage(sortedDropSets.stream()
                 .map((dropSet) -> ChatColor.YELLOW + dropSet.getId())
                 .collect(Collectors.joining(ChatColor.WHITE + ", ")));
                 return true;
