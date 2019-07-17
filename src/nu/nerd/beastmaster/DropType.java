@@ -2,8 +2,8 @@ package nu.nerd.beastmaster;
 
 // ----------------------------------------------------------------------------
 /**
- * Distinguishes the various types of actions that can be performed by a
- * {@link DropAction} when a {@link Drop} is selected in a {@link DropSet}.
+ * Distinguishes the various types of actions that can be performed when a
+ * {@link Drop} is selected in a {@link DropSet}.
  */
 public enum DropType {
     /**
@@ -47,7 +47,7 @@ public enum DropType {
      * Return true if the specified ID is reserved, and so cannot be used for
      * items or mobs.
      * 
-     * @eturn true if the specified ID is reserved.
+     * @return true if the specified ID is reserved.
      */
     public static boolean isDropType(String id) {
         for (DropType type : values()) {

@@ -38,7 +38,9 @@ public class LootManager {
     /**
      * Add a new {@link DropSet}.
      * 
-     * The type should not be previously registered.
+     * The drops should not be previously registered.
+     * 
+     * @param drops the loot table.
      */
     public void addDropSet(DropSet drops) {
         _idToDrops.put(drops.getId().toLowerCase(), drops);
@@ -48,7 +50,7 @@ public class LootManager {
     /**
      * Remove a {@link DropSet}.
      * 
-     * @param id the ID of the type to remove.
+     * @param id the ID of the loot table to remove.
      */
     public void removeDropSet(String id) {
         _idToDrops.remove(id.toLowerCase());
@@ -58,15 +60,15 @@ public class LootManager {
     /**
      * Remove a {@link DropSet}.
      * 
-     * @param type the type to remove.
+     * @param drops the loot table to remove.
      */
-    public void removeDropSet(DropSet type) {
-        removeDropSet(type.getId());
+    public void removeDropSet(DropSet drops) {
+        removeDropSet(drops.getId());
     }
 
     // ------------------------------------------------------------------------
     /**
-     * Load all the loot tables types from the plugin configuration.
+     * Load all the loot tables from the plugin configuration.
      * 
      * @param config the plugin configuration file.
      * @param logger the logger.
