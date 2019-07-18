@@ -22,6 +22,7 @@ import nu.nerd.beastmaster.Drop;
 import nu.nerd.beastmaster.DropSet;
 import nu.nerd.beastmaster.DropType;
 import nu.nerd.beastmaster.Item;
+import nu.nerd.beastmaster.PotionSet;
 import nu.nerd.entitymeta.EntityMeta;
 
 // ----------------------------------------------------------------------------
@@ -500,10 +501,17 @@ public class MobType {
                 boolean canDespawn = (Boolean) getDerivedProperty("can-despawn").getValue();
                 mob.setRemoveWhenFarAway(canDespawn);
             }));
+        addProperty(new MobProperty("potion-buffs", DataType.STRING,
+            (mob, logger) -> {
+                String potionSetId = (String) getDerivedProperty("potion-buffs").getValue();
+                PotionSet potionSet = BeastMaster.POTIONS.getPotionSet(potionSetId);
+                if (potionSet != null) {
+                    potionSet.apply(mob);
+                }
+            }));
 
         // TODO: use AIR to signify clearing the default armour/weapon.
         // TODO: Disguise property.
-        // TODO: contact potion effects.
         // TODO: particle effect tracking mob.
     }
 
