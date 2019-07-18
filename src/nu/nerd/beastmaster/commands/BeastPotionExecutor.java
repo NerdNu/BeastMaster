@@ -251,6 +251,7 @@ public class BeastPotionExecutor extends ExecutorBase {
     protected void listPotionEffectTypes(CommandSender sender) {
         String effects = Stream.of(PotionEffectType.values())
         .map(e -> ChatColor.YELLOW + e.getName().toLowerCase())
+        .sorted()
         .collect(Collectors.joining(ChatColor.WHITE + ", "));
         sender.sendMessage(ChatColor.GOLD + "Potion types: " + effects);
     }
