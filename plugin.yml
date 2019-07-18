@@ -35,6 +35,10 @@ permissions:
     description: Permission to use the /beast-obj command.
     default: op
 
+  beastmaster.potion:
+    description: Permission to use the /beast-potion command.
+    default: op
+
   beastmaster.admin:
     description: Permission to use all commands except those requiring console access.
     default: op
@@ -44,6 +48,7 @@ permissions:
       beastmaster.loot: true
       beastmaster.mob: true
       beastmaster.obj: true
+      beastmaster.potion: true
 
 commands:
   beastmaster:
@@ -98,20 +103,20 @@ commands:
         - Create or modify a drop in the loot table. The <drop-type>
           can be nothing, default, item or mob; item and mob types
           require the <id> of the item or mob type to be specified.
-          <percentage-chance> is probability of the chance from 0.0
+          <percentage-chance> is probability of the drop from 0.0
           to 100.0. <min> is the number of dropped items or mobs, 
           and defaults to 1. <max> is the maximum number of dropped
           items or mobs and defaults to <min>.
       §e/<command> remove-drop <loot-id> <id>§f - Remove the 
         specified drop from the possible drops in the loot table.
       §e/<command> list-drops <loot-id>§f - List all possible drops from this loot table.
-      §e/<command> single <loot-id> <yes-or-no>§f - Specifies whether the loot table will drop a single drop or multiple independent drops. <yes-or-no> is case insensitive and can be one of yes/no/true/false/t/f/on/off. If yes, a single drop will be selected to drop and drop chances are interpreted as relative preferences. If no, multiple drops may drop, according to their drop chances.
+      §e/<command> single <loot-id> <yes-or-no>§f - Specifies whether the loot table will drop a single drop or multiple independent drops. <yes-or-no> is case insensitive and can be one of yes/no/y/n/true/false/t/f/on/off. If yes, a single drop will be selected to drop and drop chances are interpreted as relative preferences. If no, multiple drops may drop, according to their drop chances.
       §e/<command> objective <loot-id> <item-id> (<obj-id>|none)§f - Signify that this drop causes an objective to spawn, or not if the objective ID is "none". Only item drops can trigger an objective.
-      §e/<command> logged <loot-id> <item-id> <yes-or-no>§f - Enables or disables logging of this drop in the console. <yes-or-no> is case insensitive and can be one of yes/no/true/false/t/f/on/off.
+      §e/<command> logged <loot-id> <item-id> <yes-or-no>§f - Enables or disables logging of this drop in the console. <yes-or-no> is case insensitive and can be one of yes/no/y/n/true/false/t/f/on/off.
       §e/<command> sound <loot-id> <item-id> <sound> §f[§e<range> <pitch>§f] - Signify that this drop causes a sound to play. <sound> is a sound name from the Bukkit API or "none". <range> is the range of the sound in blocks. <pitch> is playback speed, from 0.5 to 2.0. <range> and <pitch> can be omitted, in which case they default to 15.0 and 1.0, respectively.
       §e/<command> xp <loot-id> <item-id> <xp>§f - Signify that this drop will be accompanied by a specified amount of XP, or 0 to suppress the XP. NOTE: This option does not affect XP from vanilla default drops.
-      §e/<command> invulnerable <loot-id> <yes-or-no>§f - Controls whether the specified drop is invulnerable. <yes-or-no> is case insensitive and can be one of yes/no/true/false/t/f/on/off.
-      §e/<command> glowing <loot-id> <yes-or-no>§f - Controls whether the specified drop is glowing. (Default drops are not affected.) <yes-or-no> is case insensitive and can be one of yes/no/true/false/t/f/on/off.
+      §e/<command> invulnerable <loot-id> <yes-or-no>§f - Controls whether the specified drop is invulnerable. <yes-or-no> is case insensitive and can be one of yes/no/y/n/true/false/t/f/on/off.
+      §e/<command> glowing <loot-id> <yes-or-no>§f - Controls whether the specified drop is glowing. (Default drops are not affected.) <yes-or-no> is case insensitive and can be one of yes/no/y/n/true/false/t/f/on/off.
 
   beast-mob:
     description: Configure mobs.
@@ -143,3 +148,32 @@ commands:
       §e/<command> range <obj-id> <min> <max>§f - Specify the minimum and maximum range an objective can spawn from the drop that initiates it.
       §e/<command> height <obj-id> <min> <max>§f - Specify the minimum and maximum Y coordinate an objective can spawn.
       §e/<command> time <obj-id> <speed> <extra-ticks>§f - Specify the expected player speed from which objective lifetimes are computed. The <extra-ticks> value is a fixed amount of time added to the objective lifetime, irrespective of its range.
+
+  beast-potion:
+    description: Configure potion sets.
+    permission: beastmaster.potion
+    usage: |
+    
+      §e/<command> help§f - Show usage help.
+      §e/<command> add <potion-set-id>§f - Define a new potion set.
+      §e/<command> remove <potion-set-id>§f - Remove the specified potion set.
+      §e/<command> info <potion-set-id>§f - Describe the specified potion set.
+      §e/<command> list§f - List all potion sets.
+      §e/<command> add-potion <potion-set-id> <percentage-chance> <seconds> <potion-type> <amplifier> [<particles>] [<ambient>] [<icon>]§f
+        - Add or modify a potion in the set. Within any potion set,
+          the <potion-type> is unique, so adding a new potion of
+          the same type as an existing one overrides the latter.
+          <seconds> is the duration of the potion effect, or "inf"
+          to signify infinite duration.
+          <potion-type> is the effect type, e.g. BLINDNESS.
+          <amplifier> is the potion level, starting at 1.
+          <particles> (yes/no/y/n/true/false/t/f/on/off) specifies
+          whether particles should be visible.
+          <ambient> (yes/no/y/n/true/false/t/f/on/off) specifies
+          whether the potion is "ambient" (like a beacon).
+          Ambient potion effects have less obtrusive particles.
+          <icon> (yes/no/y/n/true/false/t/f/on/off) specifies
+          whether the potion's icon should be shown in the client.
+      §e/<command> remove-potion <potion-set-id> <potion-type>§f
+        - Remove the potion with the specified type.
+      §e/<command> list-potions <loot-id>§f - List all potions in this potion set.

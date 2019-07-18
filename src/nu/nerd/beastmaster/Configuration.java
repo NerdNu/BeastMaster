@@ -70,6 +70,7 @@ public class Configuration {
         BeastMaster.MOBS.load(config, logger);
         BeastMaster.LOOTS.load(config, logger);
         BeastMaster.OBJECTIVE_TYPES.load(config, logger);
+        BeastMaster.POTIONS.load(config, logger);
 
         if (DEBUG_CONFIG) {
             logger.info("Configuration:");
@@ -102,6 +103,11 @@ public class Configuration {
             for (ObjectiveType objectiveType : BeastMaster.OBJECTIVE_TYPES.getObjectiveTypes()) {
                 logger.info(objectiveType.getDescription());
             }
+
+            logger.info("POTIONS: ");
+            for (PotionSet potionSet : BeastMaster.POTIONS.getPotionSets()) {
+                logger.info(potionSet.getDescription());
+            }
         }
     } // reload
 
@@ -118,6 +124,7 @@ public class Configuration {
         BeastMaster.LOOTS.save(config, logger);
         BeastMaster.MOBS.save(config, logger);
         BeastMaster.OBJECTIVE_TYPES.save(config, logger);
+        BeastMaster.POTIONS.save(config, logger);
         BeastMaster.PLUGIN.saveConfig();
     }
 

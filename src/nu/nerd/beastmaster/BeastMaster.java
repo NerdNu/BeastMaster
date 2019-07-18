@@ -34,6 +34,7 @@ import nu.nerd.beastmaster.commands.BeastLootExecutor;
 import nu.nerd.beastmaster.commands.BeastMasterExecutor;
 import nu.nerd.beastmaster.commands.BeastMobExecutor;
 import nu.nerd.beastmaster.commands.BeastObjectiveExecutor;
+import nu.nerd.beastmaster.commands.BeastPotionExecutor;
 import nu.nerd.beastmaster.commands.BeastZoneExecutor;
 import nu.nerd.beastmaster.commands.ExecutorBase;
 import nu.nerd.beastmaster.mobs.MobProperty;
@@ -93,6 +94,11 @@ public class BeastMaster extends JavaPlugin implements Listener {
     public static final ObjectiveTypeManager OBJECTIVE_TYPES = new ObjectiveTypeManager();
 
     /**
+     * Manages all potion sets.
+     */
+    public static final PotionManager POTIONS = new PotionManager();
+
+    /**
      * Metadata name (key) used to tag affected mobs.
      */
     public static final String MOB_META_KEY = "BM_Mob";
@@ -120,6 +126,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         addCommandExecutor(new BeastLootExecutor());
         addCommandExecutor(new BeastMobExecutor());
         addCommandExecutor(new BeastObjectiveExecutor());
+        addCommandExecutor(new BeastPotionExecutor());
 
         getServer().getPluginManager().registerEvents(this, this);
 
