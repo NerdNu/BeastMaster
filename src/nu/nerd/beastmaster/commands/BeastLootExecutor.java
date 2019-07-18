@@ -277,7 +277,7 @@ public class BeastLootExecutor extends ExecutorBase {
                 }
 
                 String yesNoArg = args[2];
-                Boolean single = Commands.parseBoolean(sender, yesNoArg);
+                Boolean single = Commands.parseBoolean(sender, yesNoArg, "single");
                 if (single == null) {
                     return true;
                 }
@@ -353,7 +353,7 @@ public class BeastLootExecutor extends ExecutorBase {
                 }
 
                 String yesNoArg = args[3];
-                Boolean logged = Commands.parseBoolean(sender, yesNoArg);
+                Boolean logged = Commands.parseBoolean(sender, yesNoArg, "logged");
                 if (logged == null) {
                     return true;
                 }
@@ -490,7 +490,7 @@ public class BeastLootExecutor extends ExecutorBase {
                 }
 
                 String yesNoArg = args[3];
-                Boolean flag = Commands.parseBoolean(sender, yesNoArg);
+                Boolean flag = Commands.parseBoolean(sender, yesNoArg, "invulnerable");
                 if (flag == null) {
                     return true;
                 }
@@ -522,7 +522,7 @@ public class BeastLootExecutor extends ExecutorBase {
                 }
 
                 String yesNoArg = args[3];
-                Boolean flag = Commands.parseBoolean(sender, yesNoArg);
+                Boolean flag = Commands.parseBoolean(sender, yesNoArg, "glowing");
                 if (flag == null) {
                     return true;
                 }
@@ -553,7 +553,7 @@ public class BeastLootExecutor extends ExecutorBase {
                 }
 
                 String yesNoArg = args[3];
-                Boolean flag = Commands.parseBoolean(sender, yesNoArg);
+                Boolean flag = Commands.parseBoolean(sender, yesNoArg, "direct");
                 if (flag == null) {
                     return true;
                 }

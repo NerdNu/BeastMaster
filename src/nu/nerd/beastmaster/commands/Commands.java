@@ -1,14 +1,14 @@
 package nu.nerd.beastmaster.commands;
 
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.command.CommandSender;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.command.CommandSender;
 
 // ----------------------------------------------------------------------------
 /**
@@ -157,21 +157,24 @@ public class Commands {
     // ------------------------------------------------------------------------
     /**
      * Case insensitively parse a command argument as a boolean value (t/f,
-     * true/false, yes/no, on/off).
+     * true/false, y/n, yes/no, on/off).
      * 
      * @param sender the CommandSender.
      * @param arg the command argument to parse as boolean.
+     * @param argName a name identifying the purpose of the argument, to be
+     *        shown in error messages.
      * @return true or false, respectively, for values that are unambiguously
      *         true or false, and null for everything else.
      */
-    public static Boolean parseBoolean(CommandSender sender, String arg) {
+    public static Boolean parseBoolean(CommandSender sender, String arg, String argName) {
         String lowerArg = arg.toLowerCase();
         if (TRUE_STRINGS.contains(lowerArg)) {
             return true;
         } else if (FALSE_STRINGS.contains(lowerArg)) {
             return false;
         } else {
-            sender.sendMessage(ChatColor.RED + arg + " is neither false nor true.");
+            sender.sendMessage(ChatColor.RED + arg + " is not a valid " + argName + " argument.");
+            sender.sendMessage(ChatColor.RED + "Valid values are: yes/no/y/n/true/false/t/f/on/off");
             return null;
         }
     }
@@ -253,10 +256,10 @@ public class Commands {
     /**
      * String values treated as false.
      */
-    private static List<String> FALSE_STRINGS = Arrays.asList("f", "false", "no", "off");
+    private static List<String> FALSE_STRINGS = Arrays.asList("f", "false", "n", "no", "off");
 
     /**
      * String values treated as true.
      */
-    private static List<String> TRUE_STRINGS = Arrays.asList("t", "true", "yes", "on");
+    private static List<String> TRUE_STRINGS = Arrays.asList("t", "true", "y", "yes", "on");
 } // class Commands
