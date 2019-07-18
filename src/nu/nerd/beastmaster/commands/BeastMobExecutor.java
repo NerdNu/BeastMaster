@@ -207,9 +207,12 @@ public class BeastMobExecutor extends ExecutorBase {
 
                 Object value;
                 try {
-                    value = property.getType().parse(valueArg);
+                    value = property.getType().parse(valueArg, sender, property.getId());
+                    if (value == null) {
+                        return true;
+                    }
                 } catch (IllegalArgumentException ex) {
-                    sender.sendMessage(ChatColor.RED + valueArg + " is not a valid value.");
+                    sender.sendMessage(ChatColor.RED + valueArg + " is not a valid " + property.getId() + " value.");
                     return true;
                 }
 

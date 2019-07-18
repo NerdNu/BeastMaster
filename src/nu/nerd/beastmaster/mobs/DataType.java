@@ -1,6 +1,9 @@
 package nu.nerd.beastmaster.mobs;
 
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
+
+import nu.nerd.beastmaster.commands.Commands;
 
 // ----------------------------------------------------------------------------
 /**
@@ -11,8 +14,8 @@ public class DataType {
 
     public static final IDataType BOOLEAN = new IDataType() {
         @Override
-        public Object parse(String value) throws IllegalArgumentException {
-            return Boolean.parseBoolean(value);
+        public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
+            return Commands.parseBoolean(sender, value, id);
         }
 
         @Override
@@ -30,7 +33,7 @@ public class DataType {
 
     public static final IDataType INTEGER = new IDataType() {
         @Override
-        public Object parse(String value) throws IllegalArgumentException {
+        public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
             return Integer.parseInt(value);
         }
 
@@ -49,7 +52,7 @@ public class DataType {
 
     public static final IDataType DOUBLE = new IDataType() {
         @Override
-        public Object parse(String value) throws IllegalArgumentException {
+        public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
             return Double.parseDouble(value);
         }
 
@@ -68,7 +71,7 @@ public class DataType {
 
     public static final IDataType STRING = new IDataType() {
         @Override
-        public Object parse(String value) throws IllegalArgumentException {
+        public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
             return value;
         }
 
@@ -87,7 +90,7 @@ public class DataType {
 
     public static final IDataType ENTITY_TYPE = new IDataType() {
         @Override
-        public Object parse(String value) throws IllegalArgumentException {
+        public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
             return EntityType.valueOf(value);
         }
 
