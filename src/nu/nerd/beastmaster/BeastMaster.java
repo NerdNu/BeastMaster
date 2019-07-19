@@ -324,24 +324,45 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * Tag mobs hurt by players with the time stamp of the damage event to
      * facilitate custom dropped XP.
+     * 
+     * Also, apply attack-potions {@link PotionSet} to the victim, where
+     * configured on the attacker.
      */
     @EventHandler(ignoreCancelled = true)
     protected void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        Entity entity = event.getEntity();
+        Entity damagedEntity = event.getEntity();
+        LivingEntity attackingMob = null;
 
         boolean isPlayerAttack = false;
         if (event.getDamager() instanceof Player) {
             isPlayerAttack = true;
+        } else if (event.getDamager() instanceof LivingEntity) {
+            attackingMob = (LivingEntity) event.getDamager();
         } else if (event.getDamager() instanceof Projectile) {
             Projectile projectile = (Projectile) event.getDamager();
             if (projectile.getShooter() instanceof Player) {
                 isPlayerAttack = true;
+            } else if (projectile.getShooter() instanceof LivingEntity) {
+                attackingMob = (LivingEntity) projectile.getShooter();
             }
         }
 
         // Tag mobs hurt by players with the damage time stamp.
         if (isPlayerAttack) {
-            entity.setMetadata(PLAYER_DAMAGE_TIME_KEY, new FixedMetadataValue(this, new Long(entity.getWorld().getFullTime())));
+            damagedEntity.setMetadata(PLAYER_DAMAGE_TIME_KEY, new FixedMetadataValue(this, new Long(damagedEntity.getWorld().getFullTime())));
+        }
+
+        // Apply attackingMob's attack-potions, if set.
+        if (attackingMob != null && damagedEntity instanceof LivingEntity) {
+            String mobTypeId = (String) EntityMeta.api().get(attackingMob, this, "mob-type");
+            MobType mobType = MOBS.getMobType(mobTypeId);
+            if (mobType != null) {
+                String potionSetId = (String) mobType.getDerivedProperty("attack-potions").getValue();
+                PotionSet potionSet = POTIONS.getPotionSet(potionSetId);
+                if (potionSet != null) {
+                    potionSet.apply((LivingEntity) damagedEntity);
+                }
+            }
         }
     }
 

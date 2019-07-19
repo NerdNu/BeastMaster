@@ -509,6 +509,8 @@ public class MobType {
                     potionSet.apply(mob);
                 }
             }));
+        addProperty(new MobProperty("attack-potions", DataType.STRING, (mob, logger) -> {
+        }));
 
         // TODO: use AIR to signify clearing the default armour/weapon.
         // TODO: Disguise property.
