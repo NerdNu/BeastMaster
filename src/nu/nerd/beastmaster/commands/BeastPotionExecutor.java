@@ -26,7 +26,7 @@ public class BeastPotionExecutor extends ExecutorBase {
      */
     public BeastPotionExecutor() {
         super("beast-potion", "help", "add", "remove", "list",
-              "add-potion", "remove-potion", "list-potions");
+              "info", "add-potion", "remove-potion");
     }
 
     // --------------------------------------------------------------------------
@@ -91,6 +91,28 @@ public class BeastPotionExecutor extends ExecutorBase {
                 sender.sendMessage(ChatColor.GOLD + "Potion sets: " +
                                    potionSets.stream().map(s -> ChatColor.YELLOW + s.getId())
                                    .collect(Collectors.joining(ChatColor.WHITE + ", ")));
+            }
+            return true;
+
+        } else if (args[0].equals("info")) {
+            if (args.length != 2) {
+                Commands.invalidArguments(sender, getName() + " info <potion-set-id>");
+                return true;
+            }
+
+            String idArg = args[1];
+            PotionSet potionSet = BeastMaster.POTIONS.getPotionSet(idArg);
+            if (potionSet == null) {
+                Commands.errorNull(sender, "potion set", idArg);
+                return true;
+            }
+
+            if (potionSet.isEmpty()) {
+                sender.sendMessage(ChatColor.GOLD + "Potion set " +
+                                   ChatColor.YELLOW + potionSet.getId() +
+                                   ChatColor.GOLD + " contains no potions.");
+            } else {
+                sender.sendMessage(ChatColor.GOLD + "Potion set: " + potionSet.getDescription());
             }
             return true;
 
@@ -213,28 +235,6 @@ public class BeastPotionExecutor extends ExecutorBase {
                 sender.sendMessage(ChatColor.GOLD + "Removed potion " + ChatColor.YELLOW + potionSetIdArg +
                                    ChatColor.GOLD + ":");
                 sender.sendMessage(potion.getDescription());
-            }
-            return true;
-
-        } else if (args[0].equals("list-potions")) {
-            if (args.length != 2) {
-                Commands.invalidArguments(sender, getName() + " list-potions <potion-set-id>");
-                return true;
-            }
-
-            String idArg = args[1];
-            PotionSet potionSet = BeastMaster.POTIONS.getPotionSet(idArg);
-            if (potionSet == null) {
-                Commands.errorNull(sender, "potion set", idArg);
-                return true;
-            }
-
-            if (potionSet.isEmpty()) {
-                sender.sendMessage(ChatColor.GOLD + "Potion set " +
-                                   ChatColor.YELLOW + potionSet.getId() +
-                                   ChatColor.GOLD + " contains no potions.");
-            } else {
-                sender.sendMessage(ChatColor.GOLD + "Potion set: " + potionSet.getDescription());
             }
             return true;
 

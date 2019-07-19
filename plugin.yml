@@ -157,8 +157,8 @@ commands:
       §e/<command> help§f - Show usage help.
       §e/<command> add <potion-set-id>§f - Define a new potion set.
       §e/<command> remove <potion-set-id>§f - Remove the specified potion set.
-      §e/<command> info <potion-set-id>§f - Describe the specified potion set.
       §e/<command> list§f - List all potion sets.
+      §e/<command> info <potion-set-id>§f - Describe the specified potion set.
       §e/<command> add-potion <potion-set-id> <percentage-chance> <seconds> <potion-type> <amplifier> [<particles>] [<ambient>] [<icon>]§f
         - Add or modify a potion in the set. Within any potion set,
           the <potion-type> is unique, so adding a new potion of
@@ -176,4 +176,3 @@ commands:
           whether the potion's icon should be shown in the client.
       §e/<command> remove-potion <potion-set-id> <potion-type>§f
         - Remove the potion with the specified type.
-      §e/<command> list-potions <loot-id>§f - List all potions in this potion set.
