@@ -9,6 +9,7 @@ import org.bukkit.entity.EntityType;
 
 import me.libraryaddict.disguise.utilities.parser.DisguiseParseException;
 import me.libraryaddict.disguise.utilities.parser.DisguiseParser;
+import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.commands.Commands;
 
 // ----------------------------------------------------------------------------
@@ -76,6 +77,37 @@ public class DataType {
     // ------------------------------------------------------------------------
 
     public static final IDataType STRING = new IDataType() {
+        @Override
+        public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
+            return value;
+        }
+
+        @Override
+        public Object deserialise(String value) throws IllegalArgumentException {
+            return value;
+        }
+
+        @Override
+        public int compare(Object o1, Object o2) {
+            return ((String) o1).compareTo((String) o2);
+        }
+    };
+
+    // ------------------------------------------------------------------------
+
+    public static final IDataType LOOT_OR_ITEM = new IDataType() {
+        @Override
+        public String format(Object value) {
+            String id = (String) value;
+            if (BeastMaster.LOOTS.getDropSet(id) != null) {
+                return ChatColor.GREEN + id + ChatColor.WHITE + " (loot)";
+            } else if (BeastMaster.ITEMS.getItem(id) != null) {
+                return ChatColor.GREEN + id + ChatColor.WHITE + " (item)";
+            } else {
+                return ChatColor.RED + id;
+            }
+        }
+
         @Override
         public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
             return value;

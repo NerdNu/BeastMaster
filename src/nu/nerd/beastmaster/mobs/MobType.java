@@ -415,7 +415,7 @@ public class MobType {
                 mob.setMaximumAir(ticks);
                 mob.setRemainingAir(ticks);
             }));
-        addProperty(new MobProperty("helmet", DataType.STRING,
+        addProperty(new MobProperty("helmet", DataType.LOOT_OR_ITEM,
             (mob, logger) -> {
                 String id = (String) getDerivedProperty("helmet").getValue();
                 ItemStack itemStack = getEquipmentItem(id);
@@ -428,7 +428,7 @@ public class MobType {
                 // Outside vanilla drop mechanism.
                 mob.getEquipment().setHelmetDropChance(0);
             }));
-        addProperty(new MobProperty("chest-plate", DataType.STRING,
+        addProperty(new MobProperty("chest-plate", DataType.LOOT_OR_ITEM,
             (mob, logger) -> {
                 String id = (String) getDerivedProperty("chest-plate").getValue();
                 ItemStack itemStack = getEquipmentItem(id);
@@ -441,7 +441,7 @@ public class MobType {
                 // Outside vanilla drop mechanism.
                 mob.getEquipment().setChestplateDropChance(0);
             }));
-        addProperty(new MobProperty("leggings", DataType.STRING,
+        addProperty(new MobProperty("leggings", DataType.LOOT_OR_ITEM,
             (mob, logger) -> {
                 String id = (String) getDerivedProperty("leggings").getValue();
                 ItemStack itemStack = getEquipmentItem(id);
@@ -454,7 +454,7 @@ public class MobType {
                 // Outside vanilla drop mechanism.
                 mob.getEquipment().setLeggingsDropChance(0);
             }));
-        addProperty(new MobProperty("boots", DataType.STRING,
+        addProperty(new MobProperty("boots", DataType.LOOT_OR_ITEM,
             (mob, logger) -> {
                 String id = (String) getDerivedProperty("boots").getValue();
                 ItemStack itemStack = getEquipmentItem(id);
@@ -467,7 +467,7 @@ public class MobType {
                 // Outside vanilla drop mechanism.
                 mob.getEquipment().setBootsDropChance(0);
             }));
-        addProperty(new MobProperty("main-hand", DataType.STRING,
+        addProperty(new MobProperty("main-hand", DataType.LOOT_OR_ITEM,
             (mob, logger) -> {
                 String id = (String) getDerivedProperty("main-hand").getValue();
                 ItemStack itemStack = getEquipmentItem(id);
@@ -480,7 +480,7 @@ public class MobType {
                 // Outside vanilla drop mechanism.
                 mob.getEquipment().setItemInMainHandDropChance(0);
             }));
-        addProperty(new MobProperty("off-hand", DataType.STRING,
+        addProperty(new MobProperty("off-hand", DataType.LOOT_OR_ITEM,
             (mob, logger) -> {
                 String id = (String) getDerivedProperty("off-hand").getValue();
                 ItemStack itemStack = getEquipmentItem(id);
@@ -533,7 +533,7 @@ public class MobType {
      * @return the equipment as an ItemStack, or null if the equipment should
      *         not change (be default).
      */
-    protected ItemStack getEquipmentItem(String id) {
+    protected static ItemStack getEquipmentItem(String id) {
         DropSet drops = BeastMaster.LOOTS.getDropSet(id);
         if (drops != null) {
             Drop drop = drops.chooseOneDrop();
