@@ -1,7 +1,7 @@
 debug:
-  config: false
   replace: false
   blockstore: false
+  disguises: false
 
 chance:
   wither-skeleton: 0.8

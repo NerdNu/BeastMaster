@@ -31,7 +31,7 @@ public class BeastMasterExecutor extends ExecutorBase {
         }
 
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
-            BeastMaster.CONFIG.reload();
+            BeastMaster.CONFIG.reload(true);
             sender.sendMessage(ChatColor.GOLD + BeastMaster.PLUGIN.getName() + " configuration reloaded.");
         }
         return true;

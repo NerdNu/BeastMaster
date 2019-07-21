@@ -28,8 +28,6 @@ import nu.nerd.entitymeta.EntityMeta;
 // ----------------------------------------------------------------------------
 /**
  * Represents a custom mob type.
- * 
- * TODO: implement potions.
  */
 public class MobType {
     // ------------------------------------------------------------------------
@@ -511,10 +509,13 @@ public class MobType {
             }));
         addProperty(new MobProperty("attack-potions", DataType.STRING, (mob, logger) -> {
         }));
+        addProperty(new MobProperty("disguise", DataType.DISGUISE,
+            (mob, logger) -> {
+                String encodedDisguise = (String) getDerivedProperty("disguise").getValue();
+                BeastMaster.DISGUISES.createDisguise(mob, mob.getWorld(), encodedDisguise);
+            }));
 
-        // TODO: use AIR to signify clearing the default armour/weapon.
-        // TODO: Disguise property.
-        // TODO: particle effect tracking mob.
+        // TODO: particle effects tracking mob, projectiles, attack hit points.
     }
 
     // ------------------------------------------------------------------------

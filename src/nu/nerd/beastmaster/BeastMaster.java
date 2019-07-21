@@ -3,6 +3,7 @@ package nu.nerd.beastmaster;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -23,6 +24,11 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
@@ -99,6 +105,11 @@ public class BeastMaster extends JavaPlugin implements Listener {
     public static final PotionManager POTIONS = new PotionManager();
 
     /**
+     * Keeps track of all disguised mobs.
+     */
+    public static final DisguiseManager DISGUISES = new DisguiseManager();
+
+    /**
      * Metadata name (key) used to tag affected mobs.
      */
     public static final String MOB_META_KEY = "BM_Mob";
@@ -118,7 +129,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
 
         PLUGIN = this;
         saveDefaultConfig();
-        CONFIG.reload();
+        CONFIG.reload(false);
 
         addCommandExecutor(new BeastMasterExecutor());
         addCommandExecutor(new BeastZoneExecutor());
@@ -139,6 +150,15 @@ public class BeastMaster extends JavaPlugin implements Listener {
         }, 1, 1);
 
         OBJECTIVES.extractSchematics();
+
+        // Since we can't rely on ChunkLoadEvent or WorldLoadEvent to tell us
+        // when chunks containing disguised mobs load at startup, let's
+        // process all loaded chunks here.
+        for (World world : Bukkit.getWorlds()) {
+            for (Chunk chunk : world.getLoadedChunks()) {
+                DISGUISES.loadDisguises(chunk);
+            }
+        }
     } // onEnable
 
     // ------------------------------------------------------------------------
@@ -149,6 +169,23 @@ public class BeastMaster extends JavaPlugin implements Listener {
     public void onDisable() {
         Bukkit.getScheduler().cancelTasks(this);
         OBJECTIVES.removeAll();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the MobType of the specified entity.
+     * 
+     * @param entity the entity.
+     * @return the MobType, or null if the entity is not living, or has no
+     *         custom MobType. Note that generally vanilla mobs do have one even
+     *         if it has not custom properties.
+     */
+    public static MobType getMobType(Entity entity) {
+        if (entity instanceof LivingEntity) {
+            String mobTypeId = (String) EntityMeta.api().get(entity, BeastMaster.PLUGIN, "mob-type");
+            return MOBS.getMobType(mobTypeId);
+        }
+        return null;
     }
 
     // ------------------------------------------------------------------------
@@ -193,9 +230,15 @@ public class BeastMaster extends JavaPlugin implements Listener {
      */
     @EventHandler(ignoreCancelled = true)
     public void onWorldLoad(WorldLoadEvent event) {
+        getLogger().info("onWorldLoad: " + event.getWorld().getName());
         World world = event.getWorld();
         if (ZONES.getZone(world.getName()) == null) {
             ZONES.addZone(new Zone(world.getName(), world));
+        }
+
+        // ChunkLoadEvent is not raised for pre-loaded spawn chunks.
+        for (Chunk chunk : world.getLoadedChunks()) {
+            Bukkit.getScheduler().runTaskLater(this, () -> DISGUISES.loadDisguises(chunk), 1);
         }
     }
 
@@ -354,8 +397,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
 
         // Apply attackingMob's attack-potions, if set.
         if (attackingMob != null && damagedEntity instanceof LivingEntity) {
-            String mobTypeId = (String) EntityMeta.api().get(attackingMob, this, "mob-type");
-            MobType mobType = MOBS.getMobType(mobTypeId);
+            MobType mobType = getMobType(attackingMob);
             if (mobType != null) {
                 String potionSetId = (String) mobType.getDerivedProperty("attack-potions").getValue();
                 PotionSet potionSet = POTIONS.getPotionSet(potionSetId);
@@ -378,8 +420,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         }
         // Note: Ghasts and Slimes are not Monsters... Players and ArmorStands
         // are LivingEntities. #currentyear
-        String mobTypeId = (String) EntityMeta.api().get(entity, this, "mob-type");
-        MobType mobType = MOBS.getMobType(mobTypeId);
+        MobType mobType = getMobType(entity);
         if (mobType != null) {
             DropSet drops = mobType.getDrops();
             if (drops != null) {
@@ -388,7 +429,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
                 Player player = null;
                 trigger.append("<playername>");
                 trigger.append(" killed ");
-                trigger.append(mobTypeId);
+                trigger.append(mobType.getId());
 
                 boolean dropDefaultItems = drops.generateRandomDrops(trigger.toString(), player, entity.getLocation());
                 if (!dropDefaultItems) {
@@ -443,6 +484,68 @@ public class BeastMaster extends JavaPlugin implements Listener {
             }
         }
     } // onEntityDeath
+
+    // ------------------------------------------------------------------------
+    /**
+     * When the player joins, send them all pertinent disguises in the world.
+     */
+    @EventHandler(ignoreCancelled = true)
+    protected void onPlayerJoin(PlayerJoinEvent event) {
+        if (BeastMaster.CONFIG.DEBUG_DISGUISES) {
+            getLogger().info("onPlayerJoin()");
+        }
+        DISGUISES.sendAllDisguises(event.getPlayer().getWorld(), event.getPlayer());
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * When the player respawns, refresh disguises.
+     */
+    @EventHandler(ignoreCancelled = true)
+    protected void onPlayerRespawn(PlayerRespawnEvent event) {
+        Bukkit.getScheduler().runTaskLater(this, () -> DISGUISES.sendAllDisguises(event.getPlayer().getWorld(), event.getPlayer()), 1);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * When the player changes world, send disguises for the new world.
+     */
+    @EventHandler(ignoreCancelled = true)
+    protected void onPlayerTeleport(PlayerTeleportEvent event) {
+        World fromWorld = event.getFrom().getWorld();
+        World toWorld = event.getTo().getWorld();
+        if (!fromWorld.equals(toWorld)) {
+            Bukkit.getScheduler().runTaskLater(this, () -> DISGUISES.sendAllDisguises(toWorld, event.getPlayer()), 1);
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * When loading a chunk, apply disguises if not null/empty.
+     */
+    @EventHandler(ignoreCancelled = true)
+    protected void onChunkLoad(ChunkLoadEvent event) {
+        DISGUISES.loadDisguises(event.getChunk());
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * When unloading a chunk, clear disguises of unloaded mobs.
+     */
+    @EventHandler(ignoreCancelled = true)
+    protected void onChunkUnload(ChunkUnloadEvent event) {
+        for (Entity entity : event.getChunk().getEntities()) {
+            if (entity instanceof LivingEntity) {
+                MobType mobType = getMobType(entity);
+                if (mobType != null) {
+                    String encodedDisguise = (String) mobType.getDerivedProperty("disguise").getValue();
+                    if (encodedDisguise != null && !encodedDisguise.isEmpty()) {
+                        DISGUISES.destroyDisguise((LivingEntity) entity, event.getWorld());
+                    }
+                }
+            }
+        }
+    }
 
     // ------------------------------------------------------------------------
     /**
