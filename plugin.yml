@@ -86,6 +86,7 @@ commands:
       §e/<command> remove <item-id>§f - Remove the definition of the specified item type.
       §e/<command> get <item-id> §f[§e<count>§f] - Give the player <count> of the item type with the specified, previously defined ID.
       §e/<command> list§f - List all item types.
+      §e/<command> info <item-id>§f - Describe the specified item.
       §e/<command> name [<text>]§f - Set the displayed name of the item in the player's main hand, including colour codes beginning with '&'. Omitting text clears the name.
       §e/<command> lore [<text>]§f - Set the lore of the item in the player's main hand. Omitting text clears the lore. Multiple lines can be separated by the pipe symbol, '|'. Doubling up the pipe (i.e. '||') inserts a single pipe character.
 

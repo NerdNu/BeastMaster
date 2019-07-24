@@ -3,6 +3,8 @@ package nu.nerd.beastmaster.commands;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -29,7 +31,7 @@ public class BeastItemExecutor extends ExecutorBase {
      * Constructor.
      */
     public BeastItemExecutor() {
-        super("beast-item", "help", "define", "redefine", "remove", "get", "list", "name", "lore");
+        super("beast-item", "help", "define", "redefine", "remove", "get", "list", "info", "name", "lore");
     }
 
     // ------------------------------------------------------------------------
@@ -206,13 +208,33 @@ public class BeastItemExecutor extends ExecutorBase {
                     return true;
                 }
 
-                sender.sendMessage(ChatColor.GOLD + "Items:");
-                ArrayList<Item> allItems = new ArrayList<>(BeastMaster.ITEMS.getAllItems());
-                allItems.sort((i1, i2) -> i1.getId().compareTo(i2.getId()));
-                for (Item item : allItems) {
-                    sender.sendMessage(ChatColor.YELLOW + item.getId() +
-                                       ChatColor.WHITE + ": " + Util.getItemDescription(item.getItemStack()));
+                if (BeastMaster.ITEMS.getAllItems().isEmpty()) {
+                    sender.sendMessage(ChatColor.GOLD + "There are no items.");
+                } else {
+                    List<String> ids = BeastMaster.ITEMS.getAllItems().stream()
+                    .map(Item::getId)
+                    .sorted((s1, s2) -> s1.compareToIgnoreCase(s2))
+                    .collect(Collectors.toList());
+                    sender.sendMessage(ChatColor.GOLD + "Items: " +
+                                       Util.alternateColours(ids, ChatColor.GRAY + " ", ChatColor.WHITE, ChatColor.YELLOW));
                 }
+                return true;
+
+            } else if (args[0].equals("info")) {
+                if (args.length != 2) {
+                    Commands.invalidArguments(sender, getName() + " info <item-id>");
+                    return true;
+                }
+
+                String idArg = args[1];
+                Item item = BeastMaster.ITEMS.getItem(idArg);
+                if (item == null) {
+                    Commands.errorNull(sender, "item", idArg);
+                    return true;
+                }
+
+                sender.sendMessage(ChatColor.YELLOW + item.getId() + ChatColor.GOLD + " is: " +
+                                   ChatColor.WHITE + Util.getItemDescription(item.getItemStack()));
                 return true;
 
             } else if (args[0].equals("name")) {

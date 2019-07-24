@@ -1,6 +1,7 @@
 package nu.nerd.beastmaster;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -152,6 +153,34 @@ public class Util {
         s.append(", ").append(loc.getBlockY());
         s.append(", ").append(loc.getBlockZ());
         return s.append(')').toString();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Given a sequence of strings, create a string representing the
+     * concatenation of all elements in the collection, alternately colour1 then
+     * colour2, with the specified separator interposed between consecutive
+     * sequence elements.
+     * 
+     * @param strings the sequence of strings.
+     * @param separator the separator, which can include colour codes.
+     * @param colour1 the colour of the first element and every second element
+     *        after that.
+     * @param colour2 the colour of the second element and every second element
+     *        after that.
+     * @returns a string representing the list, alternating the colours of
+     *          elements.
+     */
+    public static String alternateColours(Collection<String> strings, String separator, ChatColor colour1, ChatColor colour2) {
+        StringBuilder result = new StringBuilder();
+        int index = 0;
+        String sep = "";
+        for (String s : strings) {
+            ChatColor colour = (index++ & 1) == 0 ? colour1 : colour2;
+            result.append(sep).append(colour).append(s);
+            sep = separator;
+        }
+        return result.toString();
     }
 
     // ------------------------------------------------------------------------
