@@ -345,7 +345,7 @@ public class MobType {
         // TODO: Many of these need get/set/range implementations.
         addProperty(new MobProperty("parent-type", DataType.STRING, null));
         addProperty(new MobProperty("entity-type", DataType.ENTITY_TYPE, null));
-        addProperty(new MobProperty("drops", DataType.STRING, null));
+        addProperty(new MobProperty("drops", DataType.LOOT, null));
 
         // Note: configureMob() lambdas only called if property value non-null.
         addProperty(new MobProperty("health", DataType.DOUBLE,
@@ -499,7 +499,7 @@ public class MobType {
                 boolean canDespawn = (Boolean) getDerivedProperty("can-despawn").getValue();
                 mob.setRemoveWhenFarAway(canDespawn);
             }));
-        addProperty(new MobProperty("potion-buffs", DataType.STRING,
+        addProperty(new MobProperty("potion-buffs", DataType.POTION_SET,
             (mob, logger) -> {
                 String potionSetId = (String) getDerivedProperty("potion-buffs").getValue();
                 PotionSet potionSet = BeastMaster.POTIONS.getPotionSet(potionSetId);
@@ -507,7 +507,7 @@ public class MobType {
                     potionSet.apply(mob);
                 }
             }));
-        addProperty(new MobProperty("attack-potions", DataType.STRING, (mob, logger) -> {
+        addProperty(new MobProperty("attack-potions", DataType.POTION_SET, (mob, logger) -> {
         }));
         addProperty(new MobProperty("disguise", DataType.DISGUISE,
             (mob, logger) -> {
@@ -515,6 +515,8 @@ public class MobType {
                 BeastMaster.DISGUISES.createDisguise(mob, mob.getWorld(), encodedDisguise);
             }));
 
+        // TODO: passenger mob.
+        // TODO: list of escort mobs? Or separate that?
         // TODO: particle effects tracking mob, projectiles, attack hit points.
     }
 

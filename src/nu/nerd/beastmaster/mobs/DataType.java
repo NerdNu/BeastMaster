@@ -95,6 +95,32 @@ public class DataType {
 
     // ------------------------------------------------------------------------
 
+    public static final IDataType LOOT = new IDataType() {
+        @Override
+        public String format(Object value) {
+            String id = (String) value;
+            ChatColor colour = (BeastMaster.LOOTS.getDropSet(id) != null) ? ChatColor.GREEN : ChatColor.RED;
+            return colour + id;
+        }
+
+        @Override
+        public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
+            return value;
+        }
+
+        @Override
+        public Object deserialise(String value) throws IllegalArgumentException {
+            return value;
+        }
+
+        @Override
+        public int compare(Object o1, Object o2) {
+            return ((String) o1).compareTo((String) o2);
+        }
+    };
+
+    // ------------------------------------------------------------------------
+
     public static final IDataType LOOT_OR_ITEM = new IDataType() {
         @Override
         public String format(Object value) {
@@ -106,6 +132,32 @@ public class DataType {
             } else {
                 return ChatColor.RED + id;
             }
+        }
+
+        @Override
+        public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
+            return value;
+        }
+
+        @Override
+        public Object deserialise(String value) throws IllegalArgumentException {
+            return value;
+        }
+
+        @Override
+        public int compare(Object o1, Object o2) {
+            return ((String) o1).compareTo((String) o2);
+        }
+    };
+
+    // ------------------------------------------------------------------------
+
+    public static final IDataType POTION_SET = new IDataType() {
+        @Override
+        public String format(Object value) {
+            String id = (String) value;
+            ChatColor colour = (BeastMaster.POTIONS.getPotionSet(id) != null) ? ChatColor.GREEN : ChatColor.RED;
+            return colour + id;
         }
 
         @Override
