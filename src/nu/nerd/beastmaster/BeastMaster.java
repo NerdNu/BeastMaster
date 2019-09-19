@@ -1,6 +1,5 @@
 package nu.nerd.beastmaster;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
@@ -32,8 +31,6 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.EntityEquipment;
-import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import net.sothatsit.blockstore.BlockStoreApi;
@@ -111,16 +108,6 @@ public class BeastMaster extends JavaPlugin implements Listener {
      */
     public static final DisguiseManager DISGUISES = new DisguiseManager();
 
-    /**
-     * Metadata name (key) used to tag affected mobs.
-     */
-    public static final String MOB_META_KEY = "BM_Mob";
-
-    /**
-     * Shared metadata value for all affected mobs.
-     */
-    public static FixedMetadataValue MOB_META;
-
     // ------------------------------------------------------------------------
     /**
      * Log a debug message.
@@ -137,8 +124,6 @@ public class BeastMaster extends JavaPlugin implements Listener {
      */
     @Override
     public void onEnable() {
-        MOB_META = new FixedMetadataValue(this, null);
-
         PLUGIN = this;
         saveDefaultConfig();
         CONFIG.reload(false);
@@ -388,23 +373,21 @@ public class BeastMaster extends JavaPlugin implements Listener {
         Entity damagedEntity = event.getEntity();
         LivingEntity attackingMob = null;
 
-        boolean isPlayerAttack = false;
         if (event.getDamager() instanceof Player) {
-            isPlayerAttack = true;
+            Player attacker = (Player) event.getDamager();
+            EntityMeta.api().set(damagedEntity, this, DAMAGED_BY_PLAYER_NAME, attacker.getName());
+            EntityMeta.api().set(damagedEntity, this, DAMAGED_BY_PLAYER_TIME, damagedEntity.getWorld().getFullTime());
         } else if (event.getDamager() instanceof LivingEntity) {
             attackingMob = (LivingEntity) event.getDamager();
         } else if (event.getDamager() instanceof Projectile) {
             Projectile projectile = (Projectile) event.getDamager();
             if (projectile.getShooter() instanceof Player) {
-                isPlayerAttack = true;
+                Player attacker = (Player) projectile.getShooter();
+                EntityMeta.api().set(damagedEntity, this, DAMAGED_BY_PLAYER_NAME, attacker.getName());
+                EntityMeta.api().set(damagedEntity, this, DAMAGED_BY_PLAYER_TIME, damagedEntity.getWorld().getFullTime());
             } else if (projectile.getShooter() instanceof LivingEntity) {
                 attackingMob = (LivingEntity) projectile.getShooter();
             }
-        }
-
-        // Tag mobs hurt by players with the damage time stamp.
-        if (isPlayerAttack) {
-            damagedEntity.setMetadata(PLAYER_DAMAGE_TIME_KEY, new FixedMetadataValue(this, new Long(damagedEntity.getWorld().getFullTime())));
         }
 
         // Apply attackingMob's attack-potions, if set.
@@ -435,43 +418,48 @@ public class BeastMaster extends JavaPlugin implements Listener {
         // are LivingEntities. #currentyear
         MobType mobType = getMobType(entity);
         if (mobType != null) {
-            DropSet drops = mobType.getDrops();
-            if (drops != null) {
-                StringBuilder trigger = new StringBuilder();
-                // TODO: get player name from (transient) Metadata
-                Player player = null;
-                trigger.append("<playername>");
-                trigger.append(" killed ");
-                trigger.append(mobType.getId());
+            Location loc = entity.getLocation();
 
-                boolean dropDefaultItems = drops.generateRandomDrops(trigger.toString(), player, entity.getLocation());
-                if (!dropDefaultItems) {
-                    event.getDrops().clear();
-                }
-            }
-
-            // If the entity has a MobType, it's a LivingEntity.
-            LivingEntity mob = (LivingEntity) entity;
-            EntityEquipment equipment = mob.getEquipment();
-            Location loc = mob.getLocation();
-
-            if (CONFIG.DEBUG_EQUIPMENT_DROPS) {
-                debug(String.format("%s equipment drop %% (B,L,C,H), (M,O): (%.3f,%.3f,%.3f,%.3f), (%.3f,%.3f)",
-                                    mobType.getId(),
-                                    100 * equipment.getBootsDropChance(), 100 * equipment.getLeggingsDropChance(),
-                                    100 * equipment.getChestplateDropChance(), 100 * equipment.getHelmetDropChance(),
-                                    100 * equipment.getItemInMainHandDropChance(), 100 * equipment.getItemInOffHandDropChance()));
-                debug(mobType.getId() + " event drops: " + event.getDrops().stream().map(Util::getItemDescription).collect(Collectors.joining(", ")));
-            }
-
-            Long damageTime = getPlayerDamageTime(entity);
+            // If the mob has been damaged by a player recently, work out that
+            // player's name.
+            String victoriousPlayerName = null;
+            Long damageTime = (Long) EntityMeta.api().get(entity, this, DAMAGED_BY_PLAYER_TIME);
             if (damageTime != null) {
                 if (loc.getWorld().getFullTime() - damageTime < PLAYER_DAMAGE_TICKS) {
                     MobProperty experience = mobType.getDerivedProperty("experience");
                     if (experience.getValue() != null) {
                         event.setDroppedExp((Integer) experience.getValue());
                     }
+
+                    victoriousPlayerName = (String) EntityMeta.api().get(entity, this, DAMAGED_BY_PLAYER_NAME);
                 }
+            }
+
+            DropSet drops = mobType.getDrops();
+            if (drops != null) {
+                StringBuilder trigger = new StringBuilder();
+
+                Player victoriousPlayer = (victoriousPlayerName != null) ? Bukkit.getPlayerExact(victoriousPlayerName) : null;
+                trigger.append((victoriousPlayer != null) ? victoriousPlayer.getName() : "<environment>");
+                trigger.append(" killed ");
+                trigger.append(mobType.getId());
+
+                boolean dropDefaultItems = drops.generateRandomDrops(trigger.toString(), victoriousPlayer, entity.getLocation());
+                if (!dropDefaultItems) {
+                    event.getDrops().clear();
+                }
+            }
+
+            if (CONFIG.DEBUG_EQUIPMENT_DROPS) {
+                // If the entity has a MobType, it's a LivingEntity.
+                LivingEntity mob = (LivingEntity) entity;
+                EntityEquipment equipment = mob.getEquipment();
+                debug(String.format("%s equipment drop %% (B,L,C,H), (M,O): (%.3f,%.3f,%.3f,%.3f), (%.3f,%.3f)",
+                                    mobType.getId(),
+                                    100 * equipment.getBootsDropChance(), 100 * equipment.getLeggingsDropChance(),
+                                    100 * equipment.getChestplateDropChance(), 100 * equipment.getHelmetDropChance(),
+                                    100 * equipment.getItemInMainHandDropChance(), 100 * equipment.getItemInOffHandDropChance()));
+                debug(mobType.getId() + " event drops: " + event.getDrops().stream().map(Util::getItemDescription).collect(Collectors.joining(", ")));
             }
         }
     } // onEntityDeath
@@ -606,26 +594,6 @@ public class BeastMaster extends JavaPlugin implements Listener {
 
     // ------------------------------------------------------------------------
     /**
-     * Return the world time when a player damaged the specified entity, if
-     * stored as a PLAYER_DAMAGE_TIME_KEY metadata value, or null if that didn't
-     * happen.
-     *
-     * @param entity the entity (mob).
-     * @return the damage time stamp as Long, or null.
-     */
-    protected Long getPlayerDamageTime(Entity entity) {
-        List<MetadataValue> playerDamageTime = entity.getMetadata(PLAYER_DAMAGE_TIME_KEY);
-        if (playerDamageTime.size() > 0) {
-            MetadataValue value = playerDamageTime.get(0);
-            if (value.value() instanceof Long) {
-                return (Long) value.value();
-            }
-        }
-        return null;
-    }
-
-    // ------------------------------------------------------------------------
-    /**
      * Return true if the specified entity can fit at its spawn location.
      * 
      * This check is important when replacing mobs, because the replacement may
@@ -673,10 +641,15 @@ public class BeastMaster extends JavaPlugin implements Listener {
 
     // ------------------------------------------------------------------------
     /**
-     * Metadata name used for metadata stored on mobs to record last damage time
-     * (Long) by a player.
+     * Persistent metadata key used to record name of player that damaged a mob.
      */
-    protected static final String PLAYER_DAMAGE_TIME_KEY = "BM_PlayerDamageTime";
+    protected static final String DAMAGED_BY_PLAYER_NAME = "damage-player";
+
+    /**
+     * Persistent metadata key used to record the full world time when a mob was
+     * damaged by a player.
+     */
+    protected static final String DAMAGED_BY_PLAYER_TIME = "damage-time";
 
     /**
      * Time in ticks (1/20ths of a second) for which player attack damage
