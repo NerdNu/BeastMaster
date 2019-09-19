@@ -425,8 +425,8 @@ public class MobType {
             }));
         addProperty(new MobProperty("helmet-drop-percent", DataType.DOUBLE,
             (mob, logger) -> {
-                // Outside vanilla drop mechanism.
-                mob.getEquipment().setHelmetDropChance(0);
+                double percent = (Double) getDerivedProperty("helmet-drop-percent").getValue();
+                mob.getEquipment().setHelmetDropChance((float) percent / 100);
             }));
         addProperty(new MobProperty("chest-plate", DataType.LOOT_OR_ITEM,
             (mob, logger) -> {
@@ -438,8 +438,8 @@ public class MobType {
             }));
         addProperty(new MobProperty("chest-plate-drop-percent", DataType.DOUBLE,
             (mob, logger) -> {
-                // Outside vanilla drop mechanism.
-                mob.getEquipment().setChestplateDropChance(0);
+                double percent = (Double) getDerivedProperty("chest-plate-drop-percent").getValue();
+                mob.getEquipment().setChestplateDropChance((float) percent / 100);
             }));
         addProperty(new MobProperty("leggings", DataType.LOOT_OR_ITEM,
             (mob, logger) -> {
@@ -451,8 +451,8 @@ public class MobType {
             }));
         addProperty(new MobProperty("leggings-drop-percent", DataType.DOUBLE,
             (mob, logger) -> {
-                // Outside vanilla drop mechanism.
-                mob.getEquipment().setLeggingsDropChance(0);
+                double percent = (Double) getDerivedProperty("leggings-drop-percent").getValue();
+                mob.getEquipment().setLeggingsDropChance((float) percent / 100);
             }));
         addProperty(new MobProperty("boots", DataType.LOOT_OR_ITEM,
             (mob, logger) -> {
@@ -464,8 +464,8 @@ public class MobType {
             }));
         addProperty(new MobProperty("boots-drop-percent", DataType.DOUBLE,
             (mob, logger) -> {
-                // Outside vanilla drop mechanism.
-                mob.getEquipment().setBootsDropChance(0);
+                double percent = (Double) getDerivedProperty("boots-drop-percent").getValue();
+                mob.getEquipment().setBootsDropChance((float) percent / 100);
             }));
         addProperty(new MobProperty("main-hand", DataType.LOOT_OR_ITEM,
             (mob, logger) -> {
@@ -477,8 +477,8 @@ public class MobType {
             }));
         addProperty(new MobProperty("main-hand-drop-percent", DataType.DOUBLE,
             (mob, logger) -> {
-                // Outside vanilla drop mechanism.
-                mob.getEquipment().setItemInMainHandDropChance(0);
+                double percent = (Double) getDerivedProperty("main-hand-drop-percent").getValue();
+                mob.getEquipment().setItemInMainHandDropChance((float) percent / 100);
             }));
         addProperty(new MobProperty("off-hand", DataType.LOOT_OR_ITEM,
             (mob, logger) -> {
@@ -490,8 +490,8 @@ public class MobType {
             }));
         addProperty(new MobProperty("off-hand-drop-percent", DataType.DOUBLE,
             (mob, logger) -> {
-                // Outside vanilla drop mechanism.
-                mob.getEquipment().setItemInOffHandDropChance(0);
+                double percent = (Double) getDerivedProperty("off-hand-drop-percent").getValue();
+                mob.getEquipment().setItemInOffHandDropChance((float) percent / 100);
             }));
         // Added after custom name => will clear PersistenceRequired NBT.
         addProperty(new MobProperty("can-despawn", DataType.BOOLEAN,

@@ -2,6 +2,7 @@ debug:
   replace: false
   blockstore: false
   disguises: false
+  equipment-drops: false
 
 chance:
   wither-skeleton: 0.8

@@ -33,6 +33,11 @@ public class Configuration {
     public boolean DEBUG_DISGUISES;
 
     /**
+     * If true, log debug messages about equipment (worn and held item) drops.
+     */
+    public boolean DEBUG_EQUIPMENT_DROPS;
+
+    /**
      * Probability, in the range [0.0,1.0] that a plains biome skeleton spawn in
      * the nether environment will be replaced by a wither skeleton.
      */
@@ -55,8 +60,9 @@ public class Configuration {
         FileConfiguration config = BeastMaster.PLUGIN.getConfig();
         DEBUG_REPLACE = config.getBoolean("debug.replace");
         DEBUG_BLOCKSTORE = config.getBoolean("debug.blockstore");
-        CHANCE_WITHER_SKELETON = config.getDouble("chance.wither-skeleton");
         DEBUG_DISGUISES = config.getBoolean("debug.disguises");
+        DEBUG_EQUIPMENT_DROPS = config.getBoolean("debug.equipment-drops");
+        CHANCE_WITHER_SKELETON = config.getDouble("chance.wither-skeleton");
 
         EXCLUDED_ENTITY_TYPES.clear();
         for (String excluded : config.getStringList("excluded-entity-types")) {
@@ -79,6 +85,7 @@ public class Configuration {
             logger.info("DEBUG_REPLACE: " + DEBUG_REPLACE);
             logger.info("DEBUG_BLOCKSTORE: " + DEBUG_BLOCKSTORE);
             logger.info("DEBUG_DISGUISES: " + DEBUG_DISGUISES);
+            logger.info("DEBUG_EQUIPMENT_DROPS: " + DEBUG_EQUIPMENT_DROPS);
             logger.info("CHANCE_WITHER_SKELETON: " + CHANCE_WITHER_SKELETON);
 
             logger.info("EXCLUDED_ENTITY_TYPES: " + EXCLUDED_ENTITY_TYPES.stream()

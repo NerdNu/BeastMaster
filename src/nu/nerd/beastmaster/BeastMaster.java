@@ -1,6 +1,7 @@
 package nu.nerd.beastmaster;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -30,6 +31,7 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldLoadEvent;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -118,6 +120,16 @@ public class BeastMaster extends JavaPlugin implements Listener {
      * Shared metadata value for all affected mobs.
      */
     public static FixedMetadataValue MOB_META;
+
+    // ------------------------------------------------------------------------
+    /**
+     * Log a debug message.
+     * 
+     * @param message the message.
+     */
+    public void debug(String message) {
+        getLogger().info("[DEBUG] " + message);
+    }
 
     // ------------------------------------------------------------------------
     /**
@@ -260,7 +272,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         if (CONFIG.DEBUG_BLOCKSTORE) {
             float elapsedMs = (System.nanoTime() - start) * 1.0e-6f;
             if (elapsedMs > 10.0f) {
-                getLogger().info("BlockStoreApi.isPlaced() took: " + String.format("%3.2f", elapsedMs));
+                debug("BlockStoreApi.isPlaced() took: " + String.format("%3.2f", elapsedMs));
             }
         }
 
@@ -418,6 +430,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         if (!(entity instanceof LivingEntity)) {
             return;
         }
+
         // Note: Ghasts and Slimes are not Monsters... Players and ArmorStands
         // are LivingEntities. #currentyear
         MobType mobType = getMobType(entity);
@@ -437,40 +450,18 @@ public class BeastMaster extends JavaPlugin implements Listener {
                 }
             }
 
-            // Drop head, armour and hand items with non-vanilla code if
-            // those drop percent properties are set. This is a work around for
-            // a presumed Spigot bug wherein NBT drop HandItemDropChances and
-            // ArmorDropChances values are negative despite the Bukkit API
-            // drop chances being sane. Bukkit API drop chances are therefore
-            // set 0 in MobType when the properties are set.
             // If the entity has a MobType, it's a LivingEntity.
             LivingEntity mob = (LivingEntity) entity;
+            EntityEquipment equipment = mob.getEquipment();
             Location loc = mob.getLocation();
-            World world = loc.getWorld();
 
-            Double helmetPercent = (Double) mobType.getDerivedProperty("helmet-drop-percent").getValue();
-            if (helmetPercent != null && Util.random() < helmetPercent / 100) {
-                world.dropItem(loc, mob.getEquipment().getHelmet());
-            }
-            Double chestPercent = (Double) mobType.getDerivedProperty("chest-plate-drop-percent").getValue();
-            if (chestPercent != null && Util.random() < chestPercent / 100) {
-                world.dropItem(loc, mob.getEquipment().getChestplate());
-            }
-            Double leggingsPercent = (Double) mobType.getDerivedProperty("leggings-drop-percent").getValue();
-            if (leggingsPercent != null && Util.random() < leggingsPercent / 100) {
-                world.dropItem(loc, mob.getEquipment().getLeggings());
-            }
-            Double bootsPercent = (Double) mobType.getDerivedProperty("boots-drop-percent").getValue();
-            if (bootsPercent != null && Util.random() < bootsPercent / 100) {
-                world.dropItem(loc, mob.getEquipment().getBoots());
-            }
-            Double mainHandPercent = (Double) mobType.getDerivedProperty("main-hand-drop-percent").getValue();
-            if (mainHandPercent != null && Util.random() < mainHandPercent / 100) {
-                world.dropItem(loc, mob.getEquipment().getItemInMainHand());
-            }
-            Double offHandPercent = (Double) mobType.getDerivedProperty("off-hand-drop-percent").getValue();
-            if (offHandPercent != null && Util.random() < offHandPercent / 100) {
-                world.dropItem(loc, mob.getEquipment().getItemInOffHand());
+            if (CONFIG.DEBUG_EQUIPMENT_DROPS) {
+                debug(String.format("%s equipment drop %% (B,L,C,H), (M,O): (%.3f,%.3f,%.3f,%.3f), (%.3f,%.3f)",
+                                    mobType.getId(),
+                                    100 * equipment.getBootsDropChance(), 100 * equipment.getLeggingsDropChance(),
+                                    100 * equipment.getChestplateDropChance(), 100 * equipment.getHelmetDropChance(),
+                                    100 * equipment.getItemInMainHandDropChance(), 100 * equipment.getItemInOffHandDropChance()));
+                debug(mobType.getId() + " event drops: " + event.getDrops().stream().map(Util::getItemDescription).collect(Collectors.joining(", ")));
             }
 
             Long damageTime = getPlayerDamageTime(entity);
@@ -492,7 +483,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
     @EventHandler(ignoreCancelled = true)
     protected void onPlayerJoin(PlayerJoinEvent event) {
         if (BeastMaster.CONFIG.DEBUG_DISGUISES) {
-            getLogger().info("onPlayerJoin()");
+            debug("onPlayerJoin()");
         }
         DISGUISES.sendAllDisguises(event.getPlayer().getWorld(), event.getPlayer());
     }
@@ -605,8 +596,8 @@ public class BeastMaster extends JavaPlugin implements Listener {
             event.getEntityType() == EntityType.SKELETON &&
             Math.random() < CONFIG.CHANCE_WITHER_SKELETON) {
             if (CONFIG.DEBUG_REPLACE) {
-                getLogger().info(String.format("Replacing skeleton at (%d, %d, %d, %s) with wither skeleton.",
-                                               loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), loc.getWorld().getName()));
+                debug(String.format("Replacing skeleton at (%d, %d, %d, %s) with wither skeleton.",
+                                    loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), loc.getWorld().getName()));
             }
             event.getEntity().remove();
             world.spawnEntity(loc, EntityType.WITHER_SKELETON);

@@ -35,10 +35,10 @@ public class DisguiseManager {
                 MobType mobType = BeastMaster.getMobType(entity);
                 if (mobType != null) {
                     if (BeastMaster.CONFIG.DEBUG_DISGUISES) {
-                        BeastMaster.PLUGIN.getLogger().info("Loading " + entity.getType().name() +
-                                                            " " + entity.getUniqueId().toString() +
-                                                            " with MobType " + mobType.getId() +
-                                                            " at " + Util.formatLocation(entity.getLocation()));
+                        BeastMaster.PLUGIN.debug("Loading " + entity.getType().name() +
+                                                 " " + entity.getUniqueId().toString() +
+                                                 " with MobType " + mobType.getId() +
+                                                 " at " + Util.formatLocation(entity.getLocation()));
                     }
                     String encodedDisguise = (String) mobType.getDerivedProperty("disguise").getValue();
                     BeastMaster.DISGUISES.createDisguise((LivingEntity) entity, chunk.getWorld(), encodedDisguise);
@@ -85,9 +85,9 @@ public class DisguiseManager {
     public void createDisguise(LivingEntity entity, World world, Disguise disguise) {
         getWorldDisguises(world).put(entity, disguise);
         if (BeastMaster.CONFIG.DEBUG_DISGUISES) {
-            BeastMaster.PLUGIN.getLogger().info("Sending disguise in " + world.getName() + " to: " +
-                                                world.getPlayers().stream()
-                                                .map(Player::getName).collect(Collectors.joining(", ")));
+            BeastMaster.PLUGIN.debug("Sending disguise in " + world.getName() + " to: " +
+                                     world.getPlayers().stream()
+                                     .map(Player::getName).collect(Collectors.joining(", ")));
         }
         DisguiseAPI.disguiseToPlayers(entity, disguise, world.getPlayers());
     }
