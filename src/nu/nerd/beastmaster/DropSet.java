@@ -248,6 +248,22 @@ public class DropSet {
 
     // --------------------------------------------------------------------------
     /**
+     * Return a short description of this set of drops that can be presented to
+     * the user.
+     * 
+     * @return a short description of this set of drops that can be presented to
+     *         the user.
+     */
+    public String getShortDescription() {
+        StringBuilder s = new StringBuilder();
+        s.append(ChatColor.YELLOW).append(_id);
+        s.append(ChatColor.WHITE).append(": ");
+        s.append(ChatColor.YELLOW).append(isSingle() ? "single" : "multiple");
+        return s.toString();
+    }
+
+    // --------------------------------------------------------------------------
+    /**
      * Return a description of this set of drops that can be presented to the
      * user.
      * 
@@ -256,9 +272,7 @@ public class DropSet {
      */
     public String getDescription() {
         StringBuilder s = new StringBuilder();
-        s.append(ChatColor.YELLOW).append(_id);
-        s.append(ChatColor.WHITE).append(": ");
-        s.append(ChatColor.YELLOW).append(isSingle() ? "single" : "multiple");
+        s.append(getShortDescription());
         s.append(ChatColor.WHITE).append(" {");
         s.append(getAllDrops().stream().map(drop -> drop.getShortDescription())
         .collect(Collectors.joining(ChatColor.WHITE + ", ")));

@@ -99,7 +99,7 @@ public class BeastLootExecutor extends ExecutorBase {
                     return true;
                 }
 
-                sender.sendMessage(ChatColor.GOLD + "Loot table: " + dropSet.getDescription());
+                sender.sendMessage(ChatColor.GOLD + "Loot table: " + dropSet.getShortDescription());
                 Collection<Drop> allDrops = dropSet.getAllDrops();
                 sender.sendMessage(ChatColor.GOLD + (allDrops.isEmpty() ? "No drops defined." : "Drops:"));
                 for (Drop drop : allDrops) {
