@@ -152,6 +152,37 @@ public class DataType {
 
     // ------------------------------------------------------------------------
 
+    public static final IDataType LOOT_OR_MOB = new IDataType() {
+        @Override
+        public String format(Object value) {
+            String id = (String) value;
+            if (BeastMaster.LOOTS.getDropSet(id) != null) {
+                return ChatColor.GREEN + id + ChatColor.WHITE + " (loot)";
+            } else if (BeastMaster.MOBS.getMobType(id) != null) {
+                return ChatColor.GREEN + id + ChatColor.WHITE + " (mob)";
+            } else {
+                return ChatColor.RED + id;
+            }
+        }
+
+        @Override
+        public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
+            return value;
+        }
+
+        @Override
+        public Object deserialise(String value) throws IllegalArgumentException {
+            return value;
+        }
+
+        @Override
+        public int compare(Object o1, Object o2) {
+            return ((String) o1).compareTo((String) o2);
+        }
+    };
+
+    // ------------------------------------------------------------------------
+
     public static final IDataType POTION_SET = new IDataType() {
         @Override
         public String format(Object value) {

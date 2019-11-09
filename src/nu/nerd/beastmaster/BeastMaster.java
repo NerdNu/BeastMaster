@@ -198,6 +198,12 @@ public class BeastMaster extends JavaPlugin implements Listener {
      *         type was specified.
      */
     public LivingEntity spawnMob(Location loc, MobType mobType, boolean checkCanFit) {
+        // Maximum mob passenger stack height is two more than this, i.e. 10.
+        if (_spawnMobRecursion > 8) {
+            return null;
+        }
+        ++_spawnMobRecursion;
+
         MobProperty entityTypeProperty = mobType.getDerivedProperty("entity-type");
         EntityType entityType = (EntityType) entityTypeProperty.getValue();
         LivingEntity livingEntity = null;
@@ -217,6 +223,8 @@ public class BeastMaster extends JavaPlugin implements Listener {
             }
             _spawningMobType = null;
         }
+
+        --_spawnMobRecursion;
         return livingEntity;
     }
 
@@ -688,4 +696,19 @@ public class BeastMaster extends JavaPlugin implements Listener {
      * a result.
      */
     protected boolean _spawningCheckCanFit;
+
+    /**
+     * The number of {@link #spawnMob(Location, MobType, boolean)} calls
+     * currently on the call stack.
+     * 
+     * {@link #spawnMob(Location, MobType, boolean)} triggers a
+     * {@link CreatureSpawnEvent} that can result in more
+     * {@link #spawnMob(Location, MobType, boolean)} calls due to mob
+     * replacement or the passenger property of mobs. If a mob type is defined
+     * to spawn itself as a passenger then that would result in an infinite
+     * recursion of {@link #spawnMob(Location, MobType, boolean)} calls that
+     * would crash the server with a stack overflow. To prevent that, we keep
+     * track of the number of calls with this variable.
+     */
+    protected int _spawnMobRecursion;
 } // class BeastMaster

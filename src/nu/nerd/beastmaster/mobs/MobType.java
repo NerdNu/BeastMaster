@@ -13,8 +13,11 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Ageable;
+import org.bukkit.entity.Creeper;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Phantom;
+import org.bukkit.entity.Slime;
 import org.bukkit.inventory.ItemStack;
 
 import nu.nerd.beastmaster.BeastMaster;
@@ -397,6 +400,20 @@ public class MobType {
                     }
                 }
             }));
+        addProperty(new MobProperty("charged-percent", DataType.DOUBLE,
+            (mob, logger) -> {
+                if (mob instanceof Creeper) {
+                    ((Creeper) mob).setPowered(Math.random() * 100 < (Double) getDerivedProperty("charged-percent").getValue());
+                }
+            }));
+        addProperty(new MobProperty("size", DataType.INTEGER,
+            (mob, logger) -> {
+                if (mob instanceof Phantom) {
+                    ((Phantom) mob).setSize((Integer) getDerivedProperty("size").getValue());
+                } else if (mob instanceof Slime) {
+                    ((Slime) mob).setSize((Integer) getDerivedProperty("size").getValue());
+                }
+            }));
         addProperty(new MobProperty("glowing", DataType.BOOLEAN,
             (mob, logger) -> {
                 mob.setGlowing((Boolean) getDerivedProperty("glowing").getValue());
@@ -514,8 +531,41 @@ public class MobType {
                 String encodedDisguise = (String) getDerivedProperty("disguise").getValue();
                 BeastMaster.DISGUISES.createDisguise(mob, mob.getWorld(), encodedDisguise);
             }));
+        addProperty(new MobProperty("passenger", DataType.LOOT_OR_MOB,
+            (mob, logger) -> {
+                // If passenger-percent is unset but passenger is, the chance is
+                // implicitly 100%.
+                MobProperty percent = getDerivedProperty("passenger-percent");
+                boolean hasPassenger = (percent.getValue() == null) ? true
+                                                                    : (Math.random() * 100 < (Double) percent.getValue());
+                if (!hasPassenger) {
+                    return;
+                }
 
-        // TODO: passenger mob.
+                // The passenger property may be a loot table or a mob type.
+                String id = (String) getDerivedProperty("passenger").getValue();
+                DropSet drops = BeastMaster.LOOTS.getDropSet(id);
+                MobType mobType = null;
+                if (drops != null) {
+                    Drop drop = drops.chooseOneDrop();
+                    if (drop != null) {
+                        if (drop.getDropType() == DropType.MOB) {
+                            mobType = BeastMaster.MOBS.getMobType(drop.getId());
+                        }
+                    }
+                } else {
+                    mobType = BeastMaster.MOBS.getMobType(id);
+                }
+
+                if (mobType != null) {
+                    LivingEntity passenger = BeastMaster.PLUGIN.spawnMob(mob.getLocation(), mobType, false);
+                    if (passenger != null) {
+                        mob.addPassenger(passenger);
+                    }
+                }
+            }));
+        addProperty(new MobProperty("passenger-percent", DataType.DOUBLE, null));
+
         // TODO: list of escort mobs? Or separate that?
         // TODO: particle effects tracking mob, projectiles, attack hit points.
     }
