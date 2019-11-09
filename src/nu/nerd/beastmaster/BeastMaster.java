@@ -313,17 +313,12 @@ public class BeastMaster extends JavaPlugin implements Listener {
             }
             break;
 
-        case DEFAULT:
         case NATURAL:
+        case CHUNK_GEN:
         case REINFORCEMENTS:
         case INFECTION:
         case VILLAGE_INVASION:
         case VILLAGE_DEFENSE:
-        case EGG:
-        case SPAWNER_EGG:
-        case BUILD_SNOWMAN:
-        case BUILD_IRONGOLEM:
-        case BUILD_WITHER:
         case SILVERFISH_BLOCK:
         case ENDER_PEARL:
             // Vanilla spawns.
@@ -352,6 +347,17 @@ public class BeastMaster extends JavaPlugin implements Listener {
                         vanillaMobType.configureMob(entity);
                     }
                 }
+            }
+            break;
+
+        case EGG:
+        case SPAWNER_EGG:
+        case BUILD_SNOWMAN:
+        case BUILD_IRONGOLEM:
+        case BUILD_WITHER:
+            MobType vanillaMobType = MOBS.getMobType(entity.getType());
+            if (vanillaMobType != null) {
+                vanillaMobType.configureMob(entity);
             }
             break;
 
