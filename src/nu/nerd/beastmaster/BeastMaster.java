@@ -438,19 +438,20 @@ public class BeastMaster extends JavaPlugin implements Listener {
             // player's name.
             String victoriousPlayerName = null;
             Long damageTime = (Long) EntityMeta.api().get(entity, this, DAMAGED_BY_PLAYER_TIME);
-            if (damageTime != null) {
-                if (loc.getWorld().getFullTime() - damageTime < PLAYER_DAMAGE_TICKS) {
-                    MobProperty experience = mobType.getDerivedProperty("experience");
-                    if (experience.getValue() != null) {
-                        event.setDroppedExp((Integer) experience.getValue());
-                    }
+            boolean damagedByPlayer = damageTime != null &&
+                                      loc.getWorld().getFullTime() - damageTime < PLAYER_DAMAGE_TICKS;
 
-                    victoriousPlayerName = (String) EntityMeta.api().get(entity, this, DAMAGED_BY_PLAYER_NAME);
+            if (damagedByPlayer) {
+                MobProperty experience = mobType.getDerivedProperty("experience");
+                if (experience.getValue() != null) {
+                    event.setDroppedExp((Integer) experience.getValue());
                 }
+
+                victoriousPlayerName = (String) EntityMeta.api().get(entity, this, DAMAGED_BY_PLAYER_NAME);
             }
 
             DropSet drops = mobType.getDrops();
-            if (drops != null) {
+            if (drops != null && damagedByPlayer) {
                 StringBuilder trigger = new StringBuilder();
 
                 Player victoriousPlayer = (victoriousPlayerName != null) ? Bukkit.getPlayerExact(victoriousPlayerName) : null;
@@ -476,6 +477,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
                 debug(mobType.getId() + " event drops: " + event.getDrops().stream().map(Util::getItemDescription).collect(Collectors.joining(", ")));
             }
         }
+
     } // onEntityDeath
 
     // ------------------------------------------------------------------------
