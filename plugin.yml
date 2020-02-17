@@ -58,6 +58,7 @@ commands:
     
       §e/<command> help§f - Show usage help.
       §e/<command> reload§f - Reload the configuration.
+      §6See: §b§nhttps://github.com/NerdNu/BeastMaster/wiki/Command-Reference
       
   beast-zone:
     description: Configure zones where beasts operate.
@@ -74,6 +75,7 @@ commands:
       §e/<command> add-block <zone-id> <material> <loot-id>§f - Add a block type to watch for break events. When a block of the specified material is broken, consult the specified loot table to see what drops. The <material> can be a case-insensitive Bukkit material name, or an integer ID.
       §e/<command> remove-block <zone-id> <material>§f - Remove the custom loot drop for the specified block type. The <material> can be a case-insensitive Bukkit material name, or an integer ID.
       §e/<command> list-blocks <zone-id>§f - List all block types in the zone that drop special loot, and their corresponding loot tables.
+      §6See: §b§nhttps://github.com/NerdNu/BeastMaster/wiki/Command-Reference#zone-commands
 
   beast-item:
     description: Configure items.
@@ -89,6 +91,7 @@ commands:
       §e/<command> info <item-id>§f - Describe the specified item.
       §e/<command> name [<text>]§f - Set the displayed name of the item in the player's main hand, including colour codes beginning with '&'. Omitting text clears the name.
       §e/<command> lore [<text>]§f - Set the lore of the item in the player's main hand. Omitting text clears the lore. Multiple lines can be separated by the pipe symbol, '|'. Doubling up the pipe (i.e. '||') inserts a single pipe character.
+      §6See: §b§nhttps://github.com/NerdNu/BeastMaster/wiki/Command-Reference#item-commands
 
   beast-loot:
     description: Configure loot tables.
@@ -104,20 +107,23 @@ commands:
         - Create or modify a drop in the loot table. The <drop-type>
           can be nothing, default, item or mob; item and mob types
           require the <id> of the item or mob type to be specified.
-          <percentage-chance> is probability of the drop from 0.0
+          <percentage-chance> is the probability of the drop from 0.0
           to 100.0. <min> is the number of dropped items or mobs, 
           and defaults to 1. <max> is the maximum number of dropped
           items or mobs and defaults to <min>.
       §e/<command> remove-drop <loot-id> <id>§f - Remove the 
         specified drop from the possible drops in the loot table.
       §e/<command> list-drops <loot-id>§f - List all possible drops from this loot table.
-      §e/<command> single <loot-id> <yes-or-no>§f - Specifies whether the loot table will drop a single drop or multiple independent drops. <yes-or-no> is case insensitive and can be one of yes/no/y/n/true/false/t/f/on/off. If yes, a single drop will be selected to drop and drop chances are interpreted as relative preferences. If no, multiple drops may drop, according to their drop chances.
+      §e/<command> single <loot-id> <yes-or-no>§f - Specifies whether the loot table will drop a single drop or multiple independent drops. If yes, a single drop will be selected to drop and drop chances are interpreted as relative preferences in a weighted selection. If no, multiple drops may drop, according to their drop chances.
+      §e/<command> direct <loot-id> <item-id> <yes-or-no>§f - Controls whether the specified drop is placed straight into the triggering player's inventory.
+      §e/<command> glowing <loot-id> <id> <yes-or-no>§f - Controls whether the specified item or mob drop is glowing. (Default drops are not affected.)
+      §e/<command> invulnerable <loot-id> <id> <yes-or-no>§f - Controls whether the specified mob drop is invulnerable (except to players in creative mode). Currently, items don't work.
+      §e/<command> logged <loot-id> <id> <yes-or-no>§f - Enables or disables console logging of this item or mob drop.
       §e/<command> objective <loot-id> <item-id> (<obj-id>|none)§f - Signify that this drop causes an objective to spawn, or not if the objective ID is "none". Only item drops can trigger an objective.
-      §e/<command> logged <loot-id> <item-id> <yes-or-no>§f - Enables or disables logging of this drop in the console. <yes-or-no> is case insensitive and can be one of yes/no/y/n/true/false/t/f/on/off.
-      §e/<command> sound <loot-id> <item-id> <sound> §f[§e<range> <pitch>§f] - Signify that this drop causes a sound to play. <sound> is a sound name from the Bukkit API or "none". <range> is the range of the sound in blocks. <pitch> is playback speed, from 0.5 to 2.0. <range> and <pitch> can be omitted, in which case they default to 15.0 and 1.0, respectively.
-      §e/<command> xp <loot-id> <item-id> <xp>§f - Signify that this drop will be accompanied by a specified amount of XP, or 0 to suppress the XP. NOTE: This option does not affect XP from vanilla default drops.
-      §e/<command> invulnerable <loot-id> <yes-or-no>§f - Controls whether the specified drop is invulnerable. <yes-or-no> is case insensitive and can be one of yes/no/y/n/true/false/t/f/on/off.
-      §e/<command> glowing <loot-id> <yes-or-no>§f - Controls whether the specified drop is glowing. (Default drops are not affected.) <yes-or-no> is case insensitive and can be one of yes/no/y/n/true/false/t/f/on/off.
+      §e/<command> sound <loot-id> <id> <sound> §f[§e<range> <pitch>§f] - Signify that this item or mob drop causes a sound to play. <sound> is a sound name from the Bukkit API or "none". <range> is the range of the sound in blocks. <pitch> is playback speed, from 0.5 to 2.0. <range> and <pitch> can be omitted, in which case they default to 15.0 and 1.0, respectively.
+      §e/<command> xp <loot-id> <id> <xp>§f - Signify that this item or mob drop will be accompanied by a specified amount of XP, or 0 to suppress the XP. NOTE: This option does not affect XP from vanilla default drops.
+      §6Truthy arguments such as §e<yes-or-no>§6 are case insensitive and can be one of yes/no/y/n/true/false/t/f/on/off.
+      §6See: §b§nhttps://github.com/NerdNu/BeastMaster/wiki/Command-Reference#loot-table-commands
 
   beast-mob:
     description: Configure mobs.
@@ -134,6 +140,7 @@ commands:
       §e/<command> clear <mob-id> <property>§f - Clear the specified property of the mob type, so that it will be inherited from the parent type.
       §e/<command> spawn <mob-id> (here|there|<world> <x> <y> <z>)§f - Spawn a mob of the specified mob type either "here" (player location), "there" (where the player is looking) or at explicitly specified coordinates in a named world. A player must be in-game to use the "here" or "there" variants.
       §e/<command> statue <mob-id> (here|there|<world> <x> <y> <z>)§f - Spawn a mob of the specified mob type, as with §e/<command> spawn ...§f, but the spawned mob will have no AI and will therefore not move.
+      §6See: §b§nhttps://github.com/NerdNu/BeastMaster/wiki/Command-Reference#mob-commands
       
   beast-obj:
     description: Configure objectives.
@@ -149,6 +156,7 @@ commands:
       §e/<command> range <obj-id> <min> <max>§f - Specify the minimum and maximum range an objective can spawn from the drop that initiates it.
       §e/<command> height <obj-id> <min> <max>§f - Specify the minimum and maximum Y coordinate an objective can spawn.
       §e/<command> time <obj-id> <speed> <extra-ticks>§f - Specify the expected player speed from which objective lifetimes are computed. The <extra-ticks> value is a fixed amount of time added to the objective lifetime, irrespective of its range.
+      §6See: §b§nhttps://github.com/NerdNu/BeastMaster/wiki/Command-Reference#objective-commands
 
   beast-potion:
     description: Configure potion sets.
@@ -168,12 +176,15 @@ commands:
           to signify infinite duration.
           <potion-type> is the effect type, e.g. BLINDNESS.
           <amplifier> is the potion level, starting at 1.
-          <particles> (yes/no/y/n/true/false/t/f/on/off) specifies
-          whether particles should be visible.
-          <ambient> (yes/no/y/n/true/false/t/f/on/off) specifies
-          whether the potion is "ambient" (like a beacon).
-          Ambient potion effects have less obtrusive particles.
-          <icon> (yes/no/y/n/true/false/t/f/on/off) specifies
-          whether the potion's icon should be shown in the client.
+          <particles> (truthy) specifies whether particles should be
+          visible.
+          <ambient> (truthy) specifies whether the potion is "ambient"
+          (like a beacon). Ambient potion effects have less obtrusive
+          particles.
+          <icon> (truthy) specifies whether the potion's icon should
+          be shown in the client.
       §e/<command> remove-potion <potion-set-id> <potion-type>§f
         - Remove the potion with the specified type.
+      §6Truthy arguments are case insensitive and can be one of yes/no/y/n/true/false/t/f/on/off.
+      §6See: §b§nhttps://github.com/NerdNu/BeastMaster/wiki/Command-Reference#potion-set-commands
+      

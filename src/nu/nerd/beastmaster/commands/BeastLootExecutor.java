@@ -213,7 +213,7 @@ public class BeastLootExecutor extends ExecutorBase {
 
             } else if (args[0].equals("remove-drop")) {
                 if (args.length != 3) {
-                    Commands.invalidArguments(sender, getName() + " remove-drop <loot-id> <item-id>");
+                    Commands.invalidArguments(sender, getName() + " remove-drop <loot-id> <id>");
                     return true;
                 }
 
@@ -334,7 +334,7 @@ public class BeastLootExecutor extends ExecutorBase {
 
             } else if (args[0].equals("logged")) {
                 if (args.length != 4) {
-                    Commands.invalidArguments(sender, getName() + " logged <loot-id> <item-id> <yes-or-no>");
+                    Commands.invalidArguments(sender, getName() + " logged <loot-id> <id> <yes-or-no>");
                     return true;
                 }
 
@@ -366,7 +366,10 @@ public class BeastLootExecutor extends ExecutorBase {
 
             } else if (args[0].equals("sound")) {
                 if (args.length != 4 && args.length != 6) {
-                    Commands.invalidArguments(sender, getName() + " sound <loot-id> <item-id> <sound> [<range> <pitch>]");
+                    Commands.invalidArguments(sender, getName() + " sound <loot-id> <id> <sound> [<range> <pitch>]");
+                    sender.sendMessage(ChatColor.GOLD + "Sound names are case insensitive:");
+                    sender.sendMessage(ChatColor.AQUA + "" + ChatColor.UNDERLINE +
+                                       "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html");
                     return true;
                 }
 
@@ -429,7 +432,7 @@ public class BeastLootExecutor extends ExecutorBase {
 
             } else if (args[0].equals("xp")) {
                 if (args.length != 4) {
-                    Commands.invalidArguments(sender, getName() + " xp <loot-id> <item-id> <xp>");
+                    Commands.invalidArguments(sender, getName() + " xp <loot-id> <id> <xp>");
                     return true;
                 }
 
@@ -471,7 +474,7 @@ public class BeastLootExecutor extends ExecutorBase {
 
             } else if (args[0].equals("invulnerable")) {
                 if (args.length != 4) {
-                    Commands.invalidArguments(sender, getName() + " invulnerable <loot-id> <item-id> <yes-or-no>");
+                    Commands.invalidArguments(sender, getName() + " invulnerable <loot-id> <id> <yes-or-no>");
                     return true;
                 }
 
@@ -503,7 +506,7 @@ public class BeastLootExecutor extends ExecutorBase {
 
             } else if (args[0].equals("glowing")) {
                 if (args.length != 4) {
-                    Commands.invalidArguments(sender, getName() + " glowing <loot-id> <item-id> <yes-or-no>");
+                    Commands.invalidArguments(sender, getName() + " glowing <loot-id> <id> <yes-or-no>");
                     return true;
                 }
 
