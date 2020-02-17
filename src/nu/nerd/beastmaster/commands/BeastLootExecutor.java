@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -16,6 +17,7 @@ import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.Drop;
 import nu.nerd.beastmaster.DropSet;
 import nu.nerd.beastmaster.DropType;
+import nu.nerd.beastmaster.Util;
 import nu.nerd.beastmaster.objectives.ObjectiveType;
 
 // ----------------------------------------------------------------------------
@@ -137,6 +139,9 @@ public class BeastLootExecutor extends ExecutorBase {
                 String dropTypeArg = args[2];
                 if (!DropType.isDropType(dropTypeArg)) {
                     sender.sendMessage(ChatColor.RED + dropTypeArg + " is not a valid drop type.");
+                    sender.sendMessage(ChatColor.GOLD + "Drop types: " +
+                                       Util.alternateColours(Stream.of(DropType.values()).map(t -> t.toString().toLowerCase())
+                                       .collect(Collectors.toList()), ChatColor.GRAY + " ", ChatColor.WHITE, ChatColor.YELLOW));
                     return true;
                 }
 
