@@ -2,6 +2,7 @@ package nu.nerd.beastmaster.commands;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
@@ -116,14 +117,14 @@ public class BeastMobExecutor extends ExecutorBase {
                     return true;
                 }
 
+                List<String> predefinedMobs = BeastMaster.MOBS.getPredefinedMobTypes().stream()
+                .map(MobType::getId).sorted().collect(Collectors.toList());
                 sender.sendMessage(ChatColor.GOLD + "Predefined mob types: " +
-                                   BeastMaster.MOBS.getPredefinedMobTypes().stream()
-                                   .map(MobType::getShortDescription)
-                                   .collect(Collectors.joining(ChatColor.WHITE + ", ")));
+                                   Util.alternateColours(predefinedMobs, ChatColor.GRAY + " ", ChatColor.WHITE, ChatColor.YELLOW));
 
                 sender.sendMessage(ChatColor.GOLD + "Custom mob types:");
                 ArrayList<MobType> customMobTypes = BeastMaster.MOBS.getCustomMobTypes();
-                customMobTypes.sort((t1, t2) -> t1.getId().compareTo(t2.getId()));
+                customMobTypes.sort((t1, t2) -> t1.getId().compareToIgnoreCase(t2.getId()));
                 for (MobType mobType : customMobTypes) {
                     sender.sendMessage(mobType.getShortDescription());
                 }
