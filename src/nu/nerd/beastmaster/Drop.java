@@ -8,7 +8,6 @@ import java.util.logging.Logger;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
@@ -104,13 +103,14 @@ public class Drop implements Cloneable {
      * @param itemStack the item.
      */
     private void doDrop(Location loc, Player player, ItemStack itemStack) {
-        // To avoid drops occasionally spawning in a block and
-        // warping up to the surface, wait for the next tick and
-        // check whether the block is actually air. If not air,
-        // spawn the drop at the player's feet.
+        // To avoid drops occasionally spawning in a block and warping up to the
+        // surface, wait for the next tick and check whether the block is
+        // actually unobstructed. If not water or air, spawn the drop at the
+        // player's feet.
         Bukkit.getScheduler().scheduleSyncDelayedTask(BeastMaster.PLUGIN, () -> {
             Block locBlock = loc.getBlock();
-            Location revisedLoc = (locBlock != null && locBlock.getType() != Material.AIR &&
+            Location revisedLoc = (locBlock != null &&
+                                   Util.canAccomodateDrop(locBlock.getType()) &&
                                    player != null) ? player.getLocation() : loc;
             org.bukkit.entity.Item item = revisedLoc.getWorld().dropItem(revisedLoc, itemStack);
             item.setInvulnerable(isInvulnerable());
@@ -172,7 +172,7 @@ public class Drop implements Cloneable {
                 }
             }
             dropSucceeded = (spawnCount != 0);
-            dropDescription = "ITEM " + getId() + (dropSucceeded ? " x " + spawnCount : " (invalid)");
+            dropDescription = "MOB " + getId() + (dropSucceeded ? " x " + spawnCount : " (invalid)");
             break;
         }
 
