@@ -18,6 +18,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Phantom;
 import org.bukkit.entity.Slime;
+import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.ItemStack;
 
 import nu.nerd.beastmaster.BeastMaster;
@@ -391,13 +392,15 @@ public class MobType {
             }));
         addProperty(new MobProperty("baby-percent", DataType.DOUBLE,
             (mob, logger) -> {
+                boolean isBaby = (Math.random() * 100 < (Double) getDerivedProperty("baby-percent").getValue());
                 if (mob instanceof Ageable) {
-                    boolean isBaby = (Math.random() * 100 < (Double) getDerivedProperty("baby-percent").getValue());
                     if (isBaby) {
                         ((Ageable) mob).setBaby();
                     } else {
                         ((Ageable) mob).setAdult();
                     }
+                } else if (mob instanceof Zombie) {
+                    ((Zombie) mob).setBaby(isBaby);
                 }
             }));
         addProperty(new MobProperty("charged-percent", DataType.DOUBLE,
