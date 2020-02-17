@@ -52,7 +52,19 @@ public class Drop implements Cloneable {
      */
     public Drop(DropType dropType, String id, double dropChance, int min, int max) {
         _dropType = dropType;
-        _id = (dropType.usesId() ? id : dropType.name());
+        if (dropType.usesId()) {
+            if (dropType == DropType.ITEM) {
+                // Canonicalise automatically-created vanilla material items.
+                Item item = BeastMaster.ITEMS.getItem(id);
+                _id = (item == null) ? id : item.getId();
+            } else {
+                // Currently mobs is the only other case. Canonicalise.
+                MobType mobType = BeastMaster.MOBS.getMobType(id);
+                _id = (mobType == null) ? id : mobType.getId();
+            }
+        } else {
+            _id = dropType.name();
+        }
         _dropChance = dropChance;
         _min = min;
         _max = max;

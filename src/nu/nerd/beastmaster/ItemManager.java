@@ -41,11 +41,28 @@ public class ItemManager {
     /**
      * Return the Item with the specified ID.
      * 
+     * If a custom item with the specified ID has not been created and the ID
+     * corresponds to a vanilla Material, create a transient (not saved) Item
+     * for the Material, on the fly.
+     * 
      * @param id the case-insensitive ID of the Item to find.
-     * @return the Item with the specified ID.
+     * @return the Item with the specified ID, or an automatically generated
+     *         Item corresponding to vanilla Materials.
      */
     public Item getItem(String id) {
-        return _items.get(id.toLowerCase());
+        Item item = _items.get(id.toLowerCase());
+        if (item != null) {
+            return item;
+        }
+
+        try {
+            String upperId = id.toUpperCase();
+            Material material = Material.valueOf(upperId);
+            return new Item(upperId, new ItemStack(material));
+        } catch (IllegalArgumentException ex) {
+        }
+
+        return null;
     }
 
     // ------------------------------------------------------------------------

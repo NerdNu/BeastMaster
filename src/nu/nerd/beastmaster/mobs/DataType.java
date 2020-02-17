@@ -10,6 +10,8 @@ import org.bukkit.entity.EntityType;
 import me.libraryaddict.disguise.utilities.parser.DisguiseParseException;
 import me.libraryaddict.disguise.utilities.parser.DisguiseParser;
 import nu.nerd.beastmaster.BeastMaster;
+import nu.nerd.beastmaster.DropSet;
+import nu.nerd.beastmaster.Item;
 import nu.nerd.beastmaster.commands.Commands;
 
 // ----------------------------------------------------------------------------
@@ -136,6 +138,17 @@ public class DataType {
 
         @Override
         public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
+            // Canonicalise the case of loot table and item names.
+            DropSet dropSet = BeastMaster.LOOTS.getDropSet(value);
+            if (dropSet != null) {
+                return dropSet.getId();
+            }
+
+            Item item = BeastMaster.ITEMS.getItem(value);
+            if (item != null) {
+                return item.getId();
+            }
+
             return value;
         }
 
