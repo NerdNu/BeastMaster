@@ -391,9 +391,7 @@ public class BeastMobExecutor extends ExecutorBase {
      */
     protected void listPropertyIds(CommandSender sender) {
         sender.sendMessage(ChatColor.GOLD + "Valid property names are: " +
-                           MobType.getAllPropertyIds().stream()
-                           .map(id -> ChatColor.YELLOW + id)
-                           .collect(Collectors.joining(ChatColor.WHITE + ", ")));
+                           Util.alternateColours(MobType.getAllPropertyIds(), ChatColor.GRAY + " ", ChatColor.WHITE, ChatColor.YELLOW));
     }
 
     // ------------------------------------------------------------------------
