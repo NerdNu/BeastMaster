@@ -41,7 +41,7 @@ public class DisguiseManager {
                                                  " at " + Util.formatLocation(entity.getLocation()));
                     }
                     String encodedDisguise = (String) mobType.getDerivedProperty("disguise").getValue();
-                    BeastMaster.DISGUISES.createDisguise((LivingEntity) entity, chunk.getWorld(), encodedDisguise);
+                    createDisguise((LivingEntity) entity, chunk.getWorld(), encodedDisguise);
                 }
             }
         }
