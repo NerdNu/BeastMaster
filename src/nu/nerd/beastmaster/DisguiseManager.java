@@ -105,9 +105,11 @@ public class DisguiseManager {
      */
     public void destroyDisguise(LivingEntity entity, World world) {
         Disguise disguise = getWorldDisguises(world).remove(entity);
-        Bukkit.getScheduler().runTaskLater(BeastMaster.PLUGIN, () -> {
-            disguise.stopDisguise();
-        }, 1);
+        if (disguise != null) {
+            Bukkit.getScheduler().runTaskLater(BeastMaster.PLUGIN, () -> {
+                disguise.stopDisguise();
+            }, 1);
+        }
     }
 
     // ------------------------------------------------------------------------
