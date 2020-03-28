@@ -117,13 +117,14 @@ public class Drop implements Cloneable {
     private void doDrop(Location loc, Player player, ItemStack itemStack) {
         // To avoid drops occasionally spawning in a block and warping up to the
         // surface, wait for the next tick and check whether the block is
-        // actually unobstructed. If not water or air, spawn the drop at the
-        // player's feet.
+        // actually unobstructed. We don't attempt to save the drop if e.g.
+        // a mob is standing in lava, however.
         Bukkit.getScheduler().scheduleSyncDelayedTask(BeastMaster.PLUGIN, () -> {
-            Block locBlock = loc.getBlock();
-            Location revisedLoc = (locBlock != null &&
-                                   Util.canAccomodateDrop(locBlock.getType()) &&
-                                   player != null) ? player.getLocation() : loc;
+            Block block = loc.getBlock();
+            Location revisedLoc = (block != null &&
+                                   !block.isPassable() &&
+                                   player != null) ? player.getLocation()
+                                                   : loc;
             org.bukkit.entity.Item item = revisedLoc.getWorld().dropItem(revisedLoc, itemStack);
             item.setInvulnerable(isInvulnerable());
             item.setGlowing(isGlowing());

@@ -9,7 +9,6 @@ import java.util.Random;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
@@ -182,25 +181,6 @@ public class Util {
             sep = separator;
         }
         return result.toString();
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Return true if a block of the specified Material could "safely"
-     * accommodate a drop.
-     * 
-     * "Safely" in this instance means that the drop won't disappear in some
-     * way. Fire and lava would destroy the block; (parially) solid materials
-     * would cause the drop to shoot up into the air; void air would let the
-     * drop fall into the void.
-     * 
-     * @return true if a block of the specified Material would be a good place
-     *         for a drop.
-     */
-    public static boolean canAccomodateDrop(Material material) {
-        return material == Material.AIR ||
-               material == Material.CAVE_AIR ||
-               material == Material.WATER;
     }
 
     // ------------------------------------------------------------------------
