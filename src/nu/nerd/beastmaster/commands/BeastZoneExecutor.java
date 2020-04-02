@@ -232,8 +232,26 @@ public class BeastZoneExecutor extends ExecutorBase {
                     return true;
                 }
 
-                Material material = Commands.parseMaterial(sender, args[2]);
+                // Material name uppercase for Material.getMaterial() later.
+                String materialArg = args[2].toUpperCase();
+                Material material = Commands.parseMaterial(sender, materialArg);
                 if (material == null) {
+                    return true;
+                }
+
+                // Check that the material is an actual block and not just an
+                // item type. Suggest corrected material.
+                if (!material.isBlock()) {
+                    sender.sendMessage(ChatColor.RED + material.name() + " is not a placeable block type.");
+                    if (materialArg.equals("POTATO")) {
+                        sender.sendMessage(ChatColor.RED + "Did you mean POTATOES instead?");
+                    } else {
+                        // General case: CARROT -> CARROTS, etc.
+                        material = Material.getMaterial(materialArg + "S");
+                        if (material != null) {
+                            sender.sendMessage(ChatColor.RED + "Did you mean " + material + " instead?");
+                        }
+                    }
                     return true;
                 }
 
