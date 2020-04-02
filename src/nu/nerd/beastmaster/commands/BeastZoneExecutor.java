@@ -1,7 +1,10 @@
 package nu.nerd.beastmaster.commands;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -210,7 +213,10 @@ public class BeastZoneExecutor extends ExecutorBase {
                     sender.sendMessage(ChatColor.GOLD + "Loot tables replacing mobs in zone " +
                                        ChatColor.YELLOW + zoneArg +
                                        ChatColor.GOLD + ":");
-                    for (EntityType entityType : zone.getAllReplacedEntityTypes()) {
+                    List<EntityType> sortedTypes = zone.getAllReplacedEntityTypes().stream()
+                    .sorted(Comparator.comparing(EntityType::name))
+                    .collect(Collectors.toList());
+                    for (EntityType entityType : sortedTypes) {
                         String lootId = zone.getMobReplacementDropSetId(entityType);
                         boolean lootTableExists = (BeastMaster.LOOTS.getDropSet(lootId) != null);
                         ChatColor lootTableColour = (lootTableExists ? ChatColor.YELLOW : ChatColor.RED);
@@ -327,7 +333,10 @@ public class BeastZoneExecutor extends ExecutorBase {
                     sender.sendMessage(ChatColor.GOLD + "Block drops in zone " +
                                        ChatColor.YELLOW + zoneArg +
                                        ChatColor.GOLD + ": ");
-                    for (Entry<Material, String> entry : allMiningDrops) {
+                    List<Entry<Material, String>> sortedMiningDrops = allMiningDrops.stream()
+                    .sorted(Comparator.comparing(Entry<Material, String>::getKey))
+                    .collect(Collectors.toList());
+                    for (Entry<Material, String> entry : sortedMiningDrops) {
                         Material material = entry.getKey();
                         String dropsId = entry.getValue();
                         DropSet drops = BeastMaster.LOOTS.getDropSet(dropsId);
