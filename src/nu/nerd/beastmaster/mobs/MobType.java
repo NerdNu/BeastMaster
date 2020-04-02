@@ -97,7 +97,7 @@ public class MobType {
      * Return true if this mob type is predefined.
      * 
      * Predefined mob types correspond to the vanilla mob types. They cannot
-     * haver their "entity-type" or "parent-type" property changed.
+     * have their "entity-type" or "parent-type" property changed.
      * 
      * @return true if this mob type is predefined.
      */

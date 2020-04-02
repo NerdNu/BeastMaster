@@ -225,7 +225,7 @@ public class DataType {
     public static final IDataType ENTITY_TYPE = new IDataType() {
         @Override
         public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
-            return EntityType.valueOf(value);
+            return EntityType.valueOf(value.toUpperCase());
         }
 
         @Override
