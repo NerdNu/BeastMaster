@@ -58,7 +58,7 @@ public class ItemManager {
         try {
             String upperId = id.toUpperCase();
             Material material = Material.valueOf(upperId);
-            return new Item(upperId, new ItemStack(material));
+            return new Item(upperId, new ItemStack(material), true);
         } catch (IllegalArgumentException ex) {
         }
 
@@ -80,7 +80,7 @@ public class ItemManager {
             throw new IllegalArgumentException("can't name an item " + id);
         }
 
-        _items.put(id.toLowerCase(), new Item(id, itemStack));
+        _items.put(id.toLowerCase(), new Item(id, itemStack, false));
     }
 
     // ------------------------------------------------------------------------

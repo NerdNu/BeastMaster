@@ -1,7 +1,7 @@
 package nu.nerd.beastmaster.commands;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -102,7 +102,7 @@ public class BeastLootExecutor extends ExecutorBase {
                 }
 
                 sender.sendMessage(ChatColor.GOLD + "Loot table: " + dropSet.getShortDescription());
-                Collection<Drop> allDrops = dropSet.getAllDrops();
+                List<Drop> allDrops = dropSet.getAllDrops().stream().sorted().collect(Collectors.toList());
                 sender.sendMessage(ChatColor.GOLD + (allDrops.isEmpty() ? "No drops defined." : "Drops:"));
                 for (Drop drop : allDrops) {
                     sender.sendMessage(drop.getLongDescription());
@@ -255,7 +255,7 @@ public class BeastLootExecutor extends ExecutorBase {
                     return true;
                 }
 
-                Collection<Drop> allDrops = dropSet.getAllDrops();
+                List<Drop> allDrops = dropSet.getAllDrops().stream().sorted().collect(Collectors.toList());
                 if (allDrops.isEmpty()) {
                     sender.sendMessage(ChatColor.GOLD + "Loot table " +
                                        ChatColor.YELLOW + lootIdArg + ChatColor.GOLD + " has no drops defined.");

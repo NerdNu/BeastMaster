@@ -19,10 +19,13 @@ public class Item {
      * 
      * @param id the ID of this item.
      * @param itemStack the ItemStack.
+     * @param implicit if true, this Item was implicitly defined as a reference
+     *        to an ItemStack of 1 item of a vanilla Material.
      */
-    public Item(String id, ItemStack itemStack) {
+    public Item(String id, ItemStack itemStack, boolean implicit) {
         _id = id;
         _itemStack = itemStack;
+        _implicit = implicit;
     }
 
     // ------------------------------------------------------------------------
@@ -50,6 +53,18 @@ public class Item {
 
     // ------------------------------------------------------------------------
     /**
+     * Return true if this Item was implicitly defined as a reference to an
+     * ItemStack of 1 item of a vanilla Material.
+     * 
+     * @return true if this Item was implicitly defined as a reference to an
+     *         ItemStack of 1 item of a vanilla Material.
+     */
+    public boolean isImplicit() {
+        return _implicit;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * The ID of this item.
      */
     protected String _id;
@@ -58,4 +73,10 @@ public class Item {
      * The dropped item stack; null for special values.
      */
     protected ItemStack _itemStack;
+
+    /**
+     * If true, this Item was implicitly defined as a reference to an ItemStack
+     * of 1 item of a vanilla Material.
+     */
+    boolean _implicit;
 } // class Item

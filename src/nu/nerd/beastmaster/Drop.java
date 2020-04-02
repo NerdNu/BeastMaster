@@ -31,7 +31,7 @@ import nu.nerd.beastmaster.zones.Zone;
  * and minY and maxY, and in accordance with floating (allows feet off the
  * ground). floating false and minY > highest block (at most 255) => surface.
  */
-public class Drop implements Cloneable {
+public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Constructor for loading from configuration only.
@@ -563,7 +563,7 @@ public class Drop implements Cloneable {
 
         if (_dropType == DropType.ITEM) {
             Item item = BeastMaster.ITEMS.getItem(_id);
-            s.append((item == null) ? ChatColor.RED : ChatColor.YELLOW);
+            s.append((item == null) ? ChatColor.RED : (item.isImplicit() ? ChatColor.YELLOW : ChatColor.GREEN));
             s.append(_id);
 
             // Only items can have an associated objective.
@@ -572,7 +572,7 @@ public class Drop implements Cloneable {
             }
         } else if (_dropType == DropType.MOB) {
             MobType mobType = BeastMaster.MOBS.getMobType(_id);
-            s.append((mobType == null) ? ChatColor.RED : ChatColor.YELLOW);
+            s.append((mobType == null) ? ChatColor.RED : ChatColor.GREEN);
             s.append(_id);
         }
         if (_logged) {
@@ -756,6 +756,21 @@ public class Drop implements Cloneable {
         section.set("invulnerable", _invulnerable);
         section.set("glowing", _glowing);
         section.set("direct-to-inventory", _directToInventory);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * @see java.lang.Comparable#compareTo(java.lang.Object)
+     * 
+     *      Compare by DropType enum ordinal first, then case-insensitive ID.
+     */
+    @Override
+    public int compareTo(Drop other) {
+        int compareDropType = Integer.compare(getDropType().ordinal(), other.getDropType().ordinal());
+        if (compareDropType != 0) {
+            return compareDropType;
+        }
+        return getId().compareToIgnoreCase(other.getId());
     }
 
     // --------------------------------------------------------------------------
