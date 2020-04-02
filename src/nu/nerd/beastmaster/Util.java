@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
+import java.util.function.Function;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -25,6 +27,26 @@ import org.bukkit.potion.PotionEffect;
  * Utility methods.
  */
 public class Util {
+    // ------------------------------------------------------------------------
+    /**
+     * Computes the transitive closure of the specified relation in a directed
+     * graph of nodes of type T, starting at the specified root.
+     *
+     * @param visited the return set of visited nodes.
+     * @param root the starting node.
+     * @param relation a function that returns a collection of all nodes
+     *        directly related to the current node.
+     */
+    public static <T> void transitiveClosure(Set<T> visited, T root, Function<T, Collection<T>> relation) {
+        Collection<T> related = relation.apply(root);
+        for (T node : related) {
+            if (!visited.contains(node)) {
+                visited.add(node);
+                transitiveClosure(visited, node, relation);
+            }
+        }
+    }
+
     // ------------------------------------------------------------------------
     /**
      * Return a string describing a dropped item stack.

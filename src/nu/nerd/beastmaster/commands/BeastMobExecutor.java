@@ -2,6 +2,8 @@ package nu.nerd.beastmaster.commands;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -215,6 +217,27 @@ public class BeastMobExecutor extends ExecutorBase {
                 } catch (IllegalArgumentException ex) {
                     sender.sendMessage(ChatColor.RED + valueArg + " is not a valid " + property.getId() + " value.");
                     return true;
+                }
+
+                // Special case: prevent a mob being its own ancestor (infinite
+                // recursion that hangs the main server thread).
+                if (property.getId().equals("parent-type")) {
+                    MobType newParent = BeastMaster.MOBS.getMobType((String) value);
+                    if (mobType == newParent) {
+                        sender.sendMessage(ChatColor.RED + "A mob type cannot be its own parent.");
+                        return true;
+                    } else {
+                        HashSet<MobType> ancestors = new HashSet<>();
+                        Util.transitiveClosure(ancestors, newParent,
+                                               mt -> (mt.getParentType() != null ? Arrays.asList(mt.getParentType())
+                                                                                 : Collections.EMPTY_LIST));
+                        if (ancestors.contains(mobType)) {
+                            sender.sendMessage(ChatColor.RED +
+                                               "A mob type cannot be its own ancestor (parent, grandparent, etc). " +
+                                               newParent.getId() + "'s ancestors already include " + mobType.getId() + ".");
+                            return true;
+                        }
+                    }
                 }
 
                 property.setValue(value);
