@@ -398,11 +398,17 @@ public class BeastMobExecutor extends ExecutorBase {
 
         boolean isStatue = args[0].equals("statue");
         LivingEntity mob = BeastMaster.PLUGIN.spawnMob(spawnLoc, mobType, false);
-        mob.setAI(!isStatue);
-        sender.sendMessage(ChatColor.GOLD + "Spawned " + ChatColor.YELLOW + mobType.getId() +
-                           ChatColor.GOLD + (isStatue ? " statue" : "") + " at " +
-                           ChatColor.YELLOW + Util.formatLocation(spawnLoc) +
-                           ChatColor.GOLD + ".");
+        if (mob != null) {
+            mob.setAI(!isStatue);
+            sender.sendMessage(ChatColor.GOLD + "Spawned " + ChatColor.YELLOW + mobType.getId() +
+                               ChatColor.GOLD + (isStatue ? " statue" : "") + " at " +
+                               ChatColor.YELLOW + Util.formatLocation(spawnLoc) +
+                               ChatColor.GOLD + ".");
+        } else {
+            sender.sendMessage(ChatColor.RED + "Unable to spawn a " + mobType.getId() +
+                               (isStatue ? " statue" : "") + " at " + Util.formatLocation(spawnLoc) + ".");
+            sender.sendMessage(ChatColor.RED + "Is there a WorldGuard region preventing that?");
+        }
         return true;
     } // onCommandSpawnOrStatue
 
