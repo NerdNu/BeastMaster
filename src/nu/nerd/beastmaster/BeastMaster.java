@@ -535,7 +535,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
                 if (mobType != null) {
                     String encodedDisguise = (String) mobType.getDerivedProperty("disguise").getValue();
                     if (encodedDisguise != null && !encodedDisguise.isEmpty()) {
-                        DISGUISES.destroyDisguise((LivingEntity) entity, event.getWorld());
+                        DISGUISES.destroyDisguise(entity, event.getWorld());
                     }
                 }
             }
