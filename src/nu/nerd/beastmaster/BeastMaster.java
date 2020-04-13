@@ -6,7 +6,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Biome;
@@ -306,6 +305,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         replaceNetherSkeletonSpawn(event);
 
         LivingEntity entity = event.getEntity();
+
         // Tag spawn reason. Replacement mobs will have SpawnReason.CUSTOM.
         EntityMeta.api().set(entity, this, "spawn-reason", event.getSpawnReason().toString());
 
@@ -322,7 +322,6 @@ public class BeastMaster extends JavaPlugin implements Listener {
             break;
 
         case NATURAL:
-        case CHUNK_GEN:
         case REINFORCEMENTS:
         case INFECTION:
         case VILLAGE_INVASION:
@@ -346,7 +345,8 @@ public class BeastMaster extends JavaPlugin implements Listener {
                     case MOB:
                     case ITEM:
                         entity.remove();
-                        drop.generate("Mob replacement", null, entity.getLocation());
+                        DropResults results = new DropResults();
+                        drop.generate(results, "Mob replacement", null, entity.getLocation());
                         break;
                     }
                 } else {
@@ -459,8 +459,9 @@ public class BeastMaster extends JavaPlugin implements Listener {
                 trigger.append(" killed ");
                 trigger.append(mobType.getId());
 
-                boolean dropDefaultItems = drops.generateRandomDrops(trigger.toString(), victoriousPlayer, entity.getLocation());
-                if (!dropDefaultItems) {
+                DropResults results = new DropResults();
+                drops.generateRandomDrops(results, trigger.toString(), victoriousPlayer, entity.getLocation());
+                if (!results.includesVanillaDrop()) {
                     event.getDrops().clear();
                 }
             }
@@ -572,12 +573,10 @@ public class BeastMaster extends JavaPlugin implements Listener {
         trigger.append(event.getPlayer().getName());
         trigger.append(" broke ");
         trigger.append(block.getType());
-        if (block.getData() != 0) {
-            trigger.append(':').append(block.getData());
-        }
 
-        boolean dropDefaultItems = drops.generateRandomDrops(trigger.toString(), event.getPlayer(), loc);
-        event.setDropItems(dropDefaultItems);
+        DropResults results = new DropResults();
+        drops.generateRandomDrops(results, trigger.toString(), event.getPlayer(), loc);
+        event.setDropItems(results.includesVanillaDrop());
     }
 
     // ------------------------------------------------------------------------
@@ -634,7 +633,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
             for (int x = -width / 2; x <= width / 2; ++x) {
                 for (int z = -width / 2; z <= width / 2; ++z) {
                     Block block = feetBlock.getRelative(x, y, z);
-                    if (block != null && block.getType() != Material.AIR) {
+                    if (block != null && !block.isPassable()) {
                         return false;
                     }
                 }

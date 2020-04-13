@@ -106,45 +106,21 @@ public class Drop implements Cloneable, Comparable<Drop> {
         return itemStack;
     }
 
-    // --------------------------------------------------------------------------
-    /**
-     * Drops an item naturally near a player with a short delay.
-     *
-     * @param loc the location.
-     * @param player the player.
-     * @param itemStack the item.
-     */
-    private void doDrop(Location loc, Player player, ItemStack itemStack) {
-        // To avoid drops occasionally spawning in a block and warping up to the
-        // surface, wait for the next tick and check whether the block is
-        // actually unobstructed. We don't attempt to save the drop if e.g.
-        // a mob is standing in lava, however.
-        Bukkit.getScheduler().scheduleSyncDelayedTask(BeastMaster.PLUGIN, () -> {
-            Block block = loc.getBlock();
-            Location revisedLoc = (block != null &&
-                                   !block.isPassable() &&
-                                   player != null) ? player.getLocation()
-                                                   : loc;
-            org.bukkit.entity.Item item = revisedLoc.getWorld().dropItem(revisedLoc, itemStack);
-            item.setInvulnerable(isInvulnerable());
-            item.setGlowing(isGlowing());
-        }, 1);
-    }
-
-    // --------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     /**
      * Do all actions associated with this drop, including effects and XP.
      * 
      * If the drop is an item that spawns an objective, then check that the
      * objective can be spawned before dropping the item.
      * 
+     * @param results records some details about what was dropped.
      * @param trigger a description of the event that triggered the drop, for
      *        logging.
      * @param player the player that triggered the drop, or null.
      * @param loc the Location of the drop.
      * @return true if the default vanilla drop should be dropped.
      */
-    public boolean generate(String trigger, Player player, Location loc) {
+    public void generate(DropResults results, String trigger, Player player, Location loc) {
         // Invalid mob/item ID or inability to spawn objective makes drop fail.
         boolean dropSucceeded;
         String dropDescription;
@@ -157,9 +133,9 @@ public class Drop implements Cloneable, Comparable<Drop> {
                 if (isDirect()) {
                     // PlayerInventory#addItem returns a HashMap detailing items
                     // that failed to add.
-                    player.getInventory().addItem(itemStack).values().forEach(i -> doDrop(loc, player, i));
+                    player.getInventory().addItem(itemStack).values().forEach(i -> doItemDrop(loc, player, i));
                 } else {
-                    doDrop(loc, player, itemStack);
+                    doItemDrop(loc, player, itemStack);
                 }
             }
             dropDescription = "ITEM " + getId() + (dropSucceeded ? " x " + itemStack.getAmount() : " (invalid)");
@@ -181,6 +157,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
                         ++spawnCount;
                         livingEntity.setInvulnerable(isInvulnerable());
                         livingEntity.setGlowing(isGlowing());
+                        results.addMob(livingEntity);
                     }
                 }
             }
@@ -205,7 +182,9 @@ public class Drop implements Cloneable, Comparable<Drop> {
         }
 
         // Trigger the default vanilla drop?
-        return getDropType() == DropType.DEFAULT;
+        if (getDropType() == DropType.DEFAULT) {
+            results.setIncludesVanillaDrop();
+        }
     } // generate
 
     // ------------------------------------------------------------------------
@@ -771,6 +750,31 @@ public class Drop implements Cloneable, Comparable<Drop> {
             return compareDropType;
         }
         return getId().compareToIgnoreCase(other.getId());
+    }
+
+    // --------------------------------------------------------------------------
+    /**
+     * Drops an item naturally near a player with a short delay.
+     *
+     * @param loc the location.
+     * @param player the player.
+     * @param itemStack the item.
+     */
+    protected void doItemDrop(Location loc, Player player, ItemStack itemStack) {
+        // To avoid drops occasionally spawning in a block and warping up to the
+        // surface, wait for the next tick and check whether the block is
+        // actually unobstructed. We don't attempt to save the drop if e.g.
+        // a mob is standing in lava, however.
+        Bukkit.getScheduler().scheduleSyncDelayedTask(BeastMaster.PLUGIN, () -> {
+            Block block = loc.getBlock();
+            Location revisedLoc = (block != null &&
+                                   !block.isPassable() &&
+                                   player != null) ? player.getLocation()
+                                                   : loc;
+            org.bukkit.entity.Item item = revisedLoc.getWorld().dropItem(revisedLoc, itemStack);
+            item.setInvulnerable(isInvulnerable());
+            item.setGlowing(isGlowing());
+        }, 1);
     }
 
     // --------------------------------------------------------------------------

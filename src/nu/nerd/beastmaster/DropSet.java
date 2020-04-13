@@ -184,22 +184,24 @@ public class DropSet {
      *        logging.
      * @param player the player that triggered the drop, or null.
      * @param loc the Location where items will be dropped.
-     * @return true if the vanilla default drops should also be dropped by the
-     *         caller.
      */
-    public boolean generateRandomDrops(String trigger, Player player, Location loc) {
+    public void generateRandomDrops(DropResults results, String trigger, Player player, Location loc) {
         if (isSingle()) {
-            return chooseOneDrop().generate(trigger, player, loc);
+            chooseOneDrop().generate(results, trigger, player, loc);
 
         } else {
             // An uninitialised drop table (no drops) drops vanilla items.
-            boolean dropDefault = _drops.isEmpty();
+            // Gotcha: a call to a nested empty loot table would also be
+            // affected by this. I don't think it's worth the effort to stop.
+            if (_drops.isEmpty()) {
+                results.setIncludesVanillaDrop();
+            }
+
             for (Drop drop : _drops.values()) {
                 if (Math.random() < drop.getDropChance()) {
-                    dropDefault |= drop.generate(trigger, player, loc);
+                    drop.generate(results, trigger, player, loc);
                 }
             }
-            return dropDefault;
         }
     }
 
