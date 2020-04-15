@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 
@@ -13,11 +14,15 @@ import me.libraryaddict.disguise.utilities.parser.DisguiseParser;
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.DropSet;
 import nu.nerd.beastmaster.Item;
+import nu.nerd.beastmaster.SoundEffect;
 import nu.nerd.beastmaster.commands.Commands;
 
 // ----------------------------------------------------------------------------
 /**
  * Concrete implementations of {@link IDataType}.
+ * 
+ * TODO: audit where compare() is being called and work out whether I actually
+ * need to handle null.
  */
 public class DataType {
     // ------------------------------------------------------------------------
@@ -299,8 +304,7 @@ public class DataType {
                 return value;
             } catch (IllegalAccessException | InvocationTargetException | DisguiseParseException ex) {
                 Throwable cause = ex.getCause();
-                sender.sendMessage(ChatColor.RED + "Invalid disguise: " +
-                                   (cause != null ? cause.getMessage() : ex.getMessage()));
+                sender.sendMessage(ChatColor.RED + "Invalid disguise: " + (cause != null ? cause.getMessage() : ex.getMessage()));
                 return null;
             }
         }
@@ -316,4 +320,123 @@ public class DataType {
         }
     };
 
+    // ------------------------------------------------------------------------
+    /**
+     * IDataType for properties of the {@link SoundEffect}.
+     * 
+     * TODO: if /beast-tune is added, support tune ID as higher precendence.
+     */
+    public static final IDataType SOUND_EFFECT = new IDataType() {
+        @Override
+        public String format(Object value) {
+            return ChatColor.GREEN + ((SoundEffect) value).toString();
+        }
+
+        @Override
+        public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
+            String[] args = value.trim().split("\\s+");
+            if (args.length < 1 || args.length > 3) {
+                showHelp(sender, value, -1);
+                return null;
+            }
+
+            Sound sound = null;
+            if (args.length >= 1) {
+                String typeArg = args[0];
+                try {
+                    sound = Sound.valueOf(typeArg.toUpperCase());
+                } catch (IllegalArgumentException ex) {
+                    if (sender != null) {
+                        sender.sendMessage(ChatColor.RED + "Invalid sound type: " + typeArg);
+                    }
+                    showHelp(sender, value, 0);
+                    return null;
+                }
+            }
+
+            Double rangeMetres = null;
+            if (args.length >= 2) {
+                String rangeArg = args[1];
+                boolean valid = false;
+                try {
+                    rangeMetres = Math.abs(Double.parseDouble(rangeArg));
+                    if (rangeMetres > 0.0) {
+                        valid = true;
+                    }
+                } catch (IllegalArgumentException ex) {
+                }
+                if (!valid) {
+                    if (sender != null) {
+                        sender.sendMessage(ChatColor.RED + "The range must be a positive number!");
+                    }
+                    showHelp(sender, value, 1);
+                    return null;
+                }
+            }
+
+            // Default pitch null is the same as "random".
+            Double pitch = null;
+            if (args.length == 3) {
+                String pitchArg = args[2];
+                boolean valid = false;
+                try {
+                    if (!args[2].equalsIgnoreCase("random")) {
+                        pitch = Double.parseDouble(pitchArg);
+                        if (pitch >= 0.5 && pitch <= 2.0) {
+                            valid = true;
+                        }
+                    }
+                } catch (IllegalArgumentException ex) {
+                }
+                if (!valid) {
+                    if (sender != null) {
+                        sender.sendMessage(ChatColor.RED + "The pitch must be in the range 0.5 to 2.0!");
+                    }
+                    showHelp(sender, value, 2);
+                    return null;
+                }
+            }
+            return new SoundEffect(sound, rangeMetres, pitch);
+        }
+
+        @Override
+        public Object deserialise(String value) throws IllegalArgumentException {
+            return parse(value, null, null);
+        }
+
+        @Override
+        public int compare(Object o1, Object o2) {
+            return ((SoundEffect) o1).compareTo((SoundEffect) o2);
+        }
+
+        /**
+         * Show a help message when parsing sounds.
+         * 
+         * When loading config, parse() is called with a null command sender. We
+         * log an error in console instead.
+         * 
+         * @param sender the sender to send the message to.
+         * @param value the string that was parsed as a SoundEffect.
+         * @param parsedSoFar is the number of fields successfully parsed, or -1
+         *        for invalid argument count.
+         */
+        protected void showHelp(CommandSender sender, String value, int parsedSoFar) {
+            if (sender == null) {
+                BeastMaster.PLUGIN.getLogger().warning("Invalid sound read from config: \"" + value + "\", error code " + parsedSoFar);
+                return;
+            }
+            if (parsedSoFar == -1 || parsedSoFar == 0) {
+                sender.sendMessage(ChatColor.RED + "Specify sound as: <type> [<range>] [<pitch>|random]");
+                sender.sendMessage(ChatColor.GOLD + "The type must be one of the constants at: " +
+                                   ChatColor.AQUA + ChatColor.UNDERLINE + "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html");
+            }
+            if (parsedSoFar == -1 || parsedSoFar == 1) {
+                sender.sendMessage(ChatColor.GOLD + "<range>, if specified, is the audible range in metres and defaults to 15 if omitted.");
+            }
+            if (parsedSoFar == -1 || parsedSoFar == 2) {
+                sender.sendMessage(ChatColor.GOLD + "<pitch>, if specified, is the playback speed from 0.5 to 2.0, with 1.0 being normal speed.");
+                sender.sendMessage(ChatColor.GOLD + "<pitch> can also be specified as the word 'random' to be chosen at playback time.");
+            }
+        }
+    };
 } // class DataType

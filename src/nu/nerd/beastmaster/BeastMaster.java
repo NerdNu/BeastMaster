@@ -388,7 +388,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
     protected void onProjectileLaunch(ProjectileLaunchEvent event) {
         Projectile projectile = event.getEntity();
         ProjectileSource shooter = projectile.getShooter();
-        if (!(shooter instanceof LivingEntity)) {
+        if (!(shooter instanceof LivingEntity) || shooter instanceof Player) {
             return;
         }
 
@@ -403,6 +403,9 @@ public class BeastMaster extends JavaPlugin implements Listener {
         // Turn projectiles into mobs, if configured.
         LivingEntity shootingMob = (LivingEntity) shooter;
         MobType shootingMobType = getMobType(shootingMob);
+        if (shootingMobType == null) {
+            return;
+        }
         MobProperty projectileMobs = shootingMobType.getDerivedProperty("projectile-mobs");
 
         // Need to record if projectile removed. isValid() is not true until
@@ -466,14 +469,17 @@ public class BeastMaster extends JavaPlugin implements Listener {
     protected void onProjectileHit(ProjectileHitEvent event) {
         Projectile projectile = event.getEntity();
         ProjectileSource shooter = projectile.getShooter();
-        if (!(shooter instanceof LivingEntity)) {
+        if (!(shooter instanceof LivingEntity) || shooter instanceof Player) {
             return;
         }
+
         LivingEntity shootingMob = (LivingEntity) shooter;
         MobType shootingMobType = getMobType(shootingMob);
-        Boolean removed = (Boolean) shootingMobType.getDerivedProperty("projectile-removed").getValue();
-        if (removed != null && removed) {
-            projectile.remove();
+        if (shootingMobType != null) {
+            Boolean removed = (Boolean) shootingMobType.getDerivedProperty("projectile-removed").getValue();
+            if (removed != null && removed) {
+                projectile.remove();
+            }
         }
     }
 

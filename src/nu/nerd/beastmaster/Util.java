@@ -207,6 +207,32 @@ public class Util {
 
     // ------------------------------------------------------------------------
     /**
+     * Return x clamped to the range [min,max].
+     * 
+     * @param x the value to consider.
+     * @param min the minimum result returned.
+     * @param max the maximum result returned.
+     * @return x clamped to the range [min,max].
+     */
+    public static int clamp(int x, int min, int max) {
+        return x < min ? min : (x > max ? max : x);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return x clamped to the range [min,max].
+     * 
+     * @param x the value to consider.
+     * @param min the minimum result returned.
+     * @param max the maximum result returned.
+     * @return x clamped to the range [min,max].
+     */
+    public static double clamp(double x, double min, double max) {
+        return x < min ? min : (x > max ? max : x);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Return a random integer in the range [0,values-1].
      *
      * @param values the number of possible values.

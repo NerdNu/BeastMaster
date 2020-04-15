@@ -30,6 +30,7 @@ import nu.nerd.beastmaster.DropSet;
 import nu.nerd.beastmaster.DropType;
 import nu.nerd.beastmaster.Item;
 import nu.nerd.beastmaster.PotionSet;
+import nu.nerd.beastmaster.SoundEffect;
 import nu.nerd.entitymeta.EntityMeta;
 
 // ----------------------------------------------------------------------------
@@ -358,29 +359,39 @@ public class MobType {
         addProperty(new MobProperty("health", DataType.DOUBLE,
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-                attribute.setBaseValue((Double) getDerivedProperty("health").getValue());
-                mob.setHealth(attribute.getBaseValue());
+                if (attribute != null) {
+                    attribute.setBaseValue((Double) getDerivedProperty("health").getValue());
+                    mob.setHealth(attribute.getBaseValue());
+                }
             }));
         addProperty(new MobProperty("experience", DataType.INTEGER, null));
         addProperty(new MobProperty("follow-range", DataType.DOUBLE,
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_FOLLOW_RANGE);
-                attribute.setBaseValue((Double) getDerivedProperty("follow-range").getValue());
+                if (attribute != null) {
+                    attribute.setBaseValue((Double) getDerivedProperty("follow-range").getValue());
+                }
             }));
         addProperty(new MobProperty("attack-damage", DataType.DOUBLE,
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
-                attribute.setBaseValue((Double) getDerivedProperty("attack-damage").getValue());
+                if (attribute != null) {
+                    attribute.setBaseValue((Double) getDerivedProperty("attack-damage").getValue());
+                }
             }));
         addProperty(new MobProperty("attack-speed", DataType.DOUBLE,
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-                attribute.setBaseValue((Double) getDerivedProperty("attack-speed").getValue());
+                if (attribute != null) {
+                    attribute.setBaseValue((Double) getDerivedProperty("attack-speed").getValue());
+                }
             }));
         addProperty(new MobProperty("speed", DataType.DOUBLE,
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
-                attribute.setBaseValue((Double) getDerivedProperty("speed").getValue());
+                if (attribute != null) {
+                    attribute.setBaseValue((Double) getDerivedProperty("speed").getValue());
+                }
             }));
         addProperty(new MobProperty("flying-speed", DataType.DOUBLE,
             (mob, logger) -> {
@@ -600,7 +611,14 @@ public class MobType {
         addProperty(new MobProperty("silent", DataType.BOOLEAN, (mob, logger) -> {
             mob.setSilent((Boolean) getDerivedProperty("silent").getValue());
         }));
-
+        addProperty(new MobProperty("spawn-sound", DataType.SOUND_EFFECT, (mob, logger) -> {
+            // configureMob() is called when the entity spawns. So play the
+            // sound.
+            SoundEffect soundEffect = (SoundEffect) getDerivedProperty("spawn-sound").getValue();
+            if (soundEffect != null) {
+                soundEffect.play(mob.getLocation());
+            }
+        }));
         // TODO: particle effects tracking mob, projectiles, attack hit points.
     }
 
