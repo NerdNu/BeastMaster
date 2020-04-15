@@ -13,11 +13,14 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Ageable;
+import org.bukkit.entity.Bee;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Phantom;
+import org.bukkit.entity.PigZombie;
 import org.bukkit.entity.Slime;
+import org.bukkit.entity.Wolf;
 import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.ItemStack;
 
@@ -569,7 +572,35 @@ public class MobType {
             }));
         addProperty(new MobProperty("passenger-percent", DataType.DOUBLE, null));
 
-        // TODO: list of escort mobs? Or separate that?
+        // projectile-... properties are enforced in ProjectileLaunchEvent and
+        // ProectileHitEvent handlers.
+        addProperty(new MobProperty("projectile-mobs", DataType.LOOT_OR_MOB, null));
+        addProperty(new MobProperty("projectile-disguise", DataType.DISGUISE, null));
+        addProperty(new MobProperty("projectile-removed", DataType.BOOLEAN, null));
+        // TODO: projectile-substitution to replace one type of projectile with
+        // a different type of projectile.
+
+        addProperty(new MobProperty("tags", DataType.TAG_LIST, (mob, logger) -> {
+            String[] tags = (String[]) getDerivedProperty("tags").getValue();
+            mob.getScoreboardTags().addAll(Arrays.asList(tags));
+        }));
+        addProperty(new MobProperty("anger-ticks", DataType.INTEGER, (mob, logger) -> {
+            int ticks = (Integer) getDerivedProperty("anger-ticks").getValue();
+            if (mob instanceof Bee) {
+                ((Bee) mob).setAnger(ticks);
+            } else if (mob instanceof PigZombie) {
+                ((PigZombie) mob).setAnger(ticks);
+            } else if (mob instanceof Wolf) {
+                ((Wolf) mob).setAngry(ticks > 0);
+            }
+            // } else if (mob instanceof Enderman) {
+            // Sadface.
+        }));
+
+        addProperty(new MobProperty("silent", DataType.BOOLEAN, (mob, logger) -> {
+            mob.setSilent((Boolean) getDerivedProperty("silent").getValue());
+        }));
+
         // TODO: particle effects tracking mob, projectiles, attack hit points.
     }
 

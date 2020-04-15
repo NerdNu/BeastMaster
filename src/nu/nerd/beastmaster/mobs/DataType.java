@@ -1,6 +1,7 @@
 package nu.nerd.beastmaster.mobs;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -92,6 +93,45 @@ public class DataType {
         @Override
         public int compare(Object o1, Object o2) {
             return ((String) o1).compareTo((String) o2);
+        }
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Comma separated list of Strings assumed to be scoreboard tags.
+     * 
+     * Spaces are treated as equivalent to commas.
+     * 
+     * Tags are compared case-sensitively. I assume that it might occasionally
+     * matter for scoreboard tags.
+     */
+    public static final IDataType TAG_LIST = new IDataType() {
+        @Override
+        public String format(Object value) {
+            return String.join(",", (String[]) value);
+        }
+
+        @Override
+        public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
+            return deserialise(value.replaceAll("\\s+", ",").replaceAll(",+", ","));
+        }
+
+        @Override
+        public String serialise(Object value) {
+            return format(value);
+        }
+
+        @Override
+        public Object deserialise(String value) throws IllegalArgumentException {
+            // Sort to account for hand-edited configs.
+            String[] tags = value.split(",");
+            Arrays.sort(tags);
+            return tags;
+        }
+
+        @Override
+        public int compare(Object o1, Object o2) {
+            return serialise(o1).compareTo(serialise(o2));
         }
     };
 

@@ -14,6 +14,7 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -23,6 +24,8 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -31,6 +34,7 @@ import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.projectiles.ProjectileSource;
 
 import net.sothatsit.blockstore.BlockStoreApi;
 import nu.nerd.beastmaster.commands.BeastItemExecutor;
@@ -191,7 +195,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
      * @param loc the Location where the mob spawns.
      * @param mobType the custom mob type.
      * @param checkCanFit if true, the available space at the location is
-     *        checked to see if it can accomodate the mob, and if not, the mob
+     *        checked to see if it can accommodate the mob, and if not, the mob
      *        is removed.
      * @return the new LivingEntity, or null if it could not fit or an invalid
      *         type was specified.
@@ -373,6 +377,105 @@ public class BeastMaster extends JavaPlugin implements Listener {
             break;
         }
     } // onCreatureSpawn
+
+    // ------------------------------------------------------------------------
+    /**
+     * When a mob launches projectiles, replace them according to
+     * "projectile-mobs" first. Those that aren't turned into mobs are then
+     * disguised according to "projectile-disguise".
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    protected void onProjectileLaunch(ProjectileLaunchEvent event) {
+        Projectile projectile = event.getEntity();
+        ProjectileSource shooter = projectile.getShooter();
+        if (!(shooter instanceof LivingEntity)) {
+            return;
+        }
+
+        // Get the shooter's target.
+        // EnderDragon doesn't have getTarget() because it doesn't
+        // inherit from Mob (nor from Flying). :/
+        LivingEntity target = null;
+        if (shooter instanceof Mob) {
+            target = ((Mob) shooter).getTarget();
+        }
+
+        // Turn projectiles into mobs, if configured.
+        LivingEntity shootingMob = (LivingEntity) shooter;
+        MobType shootingMobType = getMobType(shootingMob);
+        MobProperty projectileMobs = shootingMobType.getDerivedProperty("projectile-mobs");
+
+        // Need to record if projectile removed. isValid() is not true until
+        // this event returns.
+        boolean projectileRemoved = false;
+        if (projectileMobs.getValue() != null) {
+            // DropSet or MobType ID:
+            String id = (String) projectileMobs.getValue();
+            DropSet drops = BeastMaster.LOOTS.getDropSet(id);
+            if (drops != null) {
+                DropResults results = new DropResults();
+                drops.generateRandomDrops(results, shootingMobType.getId() + " projectile-mobs",
+                                          null, projectile.getLocation());
+
+                for (LivingEntity projectileMob : results.getMobs()) {
+                    // Launch the mob with the projectile's velocity.
+                    projectileMob.setVelocity(projectile.getVelocity());
+
+                    // Target the mob at the shooter's target.
+                    if (target != null && projectileMob instanceof Mob) {
+                        ((Mob) projectileMob).setTarget(target);
+                    }
+                }
+
+                // To have the vanilla drop means not removing the projectile.
+                // Really requires drop spread to avoid hitting spawned mobs.
+                if (!results.includesVanillaDrop()) {
+                    event.setCancelled(true);
+                    projectileRemoved = true;
+                }
+            } else {
+                MobType projectileMobType = BeastMaster.MOBS.getMobType(id);
+                if (projectileMobType != null) {
+                    LivingEntity projectileMob = spawnMob(projectile.getLocation(), projectileMobType, false);
+                    if (projectileMob != null) {
+                        projectileMob.setVelocity(projectile.getVelocity());
+                        if (target != null && projectileMob instanceof Mob) {
+                            ((Mob) projectileMob).setTarget(target);
+                        }
+                        event.setCancelled(true);
+                        projectileRemoved = true;
+                    }
+                }
+            }
+        } // if replacing mobs with projectiles
+
+        // Check that we haven't removed the mob when replacing it in the
+        // previous step.
+        if (!projectileRemoved) {
+            String projectileDisguise = (String) shootingMobType.getDerivedProperty("projectile-disguise").getValue();
+            BeastMaster.DISGUISES.createDisguise(projectile, projectile.getWorld(), projectileDisguise);
+        }
+    } // onProjectileLaunch
+
+    // ------------------------------------------------------------------------
+    /**
+     * For projectiles fired by a custom mob, remove the projectile on impact
+     * when "projectile-removed" is true.
+     */
+    @EventHandler(ignoreCancelled = true)
+    protected void onProjectileHit(ProjectileHitEvent event) {
+        Projectile projectile = event.getEntity();
+        ProjectileSource shooter = projectile.getShooter();
+        if (!(shooter instanceof LivingEntity)) {
+            return;
+        }
+        LivingEntity shootingMob = (LivingEntity) shooter;
+        MobType shootingMobType = getMobType(shootingMob);
+        Boolean removed = (Boolean) shootingMobType.getDerivedProperty("projectile-removed").getValue();
+        if (removed != null && removed) {
+            projectile.remove();
+        }
+    }
 
     // ------------------------------------------------------------------------
     /**
