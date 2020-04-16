@@ -653,11 +653,18 @@ public class MobType {
         addProperty(new MobProperty("projectile-removed", DataType.BOOLEAN, null));
         addProperty(new MobProperty("projectile-immunity-percent", DataType.DOUBLE, null));
 
-        // TODO: projectile-substitution to replace one type of projectile with
-        // a different type of projectile.
-
         addProperty(new MobProperty("hurt-teleport-percent", DataType.DOUBLE, null));
 
+        // Support Mobs -------------------------------------------------------
+        // support-... properties are implemented in EntityDmanageEvent.
+        // The mechanism is distinct from vanilla zombie reinforcements.
+        addProperty(new MobProperty("support-mobs", DataType.LOOT_OR_MOB, null));
+        addProperty(new MobProperty("support-percent", DataType.DOUBLE, null));
+        addProperty(new MobProperty("support-health", DataType.DOUBLE, null));
+        addProperty(new MobProperty("support-health-step", DataType.DOUBLE, null));
+
+        // TODO: projectile-substitution to replace one type of projectile with
+        // a different type of projectile.
         // TODO: particle effects tracking mob, projectiles, attack hit points.
     }
 

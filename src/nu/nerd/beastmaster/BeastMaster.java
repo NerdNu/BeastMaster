@@ -1,5 +1,7 @@
 package nu.nerd.beastmaster;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
@@ -237,6 +239,33 @@ public class BeastMaster extends JavaPlugin implements Listener {
 
     // ------------------------------------------------------------------------
     /**
+     * Spawn multiple mobs according to a mob property that is either a DropSet
+     * ID or MobType ID.
+     * 
+     * @param loc the location to spawn the mob(s).
+     * @param lootOrMobId the DropSet or MobType ID.
+     * @param checkCanFit whether to check if the mobs can fit.
+     * @param results DropResults recording whether vanilla drops happened.
+     * @param trigger the trigger string to log for logged {@link Drop}s.
+     * @return a list of the spawned mobs.
+     */
+    public List<LivingEntity> spawnMultipleMobs(Location loc, String lootOrMobId, boolean checkCanFit, DropResults results, String trigger) {
+        DropSet drops = BeastMaster.LOOTS.getDropSet(lootOrMobId);
+        if (drops != null) {
+            drops.generateRandomDrops(results, trigger, null, loc);
+            return results.getMobs();
+        } else {
+            List<LivingEntity> mobs = new ArrayList<>();
+            MobType supportMobType = BeastMaster.MOBS.getMobType(lootOrMobId);
+            if (supportMobType != null) {
+                mobs.add(spawnMob(loc, supportMobType, checkCanFit));
+            }
+            return mobs;
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * When a world is loaded, ensure that a top-level zone for that world
      * exists.
      */
@@ -410,55 +439,37 @@ public class BeastMaster extends JavaPlugin implements Listener {
         if (shootingMobType == null) {
             return;
         }
-        MobProperty projectileMobs = shootingMobType.getDerivedProperty("projectile-mobs");
+        MobProperty projectileMobsProperty = shootingMobType.getDerivedProperty("projectile-mobs");
 
         // Need to record if projectile removed. isValid() is not true until
         // this event returns.
         Location projectileLocation = projectile.getLocation();
         boolean projectileRemoved = false;
-        if (projectileMobs.getValue() != null) {
+        if (projectileMobsProperty.getValue() != null) {
             // DropSet or MobType ID:
-            String id = (String) projectileMobs.getValue();
-            DropSet drops = BeastMaster.LOOTS.getDropSet(id);
-            if (drops != null) {
-                DropResults results = new DropResults();
-                drops.generateRandomDrops(results, shootingMobType.getId() + " projectile-mobs",
-                                          null, projectileLocation);
+            String id = (String) projectileMobsProperty.getValue();
+            DropResults results = new DropResults();
+            List<LivingEntity> projectileMobs = spawnMultipleMobs(projectileLocation, id, false, results,
+                                                                  shootingMobType.getId() + " projectile-mobs");
+            for (LivingEntity mob : projectileMobs) {
+                // Launch the mob with the projectile's velocity.
+                mob.setVelocity(projectile.getVelocity());
 
-                for (LivingEntity projectileMob : results.getMobs()) {
-                    // Launch the mob with the projectile's velocity.
-                    projectileMob.setVelocity(projectile.getVelocity());
-
-                    // Target the mob at the shooter's target.
-                    if (target != null && projectileMob instanceof Mob) {
-                        ((Mob) projectileMob).setTarget(target);
-                    }
-                }
-
-                // To have the vanilla drop means not removing the projectile.
-                // Really requires drop spread to avoid hitting spawned mobs.
-                if (!results.includesVanillaDrop()) {
-                    event.setCancelled(true);
-                    projectileRemoved = true;
-                }
-            } else {
-                MobType projectileMobType = BeastMaster.MOBS.getMobType(id);
-                if (projectileMobType != null) {
-                    LivingEntity projectileMob = spawnMob(projectileLocation, projectileMobType, false);
-                    if (projectileMob != null) {
-                        projectileMob.setVelocity(projectile.getVelocity());
-                        if (target != null && projectileMob instanceof Mob) {
-                            ((Mob) projectileMob).setTarget(target);
-                        }
-                        event.setCancelled(true);
-                        projectileRemoved = true;
-                    }
+                // Target the mob at the shooter's target.
+                if (target != null && mob instanceof Mob) {
+                    ((Mob) mob).setTarget(target);
                 }
             }
-        } // if replacing mobs with projectiles
 
-        // Check that we haven't removed the mob when replacing it in the
-        // previous step.
+            // To have the vanilla drop means not removing the projectile.
+            // Really requires drop spread to avoid hitting spawned mobs.
+            if (!results.includesVanillaDrop()) {
+                event.setCancelled(true);
+                projectileRemoved = true;
+            }
+        }
+
+        // If the projectile was removed, we can't disguise it etc.
         if (!projectileRemoved) {
             String projectileDisguise = (String) shootingMobType.getDerivedProperty("projectile-disguise").getValue();
             BeastMaster.DISGUISES.createDisguise(projectile, projectile.getWorld(), projectileDisguise);
@@ -507,20 +518,57 @@ public class BeastMaster extends JavaPlugin implements Listener {
             return;
         }
 
-        // If the entity would die, don't play the hurt sound.
-        // Leave a silence for the death sound.
-        LivingEntity living = (LivingEntity) entity;
-        if (event.getFinalDamage() >= living.getHealth()) {
+        // If the entity would die, don't summon support and don't play the hurt
+        // sound. Leave a silence for the death sound.
+        LivingEntity damagedLiving = (LivingEntity) entity;
+        double finalHealth = damagedLiving.getHealth() - event.getFinalDamage();
+        if (finalHealth <= 0.0) {
             return;
         }
 
         MobType mobType = getMobType(entity);
         if (mobType != null) {
+            Location mobLocation = entity.getLocation();
+
+            // Support mobs.
+            String supportId = (String) mobType.getProperty("support-mobs").getValue();
+            if (supportId != null) {
+                Double healthThreshold = (Double) mobType.getProperty("support-health").getValue();
+                boolean healthLow = (healthThreshold == null || finalHealth <= healthThreshold);
+                Double prevHealth = (Double) EntityMeta.api().get(entity, this, "support-health");
+                Double healthStep = (Double) mobType.getProperty("support-health-step").getValue();
+                Double supportPercent = (Double) mobType.getProperty("support-percent").getValue();
+
+                if (healthLow && (prevHealth == null ||
+                                  healthStep == null ||
+                                  prevHealth - finalHealth >= healthStep)
+                    && (supportPercent == null ||
+                        Math.random() * 100 < supportPercent)) {
+
+                    // Summon support mobs targeting same target as summoner.
+                    DropResults results = new DropResults();
+                    List<LivingEntity> supportMobs = spawnMultipleMobs(mobLocation, supportId, false, results,
+                                                                       mobType.getId() + " support-mobs");
+                    if (damagedLiving instanceof Mob) {
+                        for (LivingEntity mob : supportMobs) {
+                            if (mob instanceof Mob) {
+                                ((Mob) mob).setTarget(((Mob) damagedLiving).getTarget());
+                            }
+                        }
+                    }
+                    // TODO: Spread them out?
+
+                    // Record the mob health when support mobs were last
+                    // spawned.
+                    EntityMeta.api().set(entity, this, "support-health", finalHealth);
+                }
+            }
+
             DamageCause cause = event.getCause();
             String propertyName = (cause == DamageCause.PROJECTILE) ? "projectile-hurt-sound" : "melee-hurt-sound";
             SoundEffect hurtSound = (SoundEffect) mobType.getDerivedProperty(propertyName).getValue();
             if (hurtSound != null) {
-                Bukkit.getScheduler().runTaskLater(this, () -> hurtSound.play(entity.getLocation()), 1);
+                Bukkit.getScheduler().runTaskLater(this, () -> hurtSound.play(mobLocation), 1);
             }
 
             if (cause == DamageCause.PROJECTILE) {
@@ -530,7 +578,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
                     event.setCancelled(true);
                     SoundEffect immunitySound = (SoundEffect) mobType.getDerivedProperty("projectile-immunity-sound").getValue();
                     if (immunitySound != null) {
-                        Bukkit.getScheduler().runTaskLater(this, () -> immunitySound.play(entity.getLocation()), 1);
+                        Bukkit.getScheduler().runTaskLater(this, () -> immunitySound.play(mobLocation), 1);
                     }
                     return;
                 }
@@ -545,7 +593,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
             Double hurtTeleportPercent = (Double) mobType.getDerivedProperty("hurt-teleport-percent").getValue();
             if (hurtTeleportPercent != null && Math.random() * 100 < hurtTeleportPercent) {
                 // Find a location up to 10 blocks up and up to 15 blocks away.
-                Location oldLoc = entity.getLocation();
+                Location oldLoc = mobLocation;
                 double range = Util.random(5.0, 15.0);
                 double angle = Util.random() * 2.0 * Math.PI;
                 Location newLoc = oldLoc.clone().add(range * Math.cos(angle), 0, range * Math.sin(angle));
