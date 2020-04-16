@@ -363,11 +363,112 @@ public class MobType {
      */
     protected void addProperties() {
         // TODO: Many of these need get/set/range implementations.
+        // Appearance ---------------------------------------------------------
+
         addProperty(new MobProperty("parent-type", DataType.STRING, null));
         addProperty(new MobProperty("entity-type", DataType.ENTITY_TYPE, null));
-        addProperty(new MobProperty("drops", DataType.LOOT, null));
+        addProperty(new MobProperty("name", DataType.STRING,
+            (mob, logger) -> {
+                mob.setCustomName(ChatColor.translateAlternateColorCodes('&', (String) getDerivedProperty("name").getValue()));
+            }));
+        addProperty(new MobProperty("show-name-plate", DataType.BOOLEAN,
+            (mob, logger) -> {
+                mob.setCustomNameVisible((Boolean) getDerivedProperty("show-name-plate").getValue());
+            }));
+        addProperty(new MobProperty("disguise", DataType.DISGUISE,
+            (mob, logger) -> {
+                String encodedDisguise = (String) getDerivedProperty("disguise").getValue();
+                BeastMaster.DISGUISES.createDisguise(mob, mob.getWorld(), encodedDisguise);
+            }));
+        addProperty(new MobProperty("passenger", DataType.LOOT_OR_MOB,
+            (mob, logger) -> {
+                // If passenger-percent is unset but passenger is, the chance is
+                // implicitly 100%.
+                MobProperty percent = getDerivedProperty("passenger-percent");
+                boolean hasPassenger = (percent.getValue() == null) ? true
+                                                                    : (Math.random() * 100 < (Double) percent.getValue());
+                if (!hasPassenger) {
+                    return;
+                }
 
-        // Note: configureMob() lambdas only called if property value non-null.
+                // The passenger property may be a loot table or a mob type.
+                String id = (String) getDerivedProperty("passenger").getValue();
+                DropSet drops = BeastMaster.LOOTS.getDropSet(id);
+                MobType mobType = null;
+                if (drops != null) {
+                    Drop drop = drops.chooseOneDrop();
+                    if (drop != null) {
+                        if (drop.getDropType() == DropType.MOB) {
+                            mobType = BeastMaster.MOBS.getMobType(drop.getId());
+                        }
+                    }
+                } else {
+                    mobType = BeastMaster.MOBS.getMobType(id);
+                }
+
+                if (mobType != null) {
+                    LivingEntity passenger = BeastMaster.PLUGIN.spawnMob(mob.getLocation(), mobType, false);
+                    if (passenger != null) {
+                        mob.addPassenger(passenger);
+                    }
+                }
+            }));
+        addProperty(new MobProperty("passenger-percent", DataType.DOUBLE, null));
+        addProperty(new MobProperty("size", DataType.INTEGER,
+            (mob, logger) -> {
+                if (mob instanceof Phantom) {
+                    ((Phantom) mob).setSize((Integer) getDerivedProperty("size").getValue());
+                } else if (mob instanceof Slime) {
+                    // Includes MagmaCubes.
+                    ((Slime) mob).setSize((Integer) getDerivedProperty("size").getValue());
+                }
+            }));
+        addProperty(new MobProperty("glowing", DataType.BOOLEAN,
+            (mob, logger) -> {
+                mob.setGlowing((Boolean) getDerivedProperty("glowing").getValue());
+            }));
+        addProperty(new MobProperty("baby-percent", DataType.DOUBLE,
+            (mob, logger) -> {
+                boolean isBaby = (Math.random() * 100 < (Double) getDerivedProperty("baby-percent").getValue());
+                if (mob instanceof Ageable) {
+                    if (isBaby) {
+                        ((Ageable) mob).setBaby();
+                    } else {
+                        ((Ageable) mob).setAdult();
+                    }
+                } else if (mob instanceof Zombie) {
+                    ((Zombie) mob).setBaby(isBaby);
+                }
+            }));
+        addProperty(new MobProperty("charged-percent", DataType.DOUBLE,
+            (mob, logger) -> {
+                if (mob instanceof Creeper) {
+                    ((Creeper) mob).setPowered(Math.random() * 100 < (Double) getDerivedProperty("charged-percent").getValue());
+                }
+            }));
+
+        // Sounds -------------------------------------------------------------
+
+        addProperty(new MobProperty("silent", DataType.BOOLEAN, (mob, logger) -> {
+            mob.setSilent((Boolean) getDerivedProperty("silent").getValue());
+        }));
+        addProperty(new MobProperty("spawn-sound", DataType.SOUND_EFFECT, (mob, logger) -> {
+            // configureMob() is called when the entity spawns. So play the
+            // sound.
+            SoundEffect soundEffect = (SoundEffect) getDerivedProperty("spawn-sound").getValue();
+            if (soundEffect != null) {
+                soundEffect.play(mob.getLocation());
+            }
+        }));
+        addProperty(new MobProperty("death-sound", DataType.SOUND_EFFECT, null));
+        addProperty(new MobProperty("projectile-launch-sound", DataType.SOUND_EFFECT, null));
+        addProperty(new MobProperty("projectile-hurt-sound", DataType.SOUND_EFFECT, null));
+        addProperty(new MobProperty("melee-hurt-sound", DataType.SOUND_EFFECT, null));
+        addProperty(new MobProperty("melee-attack-sound", DataType.SOUND_EFFECT, null));
+        addProperty(new MobProperty("teleport-sound", DataType.SOUND_EFFECT, null));
+
+        // Buffs --------------------------------------------------------------
+
         addProperty(new MobProperty("health", DataType.DOUBLE,
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_MAX_HEALTH);
@@ -376,7 +477,26 @@ public class MobType {
                     mob.setHealth(attribute.getBaseValue());
                 }
             }));
-        addProperty(new MobProperty("experience", DataType.INTEGER, null));
+        addProperty(new MobProperty("breath-seconds", DataType.INTEGER,
+            (mob, logger) -> {
+                int ticks = 20 * (Integer) getDerivedProperty("breath-seconds").getValue();
+                mob.setMaximumAir(ticks);
+                mob.setRemainingAir(ticks);
+            }));
+        addProperty(new MobProperty("speed", DataType.DOUBLE,
+            (mob, logger) -> {
+                AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+                if (attribute != null) {
+                    attribute.setBaseValue((Double) getDerivedProperty("speed").getValue());
+                }
+            }));
+        addProperty(new MobProperty("flying-speed", DataType.DOUBLE,
+            (mob, logger) -> {
+                AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_FLYING_SPEED);
+                if (attribute != null) {
+                    attribute.setBaseValue((Double) getDerivedProperty("flying-speed").getValue());
+                }
+            }));
         addProperty(new MobProperty("follow-range", DataType.DOUBLE,
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_FOLLOW_RANGE);
@@ -398,69 +518,23 @@ public class MobType {
                     attribute.setBaseValue((Double) getDerivedProperty("attack-speed").getValue());
                 }
             }));
-        addProperty(new MobProperty("speed", DataType.DOUBLE,
-            (mob, logger) -> {
-                AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
-                if (attribute != null) {
-                    attribute.setBaseValue((Double) getDerivedProperty("speed").getValue());
-                }
-            }));
-        addProperty(new MobProperty("flying-speed", DataType.DOUBLE,
-            (mob, logger) -> {
-                AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_FLYING_SPEED);
-                if (attribute != null) {
-                    attribute.setBaseValue((Double) getDerivedProperty("flying-speed").getValue());
-                }
-            }));
         addProperty(new MobProperty("pick-up-percent", DataType.DOUBLE,
             (mob, logger) -> {
                 mob.setCanPickupItems(Math.random() * 100 < (Double) getDerivedProperty("pick-up-percent").getValue());
             }));
-        addProperty(new MobProperty("baby-percent", DataType.DOUBLE,
+        addProperty(new MobProperty("potion-buffs", DataType.POTION_SET,
             (mob, logger) -> {
-                boolean isBaby = (Math.random() * 100 < (Double) getDerivedProperty("baby-percent").getValue());
-                if (mob instanceof Ageable) {
-                    if (isBaby) {
-                        ((Ageable) mob).setBaby();
-                    } else {
-                        ((Ageable) mob).setAdult();
-                    }
-                } else if (mob instanceof Zombie) {
-                    ((Zombie) mob).setBaby(isBaby);
+                String potionSetId = (String) getDerivedProperty("potion-buffs").getValue();
+                PotionSet potionSet = BeastMaster.POTIONS.getPotionSet(potionSetId);
+                if (potionSet != null) {
+                    potionSet.apply(mob);
                 }
             }));
-        addProperty(new MobProperty("charged-percent", DataType.DOUBLE,
-            (mob, logger) -> {
-                if (mob instanceof Creeper) {
-                    ((Creeper) mob).setPowered(Math.random() * 100 < (Double) getDerivedProperty("charged-percent").getValue());
-                }
-            }));
-        addProperty(new MobProperty("size", DataType.INTEGER,
-            (mob, logger) -> {
-                if (mob instanceof Phantom) {
-                    ((Phantom) mob).setSize((Integer) getDerivedProperty("size").getValue());
-                } else if (mob instanceof Slime) {
-                    ((Slime) mob).setSize((Integer) getDerivedProperty("size").getValue());
-                }
-            }));
-        addProperty(new MobProperty("glowing", DataType.BOOLEAN,
-            (mob, logger) -> {
-                mob.setGlowing((Boolean) getDerivedProperty("glowing").getValue());
-            }));
-        addProperty(new MobProperty("name", DataType.STRING,
-            (mob, logger) -> {
-                mob.setCustomName(ChatColor.translateAlternateColorCodes('&', (String) getDerivedProperty("name").getValue()));
-            }));
-        addProperty(new MobProperty("show-name-plate", DataType.BOOLEAN,
-            (mob, logger) -> {
-                mob.setCustomNameVisible((Boolean) getDerivedProperty("show-name-plate").getValue());
-            }));
-        addProperty(new MobProperty("breath-seconds", DataType.INTEGER,
-            (mob, logger) -> {
-                int ticks = 20 * (Integer) getDerivedProperty("breath-seconds").getValue();
-                mob.setMaximumAir(ticks);
-                mob.setRemainingAir(ticks);
-            }));
+        addProperty(new MobProperty("attack-potions", DataType.POTION_SET, (mob, logger) -> {
+        }));
+
+        // Equipment ----------------------------------------------------------
+
         addProperty(new MobProperty("helmet", DataType.LOOT_OR_ITEM,
             (mob, logger) -> {
                 String id = (String) getDerivedProperty("helmet").getValue();
@@ -539,74 +613,14 @@ public class MobType {
                 double percent = (Double) getDerivedProperty("off-hand-drop-percent").getValue();
                 mob.getEquipment().setItemInOffHandDropChance((float) percent / 100);
             }));
-        // Added after custom name => will clear PersistenceRequired NBT.
-        addProperty(new MobProperty("can-despawn", DataType.BOOLEAN,
-            (mob, logger) -> {
-                boolean canDespawn = (Boolean) getDerivedProperty("can-despawn").getValue();
-                mob.setRemoveWhenFarAway(canDespawn);
-            }));
-        addProperty(new MobProperty("potion-buffs", DataType.POTION_SET,
-            (mob, logger) -> {
-                String potionSetId = (String) getDerivedProperty("potion-buffs").getValue();
-                PotionSet potionSet = BeastMaster.POTIONS.getPotionSet(potionSetId);
-                if (potionSet != null) {
-                    potionSet.apply(mob);
-                }
-            }));
-        addProperty(new MobProperty("attack-potions", DataType.POTION_SET, (mob, logger) -> {
-        }));
-        addProperty(new MobProperty("disguise", DataType.DISGUISE,
-            (mob, logger) -> {
-                String encodedDisguise = (String) getDerivedProperty("disguise").getValue();
-                BeastMaster.DISGUISES.createDisguise(mob, mob.getWorld(), encodedDisguise);
-            }));
-        addProperty(new MobProperty("passenger", DataType.LOOT_OR_MOB,
-            (mob, logger) -> {
-                // If passenger-percent is unset but passenger is, the chance is
-                // implicitly 100%.
-                MobProperty percent = getDerivedProperty("passenger-percent");
-                boolean hasPassenger = (percent.getValue() == null) ? true
-                                                                    : (Math.random() * 100 < (Double) percent.getValue());
-                if (!hasPassenger) {
-                    return;
-                }
 
-                // The passenger property may be a loot table or a mob type.
-                String id = (String) getDerivedProperty("passenger").getValue();
-                DropSet drops = BeastMaster.LOOTS.getDropSet(id);
-                MobType mobType = null;
-                if (drops != null) {
-                    Drop drop = drops.chooseOneDrop();
-                    if (drop != null) {
-                        if (drop.getDropType() == DropType.MOB) {
-                            mobType = BeastMaster.MOBS.getMobType(drop.getId());
-                        }
-                    }
-                } else {
-                    mobType = BeastMaster.MOBS.getMobType(id);
-                }
+        // Drops --------------------------------------------------------------
 
-                if (mobType != null) {
-                    LivingEntity passenger = BeastMaster.PLUGIN.spawnMob(mob.getLocation(), mobType, false);
-                    if (passenger != null) {
-                        mob.addPassenger(passenger);
-                    }
-                }
-            }));
-        addProperty(new MobProperty("passenger-percent", DataType.DOUBLE, null));
+        addProperty(new MobProperty("drops", DataType.LOOT, null));
+        addProperty(new MobProperty("experience", DataType.INTEGER, null));
 
-        // projectile-... properties are enforced in ProjectileLaunchEvent and
-        // ProectileHitEvent handlers.
-        addProperty(new MobProperty("projectile-mobs", DataType.LOOT_OR_MOB, null));
-        addProperty(new MobProperty("projectile-disguise", DataType.DISGUISE, null));
-        addProperty(new MobProperty("projectile-removed", DataType.BOOLEAN, null));
-        // TODO: projectile-substitution to replace one type of projectile with
-        // a different type of projectile.
+        // Behaviour ----------------------------------------------------------
 
-        addProperty(new MobProperty("tags", DataType.TAG_LIST, (mob, logger) -> {
-            String[] tags = (String[]) getDerivedProperty("tags").getValue();
-            mob.getScoreboardTags().addAll(Arrays.asList(tags));
-        }));
         addProperty(new MobProperty("anger-ticks", DataType.INTEGER, (mob, logger) -> {
             int ticks = (Integer) getDerivedProperty("anger-ticks").getValue();
             if (mob instanceof Bee) {
@@ -620,23 +634,25 @@ public class MobType {
             // Sadface.
         }));
 
-        addProperty(new MobProperty("silent", DataType.BOOLEAN, (mob, logger) -> {
-            mob.setSilent((Boolean) getDerivedProperty("silent").getValue());
+        // Added after custom name => will clear PersistenceRequired NBT.
+        addProperty(new MobProperty("can-despawn", DataType.BOOLEAN,
+            (mob, logger) -> {
+                boolean canDespawn = (Boolean) getDerivedProperty("can-despawn").getValue();
+                mob.setRemoveWhenFarAway(canDespawn);
+            }));
+        addProperty(new MobProperty("tags", DataType.TAG_LIST, (mob, logger) -> {
+            String[] tags = (String[]) getDerivedProperty("tags").getValue();
+            mob.getScoreboardTags().addAll(Arrays.asList(tags));
         }));
-        addProperty(new MobProperty("spawn-sound", DataType.SOUND_EFFECT, (mob, logger) -> {
-            // configureMob() is called when the entity spawns. So play the
-            // sound.
-            SoundEffect soundEffect = (SoundEffect) getDerivedProperty("spawn-sound").getValue();
-            if (soundEffect != null) {
-                soundEffect.play(mob.getLocation());
-            }
-        }));
-        addProperty(new MobProperty("death-sound", DataType.SOUND_EFFECT, null));
-        addProperty(new MobProperty("projectile-launch-sound", DataType.SOUND_EFFECT, null));
-        addProperty(new MobProperty("projectile-hurt-sound", DataType.SOUND_EFFECT, null));
-        addProperty(new MobProperty("melee-hurt-sound", DataType.SOUND_EFFECT, null));
-        addProperty(new MobProperty("melee-attack-sound", DataType.SOUND_EFFECT, null));
-        addProperty(new MobProperty("teleport-sound", DataType.SOUND_EFFECT, null));
+
+        // projectile-... properties are enforced in ProjectileLaunchEvent and
+        // ProectileHitEvent handlers.
+        addProperty(new MobProperty("projectile-mobs", DataType.LOOT_OR_MOB, null));
+        addProperty(new MobProperty("projectile-disguise", DataType.DISGUISE, null));
+        addProperty(new MobProperty("projectile-removed", DataType.BOOLEAN, null));
+        // TODO: projectile-substitution to replace one type of projectile with
+        // a different type of projectile.
+
         addProperty(new MobProperty("hurt-teleport-percent", DataType.DOUBLE, null));
 
         // TODO: particle effects tracking mob, projectiles, attack hit points.
