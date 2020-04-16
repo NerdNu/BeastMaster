@@ -11,6 +11,7 @@ import java.util.function.Function;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
@@ -27,6 +28,32 @@ import org.bukkit.potion.PotionEffect;
  * Utility methods.
  */
 public class Util {
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if the 3x3x3 blocks centred horizontally on the specified
+     * location, with the location in the bottom row of the three, are passable.
+     * 
+     * @param loc the location of the middle, bottom row of the 3x3x3 box to
+     *        check.
+     * @return true if it's air.
+     */
+    public static boolean isPassable3x3x3(Location loc) {
+        // Check for 3x3x3 air.
+        for (int dx = -1; dx <= 1; ++dx) {
+            for (int dz = -1; dz <= 1; ++dz) {
+                // Offset up for undulating terrain.
+                for (int dy = 0; dy <= 2; ++dy) {
+                    Location checkLoc = loc.clone().add(dx, dy, dz);
+                    Block checkBlock = checkLoc.getBlock();
+                    if (!checkBlock.isPassable()) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     // ------------------------------------------------------------------------
     /**
      * Computes the transitive closure of the specified relation in a directed

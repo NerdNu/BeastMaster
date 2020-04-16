@@ -619,6 +619,14 @@ public class MobType {
                 soundEffect.play(mob.getLocation());
             }
         }));
+        addProperty(new MobProperty("death-sound", DataType.SOUND_EFFECT, null));
+        addProperty(new MobProperty("projectile-launch-sound", DataType.SOUND_EFFECT, null));
+        addProperty(new MobProperty("projectile-hurt-sound", DataType.SOUND_EFFECT, null));
+        addProperty(new MobProperty("melee-hurt-sound", DataType.SOUND_EFFECT, null));
+        addProperty(new MobProperty("melee-attack-sound", DataType.SOUND_EFFECT, null));
+        addProperty(new MobProperty("teleport-sound", DataType.SOUND_EFFECT, null));
+        addProperty(new MobProperty("hurt-teleport-percent", DataType.DOUBLE, null));
+
         // TODO: particle effects tracking mob, projectiles, attack hit points.
     }
 

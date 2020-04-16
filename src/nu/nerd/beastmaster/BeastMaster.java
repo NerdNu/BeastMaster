@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Biome;
@@ -23,7 +24,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -410,6 +414,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
 
         // Need to record if projectile removed. isValid() is not true until
         // this event returns.
+        Location projectileLocation = projectile.getLocation();
         boolean projectileRemoved = false;
         if (projectileMobs.getValue() != null) {
             // DropSet or MobType ID:
@@ -418,7 +423,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
             if (drops != null) {
                 DropResults results = new DropResults();
                 drops.generateRandomDrops(results, shootingMobType.getId() + " projectile-mobs",
-                                          null, projectile.getLocation());
+                                          null, projectileLocation);
 
                 for (LivingEntity projectileMob : results.getMobs()) {
                     // Launch the mob with the projectile's velocity.
@@ -439,7 +444,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
             } else {
                 MobType projectileMobType = BeastMaster.MOBS.getMobType(id);
                 if (projectileMobType != null) {
-                    LivingEntity projectileMob = spawnMob(projectile.getLocation(), projectileMobType, false);
+                    LivingEntity projectileMob = spawnMob(projectileLocation, projectileMobType, false);
                     if (projectileMob != null) {
                         projectileMob.setVelocity(projectile.getVelocity());
                         if (target != null && projectileMob instanceof Mob) {
@@ -457,6 +462,11 @@ public class BeastMaster extends JavaPlugin implements Listener {
         if (!projectileRemoved) {
             String projectileDisguise = (String) shootingMobType.getDerivedProperty("projectile-disguise").getValue();
             BeastMaster.DISGUISES.createDisguise(projectile, projectile.getWorld(), projectileDisguise);
+
+            SoundEffect sound = (SoundEffect) shootingMobType.getDerivedProperty("projectile-launch-sound").getValue();
+            if (sound != null) {
+                sound.play(projectileLocation);
+            }
         }
     } // onProjectileLaunch
 
@@ -482,6 +492,69 @@ public class BeastMaster extends JavaPlugin implements Listener {
             }
         }
     }
+
+    // ------------------------------------------------------------------------
+    /**
+     * When a mob is damaged, play the `projectile-hurt-sound`, or the
+     * `melee-hurt-sound` for all other damage types.
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    protected void onEntityDamage(EntityDamageEvent event) {
+        Entity entity = event.getEntity();
+        if (!(entity instanceof LivingEntity)) {
+            return;
+        }
+
+        // If the entity would die, don't play the hurt sound.
+        // Leave a silence for the death sound.
+        LivingEntity living = (LivingEntity) entity;
+        if (event.getFinalDamage() >= living.getHealth()) {
+            return;
+        }
+
+        MobType mobType = getMobType(entity);
+        if (mobType != null) {
+            DamageCause cause = event.getCause();
+            String propertyName = (cause == DamageCause.PROJECTILE) ? "projectile-hurt-sound" : "melee-hurt-sound";
+            SoundEffect hurtSound = (SoundEffect) mobType.getDerivedProperty(propertyName).getValue();
+            if (hurtSound != null) {
+                hurtSound.play(entity.getLocation());
+            }
+
+            // The mob has been hurt. Teleport away per random chance.
+            Double hurtTeleportPercent = (Double) mobType.getDerivedProperty("hurt-teleport-percent").getValue();
+            if (hurtTeleportPercent != null && Math.random() * 100 < hurtTeleportPercent) {
+                // Find a location up to 10 blocks up and up to 15 blocks away.
+                Location oldLoc = entity.getLocation();
+                double range = Util.random(5.0, 15.0);
+                double angle = Util.random() * 2.0 * Math.PI;
+                Location newLoc = oldLoc.clone().add(range * Math.cos(angle), 0, range * Math.sin(angle));
+
+                // Look back at the old location.
+                Location diff = newLoc.clone();
+                diff.subtract(oldLoc);
+                newLoc.setDirection(diff.getDirection());
+
+                // Now go up to find space.
+                for (int i = 1; i < 10; ++i) {
+                    newLoc.add(0, 1, 0);
+                    if (Util.isPassable3x3x3(newLoc)) {
+                        SoundEffect teleportSound = (SoundEffect) mobType.getDerivedProperty("teleport-sound").getValue();
+                        if (teleportSound != null) {
+                            Bukkit.getScheduler().runTaskLater(this, () -> {
+                                entity.teleport(newLoc);
+                                teleportSound.play(oldLoc);
+                                Location particleLoc = oldLoc.clone().add(0, 0.6, 0);
+                                particleLoc.getWorld().spawnParticle(Particle.PORTAL, particleLoc, 100, 0.3, 0.6, 0.3, 0.0);
+                            }, 1);
+                        }
+                        break;
+                    }
+                }
+
+            }
+        }
+    } // onEntityDamage
 
     // ------------------------------------------------------------------------
     /**
@@ -513,14 +586,20 @@ public class BeastMaster extends JavaPlugin implements Listener {
             }
         }
 
-        // Apply attackingMob's attack-potions, if set.
         if (attackingMob != null && damagedEntity instanceof LivingEntity) {
             MobType mobType = getMobType(attackingMob);
             if (mobType != null) {
+                // Apply attackingMob's attack-potions, if set.
                 String potionSetId = (String) mobType.getDerivedProperty("attack-potions").getValue();
                 PotionSet potionSet = POTIONS.getPotionSet(potionSetId);
                 if (potionSet != null) {
                     potionSet.apply((LivingEntity) damagedEntity);
+                }
+
+                // Play the melee-attack-sound.
+                SoundEffect sound = (SoundEffect) mobType.getDerivedProperty("melee-attack-sound").getValue();
+                if (sound != null) {
+                    sound.play(damagedEntity.getLocation());
                 }
             }
         }
@@ -575,6 +654,12 @@ public class BeastMaster extends JavaPlugin implements Listener {
                 }
             }
 
+            SoundEffect deathSound = (SoundEffect) mobType.getDerivedProperty("death-sound").getValue();
+            if (deathSound != null) {
+                // Mysteriously doesn't work unless delayed 2 ticks. Disguises?
+                Bukkit.getScheduler().runTaskLater(this, () -> deathSound.play(loc), 2);
+            }
+
             if (CONFIG.DEBUG_EQUIPMENT_DROPS) {
                 // If the entity has a MobType, it's a LivingEntity.
                 LivingEntity mob = (LivingEntity) entity;
@@ -589,6 +674,27 @@ public class BeastMaster extends JavaPlugin implements Listener {
         }
 
     } // onEntityDeath
+
+    // ------------------------------------------------------------------------
+    /**
+     * Play the teleport-sound, if configured for the mob.
+     */
+    @EventHandler(ignoreCancelled = true)
+    protected void onEntityTeleport(EntityTeleportEvent event) {
+        Entity entity = event.getEntity();
+        if (!(entity instanceof LivingEntity) || entity instanceof Player) {
+            return;
+        }
+
+        MobType mobType = getMobType(entity);
+        if (mobType != null) {
+            SoundEffect sound = (SoundEffect) mobType.getDerivedProperty("teleport-sound").getValue();
+            if (sound != null) {
+                // Mysteriously doesn't work unless delayed 1 tick. Disguises?
+                Bukkit.getScheduler().runTaskLater(this, () -> sound.play(event.getFrom()), 1);
+            }
+        }
+    }
 
     // ------------------------------------------------------------------------
     /**
