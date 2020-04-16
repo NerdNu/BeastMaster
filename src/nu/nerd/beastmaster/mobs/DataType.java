@@ -380,7 +380,9 @@ public class DataType {
                 String pitchArg = args[2];
                 boolean valid = false;
                 try {
-                    if (!args[2].equalsIgnoreCase("random")) {
+                    if (pitchArg.equalsIgnoreCase("random")) {
+                        valid = true;
+                    } else {
                         pitch = Double.parseDouble(pitchArg);
                         if (pitch >= 0.5 && pitch <= 2.0) {
                             valid = true;
