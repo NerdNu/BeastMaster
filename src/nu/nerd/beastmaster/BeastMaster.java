@@ -497,6 +497,8 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * When a mob is damaged, play the `projectile-hurt-sound`, or the
      * `melee-hurt-sound` for all other damage types.
+     * 
+     * Note: onEntityDamange() is called after onEntityDamageByEntity().
      */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     protected void onEntityDamage(EntityDamageEvent event) {
@@ -518,7 +520,20 @@ public class BeastMaster extends JavaPlugin implements Listener {
             String propertyName = (cause == DamageCause.PROJECTILE) ? "projectile-hurt-sound" : "melee-hurt-sound";
             SoundEffect hurtSound = (SoundEffect) mobType.getDerivedProperty(propertyName).getValue();
             if (hurtSound != null) {
-                hurtSound.play(entity.getLocation());
+                Bukkit.getScheduler().runTaskLater(this, () -> hurtSound.play(entity.getLocation()), 1);
+            }
+
+            if (cause == DamageCause.PROJECTILE) {
+                Double immunityPercent = (Double) mobType.getDerivedProperty("projectile-immunity-percent").getValue();
+                boolean immuneToProjectile = (immunityPercent != null && Math.random() * 100 < immunityPercent);
+                if (immuneToProjectile) {
+                    event.setCancelled(true);
+                    SoundEffect immunitySound = (SoundEffect) mobType.getDerivedProperty("projectile-immunity-sound").getValue();
+                    if (immunitySound != null) {
+                        Bukkit.getScheduler().runTaskLater(this, () -> immunitySound.play(entity.getLocation()), 1);
+                    }
+                    return;
+                }
             }
 
             // Don't teleport if the damage is low to allow for slight falls.
@@ -557,7 +572,6 @@ public class BeastMaster extends JavaPlugin implements Listener {
                     }
                 }
             }
-
         }
     } // onEntityDamage
 

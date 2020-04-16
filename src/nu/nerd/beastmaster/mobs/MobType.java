@@ -462,6 +462,7 @@ public class MobType {
         }));
         addProperty(new MobProperty("death-sound", DataType.SOUND_EFFECT, null));
         addProperty(new MobProperty("projectile-launch-sound", DataType.SOUND_EFFECT, null));
+        addProperty(new MobProperty("projectile-immunity-sound", DataType.SOUND_EFFECT, null));
         addProperty(new MobProperty("projectile-hurt-sound", DataType.SOUND_EFFECT, null));
         addProperty(new MobProperty("melee-hurt-sound", DataType.SOUND_EFFECT, null));
         addProperty(new MobProperty("melee-attack-sound", DataType.SOUND_EFFECT, null));
@@ -650,6 +651,8 @@ public class MobType {
         addProperty(new MobProperty("projectile-mobs", DataType.LOOT_OR_MOB, null));
         addProperty(new MobProperty("projectile-disguise", DataType.DISGUISE, null));
         addProperty(new MobProperty("projectile-removed", DataType.BOOLEAN, null));
+        addProperty(new MobProperty("projectile-immunity-percent", DataType.DOUBLE, null));
+
         // TODO: projectile-substitution to replace one type of projectile with
         // a different type of projectile.
 
