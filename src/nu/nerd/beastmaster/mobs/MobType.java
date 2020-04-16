@@ -4,8 +4,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -189,6 +191,16 @@ public class MobType {
     public static Set<String> getAllPropertyIds() {
         // All mobs have the same properties. Choose zombie, arbitarily.
         return BeastMaster.MOBS.getMobType("zombie")._properties.keySet();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return a list of all property IDs, sorted case insensitively.
+     * 
+     * @return a list of all property IDs, sorted case insensitively.
+     */
+    public static List<String> getSortedPropertyIds() {
+        return getAllPropertyIds().stream().sorted(String.CASE_INSENSITIVE_ORDER).collect(Collectors.toList());
     }
 
     // ------------------------------------------------------------------------
@@ -685,7 +697,7 @@ public class MobType {
     /**
      * Map from property ID to {@link MobProperty} instance.
      * 
-     * Properties are enumerated in the order they were added by
+     * `/beast-mob info` enumerates properties in the order they were added by
      * {@link #addProperties()}.
      */
     protected LinkedHashMap<String, MobProperty> _properties = new LinkedHashMap<>();

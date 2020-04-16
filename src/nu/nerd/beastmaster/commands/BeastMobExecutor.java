@@ -420,7 +420,7 @@ public class BeastMobExecutor extends ExecutorBase {
      */
     protected void listPropertyIds(CommandSender sender) {
         sender.sendMessage(ChatColor.GOLD + "Valid property names are: " +
-                           Util.alternateColours(MobType.getAllPropertyIds(), ChatColor.GRAY + " ", ChatColor.WHITE, ChatColor.YELLOW));
+                           Util.alternateColours(MobType.getSortedPropertyIds(), ChatColor.GRAY + " ", ChatColor.WHITE, ChatColor.YELLOW));
     }
 
     // ------------------------------------------------------------------------
