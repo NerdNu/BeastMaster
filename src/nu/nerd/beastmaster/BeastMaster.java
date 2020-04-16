@@ -521,6 +521,11 @@ public class BeastMaster extends JavaPlugin implements Listener {
                 hurtSound.play(entity.getLocation());
             }
 
+            // Don't teleport if the damage is low to allow for slight falls.
+            if (event.getFinalDamage() <= 3.0) {
+                return;
+            }
+
             // The mob has been hurt. Teleport away per random chance.
             Double hurtTeleportPercent = (Double) mobType.getDerivedProperty("hurt-teleport-percent").getValue();
             if (hurtTeleportPercent != null && Math.random() * 100 < hurtTeleportPercent) {
@@ -551,8 +556,8 @@ public class BeastMaster extends JavaPlugin implements Listener {
                         break;
                     }
                 }
-
             }
+
         }
     } // onEntityDamage
 
