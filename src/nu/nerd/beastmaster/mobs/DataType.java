@@ -2,6 +2,10 @@ package nu.nerd.beastmaster.mobs;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -103,17 +107,15 @@ public class DataType {
 
     // ------------------------------------------------------------------------
     /**
-     * Comma separated list of Strings assumed to be scoreboard tags.
+     * Comma separated ordered set of case-insensitive Strings.
      * 
      * Spaces are treated as equivalent to commas.
-     * 
-     * Tags are compared case-sensitively. I assume that it might occasionally
-     * matter for scoreboard tags.
      */
-    public static final IDataType TAG_LIST = new IDataType() {
+    public static final IDataType TAG_SET = new IDataType() {
+        @SuppressWarnings("unchecked")
         @Override
         public String format(Object value) {
-            return String.join(",", (String[]) value);
+            return ((Set<String>) value).stream().collect(Collectors.joining(","));
         }
 
         @Override
@@ -128,15 +130,19 @@ public class DataType {
 
         @Override
         public Object deserialise(String value) throws IllegalArgumentException {
-            // Sort to account for hand-edited configs.
-            String[] tags = value.split(",");
-            Arrays.sort(tags);
-            return tags;
+            Set<String> set = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+            // Handle input like: "," by removing empty tags.
+            List<String> tags = Arrays.asList(value.split(",")).stream()
+            .filter(tag -> !tag.isEmpty())
+            .sorted(String.CASE_INSENSITIVE_ORDER)
+            .collect(Collectors.toList());
+            set.addAll(tags);
+            return set;
         }
 
         @Override
         public int compare(Object o1, Object o2) {
-            return serialise(o1).compareTo(serialise(o2));
+            return serialise(o1).compareToIgnoreCase(serialise(o2));
         }
     };
 

@@ -1,7 +1,9 @@
 package nu.nerd.beastmaster;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
@@ -29,6 +31,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
@@ -741,6 +744,44 @@ public class BeastMaster extends JavaPlugin implements Listener {
         }
 
     } // onEntityDeath
+
+    // ------------------------------------------------------------------------
+    /**
+     * Prevent a mob from targeting any other mob whose "groups" set includes a
+     * name that is in the targeting mob's "friend-groups".
+     */
+    @SuppressWarnings("unchecked")
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    protected void onEntityTargetLivingEntity(EntityTargetLivingEntityEvent event) {
+        Entity targetter = event.getEntity();
+        LivingEntity target = event.getTarget();
+        if (!(targetter instanceof LivingEntity)) {
+            return;
+        }
+
+        // If the targeting mob is not friendly to any groups, no action needed.
+        MobType mobType = getMobType(targetter);
+        if (mobType == null) {
+            return;
+        }
+        Set<String> friendGroups = (Set<String>) mobType.getDerivedProperty("friend-groups").getValue();
+        if (friendGroups == null || friendGroups.isEmpty()) {
+            return;
+        }
+
+        // Targeted mob.
+        MobType targetType = getMobType(target);
+        Set<String> targetGroups = targetType == null ? Collections.EMPTY_SET
+                                                      : (Set<String>) targetType.getDerivedProperty("groups").getValue();
+
+        // If the targeted mob is a friend, don't target.
+        for (String friend : friendGroups) {
+            if (targetGroups.contains(friend)) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
 
     // ------------------------------------------------------------------------
     /**

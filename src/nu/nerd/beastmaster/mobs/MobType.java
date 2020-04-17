@@ -622,6 +622,14 @@ public class MobType {
 
         // Behaviour ----------------------------------------------------------
 
+        addProperty(new MobProperty("groups", DataType.TAG_SET, null));
+        addProperty(new MobProperty("friend-groups", DataType.TAG_SET, null));
+        addProperty(new MobProperty("tags", DataType.TAG_SET, (mob, logger) -> {
+            @SuppressWarnings("unchecked")
+            Set<String> tags = (Set<String>) getDerivedProperty("tags").getValue();
+            mob.getScoreboardTags().addAll(tags);
+        }));
+
         addProperty(new MobProperty("anger-ticks", DataType.INTEGER, (mob, logger) -> {
             int ticks = (Integer) getDerivedProperty("anger-ticks").getValue();
             if (mob instanceof Bee) {
@@ -641,11 +649,6 @@ public class MobType {
                 boolean canDespawn = (Boolean) getDerivedProperty("can-despawn").getValue();
                 mob.setRemoveWhenFarAway(canDespawn);
             }));
-        addProperty(new MobProperty("tags", DataType.TAG_LIST, (mob, logger) -> {
-            String[] tags = (String[]) getDerivedProperty("tags").getValue();
-            mob.getScoreboardTags().addAll(Arrays.asList(tags));
-        }));
-
         // projectile-... properties are enforced in ProjectileLaunchEvent and
         // ProectileHitEvent handlers.
         addProperty(new MobProperty("projectile-mobs", DataType.LOOT_OR_MOB, null));
