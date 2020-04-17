@@ -8,8 +8,7 @@ database: true
 main: nu.nerd.beastmaster.BeastMaster
 softdepend: [ Multiverse-Core ]
 depend: [ WorldEdit, BlockStore, EntityMeta, LibsDisguises ]
-api-version: 1.13
-
+api-version: 1.15
 permissions:
   beastmaster.console:
     description: Permission to administer the plugin. This permission only makes sense for those with console access.
