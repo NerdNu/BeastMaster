@@ -158,7 +158,7 @@ public class MobType {
      * @return the ID of the DropSet consulted when this mob dies.
      */
     public String getDropsId() {
-        return (String) getProperty("drops").getValue();
+        return (String) getDerivedProperty("drops").getValue();
     }
 
     // ------------------------------------------------------------------------
