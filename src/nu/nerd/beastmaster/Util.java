@@ -9,8 +9,10 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
@@ -22,6 +24,8 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.inventory.meta.SpawnEggMeta;
 import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionEffect;
+
+import nu.nerd.beastmaster.mobs.MobType;
 
 // ----------------------------------------------------------------------------
 /**
@@ -52,6 +56,37 @@ public class Util {
             }
         }
         return true;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Show particles that resemble an enderman teleport at the specified mob
+     * location.
+     * 
+     * @param mobLoc the mob's Location.
+     */
+    public static void showTeleportParticles(Location mobLoc) {
+        Location particleLoc = mobLoc.clone().add(0, 0.6, 0);
+        particleLoc.getWorld().spawnParticle(Particle.PORTAL, particleLoc, 100, 0.3, 0.6, 0.3, 0.0);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Show teleport particles and play the MobType's "teleport-sound" at the
+     * specified mob Location.
+     * 
+     * @param mobType the mob's type.
+     * @param mobLoc the mob's Location.
+     */
+    public static void doTeleportEffects(MobType mobType, Location mobLoc) {
+        if (mobType != null) {
+            SoundEffect teleportSound = (SoundEffect) mobType.getDerivedProperty("teleport-sound").getValue();
+            if (teleportSound != null) {
+                // Silent unless delayed. Probably LibsDisguises.
+                Bukkit.getScheduler().runTaskLater(BeastMaster.PLUGIN, () -> teleportSound.play(mobLoc), 1);
+            }
+        }
+        showTeleportParticles(mobLoc);
     }
 
     // ------------------------------------------------------------------------

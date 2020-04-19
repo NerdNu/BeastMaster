@@ -10,7 +10,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Biome;
@@ -606,21 +605,40 @@ public class BeastMaster extends JavaPlugin implements Listener {
                 diff.subtract(oldLoc);
                 newLoc.setDirection(diff.getDirection());
 
-                // Now go up to find space.
-                for (int i = 1; i < 10; ++i) {
-                    newLoc.add(0, 1, 0);
+                // Find an initial safe destination. Might be floating.
+                newLoc.add(0, 10, 0);
+                boolean safe = false;
+                for (int i = 0; i < 10; ++i) {
                     if (Util.isPassable3x3x3(newLoc)) {
-                        SoundEffect teleportSound = (SoundEffect) mobType.getDerivedProperty("teleport-sound").getValue();
-                        if (teleportSound != null) {
-                            Bukkit.getScheduler().runTaskLater(this, () -> {
-                                entity.teleport(newLoc);
-                                teleportSound.play(oldLoc);
-                                Location particleLoc = oldLoc.clone().add(0, 0.6, 0);
-                                particleLoc.getWorld().spawnParticle(Particle.PORTAL, particleLoc, 100, 0.3, 0.6, 0.3, 0.0);
-                            }, 1);
-                        }
+                        safe = true;
                         break;
                     }
+                    newLoc.add(0, -1, 0);
+                }
+
+                if (!safe) {
+                    // Nowhere safe. Try again next damage.
+                    return;
+                }
+
+                // newLoc is a valid teleport destination, but maybe floating.
+                // Try to lower the location to the ground.
+                for (int i = 0; i < 10; ++i) {
+                    Location tryLoc = newLoc.clone().add(0, -1, 0);
+                    if (Util.isPassable3x3x3(tryLoc)) {
+                        newLoc = tryLoc;
+                    } else {
+                        break;
+                    }
+                }
+
+                // Needs to be final to keep the compiler happy.
+                final Location destination = newLoc;
+                if (destination != null) {
+                    Bukkit.getScheduler().runTaskLater(this, () -> {
+                        entity.teleport(destination);
+                        Util.doTeleportEffects(mobType, destination);
+                    }, 1);
                 }
             }
         }
