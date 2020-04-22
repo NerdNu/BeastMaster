@@ -30,6 +30,21 @@ public class DropSet {
 
     // ------------------------------------------------------------------------
     /**
+     * Create a copy of another DropSet, with a different ID.
+     * 
+     * @param id the ID of the new DropSet.
+     * @param other the DropSet whose drops and other state are copied.
+     */
+    public DropSet(String id, DropSet other) {
+        _id = id;
+        _single = other._single;
+        for (Drop drop : other.getAllDrops()) {
+            addDrop(drop.clone());
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Return the programmatic ID of this DropSet.
      * 
      * @return the programmatic ID of this DropSet.
