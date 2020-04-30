@@ -42,7 +42,7 @@ public class Item {
     /**
      * Return the ItemStack.
      * 
-     * If the ItemStack is non-null, it will have a single item. It will be
+     * If the ItemStack is non-null, it will have a single item. It should be
      * cloned and the amount changed before being dropped.
      * 
      * @return the ItemStack.
