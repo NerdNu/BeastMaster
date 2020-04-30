@@ -402,6 +402,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         case BUILD_SNOWMAN:
         case BUILD_IRONGOLEM:
         case BUILD_WITHER:
+        case DEFAULT: // For the EnderDragon.
             MobType vanillaMobType = MOBS.getMobType(entity.getType());
             if (vanillaMobType != null) {
                 vanillaMobType.configureMob(entity);
