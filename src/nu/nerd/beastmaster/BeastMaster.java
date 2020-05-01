@@ -19,6 +19,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.entity.Slime;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -32,6 +33,7 @@ import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.entity.SlimeSplitEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -771,6 +773,20 @@ public class BeastMaster extends JavaPlugin implements Listener {
         }
 
     } // onEntityDeath
+
+    // ------------------------------------------------------------------------
+    /**
+     * Prevent slimes with "slime-can-split" false from splitting.
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    protected void onSlimeSplit(SlimeSplitEvent event) {
+        Slime slime = event.getEntity();
+        MobType mobType = getMobType(slime);
+        Boolean canSplit = (Boolean) mobType.getDerivedProperty("slime-can-split").getValue();
+        if (canSplit != null && !canSplit) {
+            event.setCancelled(true);
+        }
+    }
 
     // ------------------------------------------------------------------------
     /**
