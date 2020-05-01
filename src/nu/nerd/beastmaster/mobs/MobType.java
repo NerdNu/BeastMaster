@@ -174,6 +174,41 @@ public class MobType {
 
     // ------------------------------------------------------------------------
     /**
+     * Return true if this mob is friendly to (will not target, will not
+     * intentionally damage) a specified other MobType.
+     * 
+     * @param targetMobType the MobType of the other mob potentially being
+     *        targeted. If null, then this MobType is hostile to it by default.
+     * @return true if this mob should not target or damage potential targets of
+     *         the specified MobType.
+     */
+    public boolean isFriendlyTo(MobType targetMobType) {
+        if (targetMobType == null) {
+            // Hostile by default.
+            return false;
+        }
+
+        @SuppressWarnings("unchecked")
+        Set<String> friendGroups = (Set<String>) getDerivedProperty("friend-groups").getValue();
+        if (friendGroups == null || friendGroups.isEmpty()) {
+            return false;
+        }
+
+        // Targeted mob's group membership.
+        @SuppressWarnings("unchecked")
+        Set<String> targetGroups = (Set<String>) targetMobType.getDerivedProperty("groups").getValue();
+
+        // Return true if the targeted mob's groups includes this mob's friends.
+        for (String friend : friendGroups) {
+            if (targetGroups.contains(friend)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Return a collection of all properties that this mob type can override.
      * 
      * @return a collection of all properties that this mob type can override.

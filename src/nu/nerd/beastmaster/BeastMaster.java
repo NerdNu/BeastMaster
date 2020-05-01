@@ -1,9 +1,7 @@
 package nu.nerd.beastmaster;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
@@ -675,18 +673,28 @@ public class BeastMaster extends JavaPlugin implements Listener {
             }
         }
 
+        // What to do if the attacker is a mob.
         if (attackingMob != null && damagedEntity instanceof LivingEntity) {
-            MobType mobType = getMobType(attackingMob);
-            if (mobType != null) {
+            MobType attackingMobType = getMobType(attackingMob);
+            if (attackingMobType != null) {
+                // Mob attacking mob?
+                if (damagedEntity instanceof LivingEntity) {
+                    MobType damagedMobType = getMobType(damagedEntity);
+                    if (attackingMobType.isFriendlyTo(damagedMobType)) {
+                        event.setCancelled(true);
+                        return;
+                    }
+                }
+
                 // Apply attackingMob's attack-potions, if set.
-                String potionSetId = (String) mobType.getDerivedProperty("attack-potions").getValue();
+                String potionSetId = (String) attackingMobType.getDerivedProperty("attack-potions").getValue();
                 PotionSet potionSet = POTIONS.getPotionSet(potionSetId);
                 if (potionSet != null) {
                     potionSet.apply((LivingEntity) damagedEntity);
                 }
 
                 // Play the melee-attack-sound.
-                SoundEffect sound = (SoundEffect) mobType.getDerivedProperty("melee-attack-sound").getValue();
+                SoundEffect sound = (SoundEffect) attackingMobType.getDerivedProperty("melee-attack-sound").getValue();
                 if (sound != null) {
                     sound.play(damagedEntity.getLocation());
                 }
@@ -769,7 +777,6 @@ public class BeastMaster extends JavaPlugin implements Listener {
      * Prevent a mob from targeting any other mob whose "groups" set includes a
      * name that is in the targeting mob's "friend-groups".
      */
-    @SuppressWarnings("unchecked")
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     protected void onEntityTargetLivingEntity(EntityTargetLivingEntityEvent event) {
         Entity targetter = event.getEntity();
@@ -783,22 +790,9 @@ public class BeastMaster extends JavaPlugin implements Listener {
         if (mobType == null) {
             return;
         }
-        Set<String> friendGroups = (Set<String>) mobType.getDerivedProperty("friend-groups").getValue();
-        if (friendGroups == null || friendGroups.isEmpty()) {
-            return;
-        }
 
-        // Targeted mob.
-        MobType targetType = getMobType(target);
-        Set<String> targetGroups = targetType == null ? Collections.EMPTY_SET
-                                                      : (Set<String>) targetType.getDerivedProperty("groups").getValue();
-
-        // If the targeted mob is a friend, don't target.
-        for (String friend : friendGroups) {
-            if (targetGroups.contains(friend)) {
-                event.setCancelled(true);
-                return;
-            }
+        if (mobType.isFriendlyTo(getMobType(target))) {
+            event.setCancelled(true);
         }
     }
 
