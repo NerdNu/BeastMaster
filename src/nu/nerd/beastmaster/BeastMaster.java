@@ -403,6 +403,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         case BUILD_IRONGOLEM:
         case BUILD_WITHER:
         case DEFAULT: // For the EnderDragon.
+        case SLIME_SPLIT: // For slimes.
             MobType vanillaMobType = MOBS.getMobType(entity.getType());
             if (vanillaMobType != null) {
                 vanillaMobType.configureMob(entity);
@@ -782,6 +783,10 @@ public class BeastMaster extends JavaPlugin implements Listener {
     protected void onSlimeSplit(SlimeSplitEvent event) {
         Slime slime = event.getEntity();
         MobType mobType = getMobType(slime);
+        if (mobType == null) {
+            return;
+        }
+
         Boolean canSplit = (Boolean) mobType.getDerivedProperty("slime-can-split").getValue();
         if (canSplit != null && !canSplit) {
             event.setCancelled(true);
