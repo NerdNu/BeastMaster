@@ -197,6 +197,9 @@ public class MobType {
         // Targeted mob's group membership.
         @SuppressWarnings("unchecked")
         Set<String> targetGroups = (Set<String>) targetMobType.getDerivedProperty("groups").getValue();
+        if (targetGroups == null) {
+            return false;
+        }
 
         // Return true if the targeted mob's groups includes this mob's friends.
         for (String friend : friendGroups) {
@@ -692,6 +695,7 @@ public class MobType {
         addProperty(new MobProperty("projectile-immunity-percent", DataType.DOUBLE, null));
 
         addProperty(new MobProperty("hurt-teleport-percent", DataType.DOUBLE, null));
+        addProperty(new MobProperty("slime-can-split", DataType.BOOLEAN, null));
 
         // Support Mobs -------------------------------------------------------
         // support-... properties are implemented in EntityDmanageEvent.
