@@ -254,7 +254,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
     public List<LivingEntity> spawnMultipleMobs(Location loc, String lootOrMobId, boolean checkCanFit, DropResults results, String trigger) {
         DropSet drops = BeastMaster.LOOTS.getDropSet(lootOrMobId);
         if (drops != null) {
-            drops.generateRandomDrops(results, trigger, null, loc);
+            drops.generateRandomDrops(results, trigger, null, loc, true);
             return results.getMobs();
         } else {
             List<LivingEntity> mobs = new ArrayList<>();
@@ -373,7 +373,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
             if (zone != null) {
                 DropSet replacement = zone.getMobReplacementDropSet(entity.getType());
                 if (replacement != null) {
-                    Drop drop = replacement.chooseOneDrop();
+                    Drop drop = replacement.chooseOneDrop(true);
                     switch (drop.getDropType()) {
                     case DEFAULT:
                         // Don't change anything.
@@ -739,7 +739,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
             }
 
             DropSet drops = mobType.getDrops();
-            if (drops != null && damagedByPlayer) {
+            if (drops != null) {
                 StringBuilder trigger = new StringBuilder();
 
                 Player victoriousPlayer = (victoriousPlayerName != null) ? Bukkit.getPlayerExact(victoriousPlayerName) : null;
@@ -748,7 +748,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
                 trigger.append(mobType.getId());
 
                 DropResults results = new DropResults();
-                drops.generateRandomDrops(results, trigger.toString(), victoriousPlayer, entity.getLocation());
+                drops.generateRandomDrops(results, trigger.toString(), victoriousPlayer, entity.getLocation(), damagedByPlayer);
                 if (!results.includesVanillaDrop()) {
                     event.getDrops().clear();
                 }
@@ -932,7 +932,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         trigger.append(block.getType());
 
         DropResults results = new DropResults();
-        drops.generateRandomDrops(results, trigger.toString(), event.getPlayer(), loc);
+        drops.generateRandomDrops(results, trigger.toString(), event.getPlayer(), loc, true);
         event.setDropItems(results.includesVanillaDrop());
     }
 

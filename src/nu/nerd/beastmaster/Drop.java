@@ -32,6 +32,15 @@ import nu.nerd.beastmaster.zones.Zone;
  * ground). floating false and minY > highest block (at most 255) => surface.
  */
 public class Drop implements Cloneable, Comparable<Drop> {
+    /**
+     * This represents a 100% chance of dropping nothing.
+     * 
+     * It's used to avoid returning null when selecting a single entry in an
+     * empty single-mode DropSet (or a DropSet that is effectively empty after
+     * filtering out restricted Drops.
+     */
+    public static Drop NOTHING = new Drop(DropType.NOTHING, "nothing", 100, 0, 0);
+
     // ------------------------------------------------------------------------
     /**
      * Constructor for loading from configuration only.
@@ -64,6 +73,9 @@ public class Drop implements Cloneable, Comparable<Drop> {
             }
         } else {
             _id = dropType.name();
+        }
+        if (_dropType == DropType.ITEM) {
+            _restricted = true;
         }
         _dropChance = dropChance;
         _min = min;
@@ -304,6 +316,38 @@ public class Drop implements Cloneable, Comparable<Drop> {
 
     // ------------------------------------------------------------------------
     /**
+     * Set this drop restricted.
+     * 
+     * Restricted drops require player involvement to occur, usually in the case
+     * of a mob being killed. If the mob dies of natural causes, the restricted
+     * drops are filtered out.
+     * 
+     * Only item drops can be set restricted. Item drops are set restricted by
+     * default upon creation.
+     * 
+     * @param restricted whether this drop is restricted.
+     */
+    public void setRestricted(boolean restricted) {
+        _restricted = (restricted && _dropType == DropType.ITEM);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if the player must be involved in precipitating the drop for
+     * it to occur.
+     * 
+     * Otherwise, the drop is filtered out. Only item drops can be restricted.
+     * Item drops are set restricted upon creation. All other drops default to
+     * false for restricted.
+     * 
+     * @return true if the player must be the cause of the drop for it to occur.
+     */
+    public boolean isRestricted() {
+        return _restricted;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Specify whether this drop should be logged to console when dropped.
      * 
      * @param logged if true, log this drop.
@@ -522,6 +566,10 @@ public class Drop implements Cloneable, Comparable<Drop> {
             s.append(_id);
         }
 
+        if (_restricted) {
+            s.append(ChatColor.RED).append(" restricted");
+        }
+
         if (_logged) {
             s.append(ChatColor.GOLD).append(" (logged)");
         }
@@ -554,6 +602,11 @@ public class Drop implements Cloneable, Comparable<Drop> {
             s.append((mobType == null) ? ChatColor.RED : ChatColor.GREEN);
             s.append(_id);
         }
+
+        if (_restricted) {
+            s.append(ChatColor.RED).append(" restricted");
+        }
+
         if (_logged) {
             s.append(ChatColor.GOLD).append(" (logged)");
         }
@@ -691,6 +744,8 @@ public class Drop implements Cloneable, Comparable<Drop> {
             return false;
         }
         _id = section.getName();
+        // Need to default restricted to true for ITEMs in old configs.
+        _restricted = section.getBoolean("restricted", _dropType == DropType.ITEM);
         _logged = section.getBoolean("logged");
         _dropChance = section.getDouble("chance", 0.0);
         _min = section.getInt("min", 1);
@@ -723,6 +778,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     public void save(ConfigurationSection parentSection, Logger logger) {
         ConfigurationSection section = parentSection.createSection(_id);
         section.set("type", _dropType.name());
+        section.set("restricted", _restricted);
         section.set("logged", _logged);
         section.set("chance", _dropChance);
         section.set("min", _min);
@@ -752,7 +808,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
         return getId().compareToIgnoreCase(other.getId());
     }
 
-    // --------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     /**
      * Drops an item naturally near a player with a short delay.
      *
@@ -768,7 +824,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
         Bukkit.getScheduler().scheduleSyncDelayedTask(BeastMaster.PLUGIN, () -> {
             Block block = loc.getBlock();
             Location revisedLoc = (block != null &&
-                                   !block.isPassable() &&
+                                   !canAccomodateItemDrop(block) &&
                                    player != null) ? player.getLocation()
                                                    : loc;
             org.bukkit.entity.Item item = revisedLoc.getWorld().dropItem(revisedLoc, itemStack);
@@ -777,7 +833,21 @@ public class Drop implements Cloneable, Comparable<Drop> {
         }, 1);
     }
 
-    // --------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if the specified Block can accomodate an item drop without
+     * warping it up to the stratosphere.
+     * 
+     * We only check for some of the more common non-full-block materials.
+     * 
+     * @param block the Block.
+     * @return true if the block is passable or not a "full" block.
+     */
+    protected static boolean canAccomodateItemDrop(Block block) {
+        return block.isPassable() || Util.isNotFullBlock(block.getType());
+    }
+
+    // ------------------------------------------------------------------------
     /**
      * If this drop has an accompanying objective, try to spawn it.
      * 
@@ -858,6 +928,16 @@ public class Drop implements Cloneable, Comparable<Drop> {
      * The custom item or mob ID.
      */
     protected String _id;
+
+    /**
+     * If true (the default) then the player must be involved in precipitating
+     * the drop for it to occur.
+     * 
+     * Otherwise, the drop is filtered out. Only item drops can be restricted.
+     * Item drops are set restricted upon creation. All other drops default to
+     * false for restricted.
+     */
+    protected boolean _restricted;
 
     /**
      * If true, this drop is logged to console when dropped.

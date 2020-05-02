@@ -434,11 +434,9 @@ public class MobType {
                 DropSet drops = BeastMaster.LOOTS.getDropSet(id);
                 MobType mobType = null;
                 if (drops != null) {
-                    Drop drop = drops.chooseOneDrop();
-                    if (drop != null) {
-                        if (drop.getDropType() == DropType.MOB) {
-                            mobType = BeastMaster.MOBS.getMobType(drop.getId());
-                        }
+                    Drop drop = drops.chooseOneDrop(true);
+                    if (drop.getDropType() == DropType.MOB) {
+                        mobType = BeastMaster.MOBS.getMobType(drop.getId());
                     }
                 } else {
                     mobType = BeastMaster.MOBS.getMobType(id);
@@ -728,13 +726,11 @@ public class MobType {
     protected static ItemStack getEquipmentItem(String id) {
         DropSet drops = BeastMaster.LOOTS.getDropSet(id);
         if (drops != null) {
-            Drop drop = drops.chooseOneDrop();
-            if (drop != null) {
-                if (drop.getDropType() == DropType.NOTHING) {
-                    return new ItemStack(Material.AIR);
-                } else if (drop.getDropType() == DropType.ITEM) {
-                    return drop.randomItemStack();
-                }
+            Drop drop = drops.chooseOneDrop(true);
+            if (drop.getDropType() == DropType.NOTHING) {
+                return new ItemStack(Material.AIR);
+            } else if (drop.getDropType() == DropType.ITEM) {
+                return drop.randomItemStack();
             }
             return null;
         } else {

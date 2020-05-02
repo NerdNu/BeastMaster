@@ -153,14 +153,14 @@ public class DropSet {
      * Return a map from drop to corresponding weight (for the single selection
      * case).
      * 
+     * @param allowRestricted if true, restricted drops are included in the
+     *        WeightedSelection.
      * @return a map from drop to corresponding weight
      */
-    public Map<Drop, Double> getDropWeights() {
-        cacheWeightedSelection();
-
+    public Map<Drop, Double> getDropWeights(boolean allowRestricted) {
         Map<Drop, Double> weights = new TreeMap<>();
         double previousKey = 0;
-        for (Entry<Double, Drop> entry : _selectionCache.entrySet()) {
+        for (Entry<Double, Drop> entry : getWeightedSelection(allowRestricted).entrySet()) {
             double weight = entry.getKey() - previousKey;
             previousKey = entry.getKey();
             weights.put(entry.getValue(), weight);
@@ -170,24 +170,27 @@ public class DropSet {
 
     // ------------------------------------------------------------------------
     /**
-     * Return the total of all spawn weights in the zone.
+     * Return the sum of all weights in the DropSet when interpreted as a
+     * WeightedSelection (for "single" mode).
      * 
-     * @return the total of all spawn weights in the zone.
+     * @return the sum of all weights in the DropSet's corresponding
+     *         WeightedSelection.
      */
-    public double getTotalWeight() {
-        cacheWeightedSelection();
-        return _selectionCache.getTotalWeight();
+    public double getTotalWeight(boolean allowRestricted) {
+        return getWeightedSelection(allowRestricted).getTotalWeight();
     }
 
     // ------------------------------------------------------------------------
     /**
      * Select one drop, as if this DropSet {@link #isSingle()}.
      * 
-     * @return the {@link Drop}.
+     * @return the {@link Drop}, or return Drop.NOTHING if the DropSet is empty,
+     *         or effectively so after filtering restricted drops.
      */
-    public Drop chooseOneDrop() {
-        cacheWeightedSelection();
-        return _selectionCache.choose();
+    public Drop chooseOneDrop(boolean allowRestricted) {
+        WeightedSelection<Drop> selection = getWeightedSelection(allowRestricted);
+        Drop drop = selection.choose();
+        return (drop == null) ? Drop.NOTHING : drop;
     }
 
     // ------------------------------------------------------------------------
@@ -199,10 +202,12 @@ public class DropSet {
      *        logging.
      * @param player the player that triggered the drop, or null.
      * @param loc the Location where items will be dropped.
+     * @param allowRestricted if true, restricted drops are allowed; otherwise
+     *        they are removed.
      */
-    public void generateRandomDrops(DropResults results, String trigger, Player player, Location loc) {
+    public void generateRandomDrops(DropResults results, String trigger, Player player, Location loc, boolean allowRestricted) {
         if (isSingle()) {
-            chooseOneDrop().generate(results, trigger, player, loc);
+            chooseOneDrop(allowRestricted).generate(results, trigger, player, loc);
 
         } else {
             // An uninitialised drop table (no drops) drops vanilla items.
@@ -213,7 +218,8 @@ public class DropSet {
             }
 
             for (Drop drop : _drops.values()) {
-                if (Math.random() < drop.getDropChance()) {
+                if ((allowRestricted || !drop.isRestricted()) &&
+                    Math.random() < drop.getDropChance()) {
                     drop.generate(results, trigger, player, loc);
                 }
             }
@@ -299,16 +305,21 @@ public class DropSet {
 
     // ------------------------------------------------------------------------
     /**
-     * Cache a {@link WeightedSelection} for use when this
+     * Get a {@link WeightedSelection} for use when this
      * {@link DropSet#isSingle()}.
+     * 
+     * @param allowRestricted if true, restricted drops are included in the
+     *        WeightedSelection.
+     * @return a WeightedSelection<Drop> containing all allowed drops.
      */
-    protected void cacheWeightedSelection() {
-        if (_selectionCache == null) {
-            _selectionCache = new WeightedSelection<Drop>();
-            for (Drop drop : _drops.values()) {
-                _selectionCache.addChoice(drop, drop.getDropChance());
+    protected WeightedSelection<Drop> getWeightedSelection(boolean allowRestricted) {
+        WeightedSelection<Drop> selection = new WeightedSelection<Drop>();
+        for (Drop drop : _drops.values()) {
+            if (allowRestricted || !drop.isRestricted()) {
+                selection.addChoice(drop, drop.getDropChance());
             }
         }
+        return selection;
     }
 
     // ------------------------------------------------------------------------

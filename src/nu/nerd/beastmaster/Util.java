@@ -2,6 +2,7 @@ package nu.nerd.beastmaster;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -12,7 +13,9 @@ import java.util.function.Function;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
+import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
@@ -32,6 +35,75 @@ import nu.nerd.beastmaster.mobs.MobType;
  * Utility methods.
  */
 public class Util {
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if the specified Material is not a full block.
+     * 
+     * This is used for determining whether to drop an item at a particular
+     * location, avoiding full-block materials that might cause the item to
+     * shoot up into the air. This method is only consulted if a block is not
+     * passable. Passable blocks include, air and liquids as well as stuff like
+     * string, saplings and crops. So to the extent that this check returns true
+     * for any of those, it is just being extra cautious.
+     * 
+     * @return true if the specified Material is not a full block.
+     */
+    public static boolean isNotFullBlock(Material material) {
+        if (NOT_FULL_BLOCK_MATERIALS == null) {
+            NOT_FULL_BLOCK_MATERIALS = EnumSet.noneOf(Material.class);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.AIR);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.BAMBOO);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.BAMBOO_SAPLING);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.BREWING_STAND);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.BUBBLE_COLUMN);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.CHEST);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.CAULDRON);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.CAVE_AIR);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.COMPARATOR);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.DAYLIGHT_DETECTOR);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.ENCHANTING_TABLE);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.ENDER_CHEST);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.HOPPER);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.IRON_BARS);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.LADDER);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.LANTERN);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.LAVA);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.LECTERN);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.STONE_PRESSURE_PLATE);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.REDSTONE);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.REDSTONE_TORCH);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.REPEATER);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.STONECUTTER);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.TORCH);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.TRAPPED_CHEST);
+            NOT_FULL_BLOCK_MATERIALS.add(Material.WATER);
+
+            // TODO: (stained) glass panes.
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.ANVIL.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.BANNERS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.BEDS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.BUTTONS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.CARPETS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.CORALS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.CROPS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.DOORS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.FENCES.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.FLOWERS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.FLOWER_POTS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.WOODEN_PRESSURE_PLATES.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.RAILS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.SAPLINGS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.SIGNS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.SLABS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.STAIRS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.TRAPDOORS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.WALL_CORALS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.WALL_SIGNS.getValues());
+            NOT_FULL_BLOCK_MATERIALS.addAll(Tag.WALLS.getValues());
+        }
+        return NOT_FULL_BLOCK_MATERIALS.contains(material);
+    }
+
     // ------------------------------------------------------------------------
     /**
      * Return true if the 3x3x3 blocks centred horizontally on the specified
@@ -350,6 +422,18 @@ public class Util {
     }
 
     // ------------------------------------------------------------------------
+    /**
+     * A set of common Materials that are not a full block.
+     * 
+     * The set is initialised on first use, because I'm not sure when
+     * Tag<Material> gets set up.
+     * 
+     * This is used for deciding whether to drop an item where the Drop occurs
+     * or placing it at the Player's feet. So the set doesn't have to be 100%
+     * exhaustive; it just needs to cover the most common cases.
+     */
+    protected static EnumSet<Material> NOT_FULL_BLOCK_MATERIALS;
+
     /**
      * Random number generator.
      */

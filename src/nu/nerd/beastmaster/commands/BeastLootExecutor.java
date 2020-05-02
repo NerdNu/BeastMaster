@@ -369,6 +369,43 @@ public class BeastLootExecutor extends ExecutorBase {
                 BeastMaster.CONFIG.save();
                 return true;
 
+            } else if (args[0].equals("restricted")) {
+                if (args.length != 4) {
+                    Commands.invalidArguments(sender, getName() + " restricted <loot-id> <id> <yes-or-no>");
+                    return true;
+                }
+
+                String lootIdArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(lootIdArg);
+                if (dropSet == null) {
+                    Commands.errorNull(sender, "loot table", lootIdArg);
+                    return true;
+                }
+
+                String dropIdArg = args[2];
+                Drop drop = dropSet.getDrop(dropIdArg);
+                if (drop == null) {
+                    Commands.errorNull(sender, "drop of " + lootIdArg, dropIdArg);
+                    return true;
+                }
+
+                if (drop.getDropType() != DropType.ITEM) {
+                    sender.sendMessage(ChatColor.RED + "Only item drops can have their \"restricted\" property configured.");
+                    return true;
+                }
+
+                String yesNoArg = args[3];
+                Boolean restricted = Commands.parseBoolean(sender, yesNoArg, "restricted");
+                if (restricted == null) {
+                    return true;
+                }
+
+                drop.setRestricted(restricted);
+                String change = (restricted ? "Restricted" : "Unrestricted");
+                sender.sendMessage(ChatColor.GOLD + change + " dropping of " + drop.getLongDescription());
+                BeastMaster.CONFIG.save();
+                return true;
+
             } else if (args[0].equals("sound")) {
                 if (args.length != 4 && args.length != 6) {
                     Commands.invalidArguments(sender, getName() + " sound <loot-id> <id> <sound> [<range> <pitch>]");
