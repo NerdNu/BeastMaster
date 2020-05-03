@@ -549,9 +549,14 @@ public class BeastMaster extends JavaPlugin implements Listener {
                     && (supportPercent == null ||
                         Math.random() * 100 < supportPercent)) {
 
+                    // TODO: spawning needs to do better at looking for a
+                    // spawnable location. Really need to do spawn conditions
+                    // argument to spawning functions.
+                    Location supportLocation = mobLocation.clone().add(0, 1, 0);
+
                     // Summon support mobs targeting same target as summoner.
                     DropResults results = new DropResults();
-                    List<LivingEntity> supportMobs = spawnMultipleMobs(mobLocation, supportId, false, results,
+                    List<LivingEntity> supportMobs = spawnMultipleMobs(supportLocation, supportId, false, results,
                                                                        mobType.getId() + " support-mobs");
                     if (damagedLiving instanceof Mob) {
                         for (LivingEntity mob : supportMobs) {
@@ -569,12 +574,6 @@ public class BeastMaster extends JavaPlugin implements Listener {
             }
 
             DamageCause cause = event.getCause();
-            String propertyName = (cause == DamageCause.PROJECTILE) ? "projectile-hurt-sound" : "melee-hurt-sound";
-            SoundEffect hurtSound = (SoundEffect) mobType.getDerivedProperty(propertyName).getValue();
-            if (hurtSound != null) {
-                Bukkit.getScheduler().runTaskLater(this, () -> hurtSound.play(mobLocation), 1);
-            }
-
             if (cause == DamageCause.PROJECTILE) {
                 Double immunityPercent = (Double) mobType.getDerivedProperty("projectile-immunity-percent").getValue();
                 boolean immuneToProjectile = (immunityPercent != null && Math.random() * 100 < immunityPercent);
@@ -586,6 +585,13 @@ public class BeastMaster extends JavaPlugin implements Listener {
                     }
                     return;
                 }
+            }
+
+            // Play hurt sounds after projectile immunity checks.
+            String propertyName = (cause == DamageCause.PROJECTILE) ? "projectile-hurt-sound" : "melee-hurt-sound";
+            SoundEffect hurtSound = (SoundEffect) mobType.getDerivedProperty(propertyName).getValue();
+            if (hurtSound != null) {
+                Bukkit.getScheduler().runTaskLater(this, () -> hurtSound.play(mobLocation), 1);
             }
 
             // Don't teleport if the damage is low to allow for slight falls.
