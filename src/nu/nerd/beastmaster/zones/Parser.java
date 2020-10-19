@@ -155,7 +155,7 @@ public class Parser {
         } else {
             throw new ParseError("expecting parentheses, ! or a predicate, but got " +
                                  _lexer.current().getType(),
-                _lexer.column());
+                _lexer.current().getColumn());
         }
     }
 
@@ -192,9 +192,10 @@ public class Parser {
 
     // ------------------------------------------------------------------------
     /**
-     * Return true of the current token has the specified type.
+     * Return true if the current token has the specified type.
      * 
      * @param tokenType the type of the token.
+     * @return true if the current token matched.
      */
     boolean have(Token.Type tokenType) {
         return (_lexer.current().getType() == tokenType);
@@ -206,7 +207,8 @@ public class Parser {
      * and return true.
      * 
      * Otherwise, don't advance and return false.
-     * 
+     *
+     * @param tokenType the type of Token to take.
      * @return true if the current token matched.
      */
     boolean take(Token.Type tokenType) {
@@ -233,6 +235,9 @@ public class Parser {
     // ------------------------------------------------------------------------
     /**
      * Throw a ParseError if the current token is not of the expected type.
+     * 
+     * @return the expected Token and advance to the next Token.
+     * @throws ParseError if the expected Token cannot be taken.
      */
     Token expect(Token.Type tokenType) {
         Token token = _lexer.current();
@@ -240,7 +245,7 @@ public class Parser {
             return token;
         } else {
             throw new ParseError("got " + _lexer.current() + " when expecting " + tokenType,
-                _lexer.column());
+                _lexer.current().getColumn());
         }
     }
 

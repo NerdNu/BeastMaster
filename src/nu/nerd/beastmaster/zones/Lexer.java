@@ -77,16 +77,6 @@ public class Lexer {
 
     // ------------------------------------------------------------------------
     /**
-     * Return the current 1-based column of the most recently read character.
-     * 
-     * @return the current 1-based column of the most recently read character.
-     */
-    public int column() {
-        return _column;
-    }
-
-    // ------------------------------------------------------------------------
-    /**
      * Return the most recently read token.
      * 
      * @return the most recently read token.
@@ -157,34 +147,36 @@ public class Lexer {
 
         switch (c) {
         case '(':
-            return new Token(Token.Type.L_PAREN);
+            return new Token(Token.Type.L_PAREN, _column);
         case ')':
-            return new Token(Token.Type.R_PAREN);
+            return new Token(Token.Type.R_PAREN, _column);
         case ',':
-            return new Token(Token.Type.COMMA);
+            return new Token(Token.Type.COMMA, _column);
         case '&':
-            return new Token(Token.Type.AND);
+            return new Token(Token.Type.AND, _column);
         case '|':
-            return new Token(Token.Type.OR);
+            return new Token(Token.Type.OR, _column);
         case '^':
-            return new Token(Token.Type.XOR);
+            return new Token(Token.Type.XOR, _column);
         case '!':
-            return new Token(Token.Type.NOT);
+            return new Token(Token.Type.NOT, _column);
         case -1:
-            return new Token(Token.Type.END);
+            return new Token(Token.Type.END, _column);
         }
 
         if (Character.isLetter(c)) {
             // IDENT
+            int startColumn = _column;
             StringBuilder sb = new StringBuilder();
             do {
                 sb.append((char) c);
                 c = nextChar();
             } while (Character.isLetter(c));
             unreadChar(c);
-            return new Token(Token.Type.IDENT, sb.toString());
+            return new Token(Token.Type.IDENT, sb.toString(), startColumn);
         } else if (c == '"') {
             // STRING
+            int startColumn = _column;
             StringBuilder sb = new StringBuilder();
             for (;;) {
                 c = nextChar();
@@ -194,22 +186,31 @@ public class Lexer {
                 sb.append((char) c);
             }
             if (c == -1) {
-                throw new ParseError("unterminated string", column());
+                throw new ParseError("unterminated string", _column);
             }
-            return new Token(Token.Type.STRING, sb.toString());
+            return new Token(Token.Type.STRING, sb.toString(), startColumn);
         } else if (c == '+' || c == '-' || Character.isDigit(c)) {
             // NUMBER
+            int startColumn = _column;
             StringBuilder sb = new StringBuilder();
+            boolean signed = false;
             if (c == '+') {
                 // Don't append '+'.
                 c = nextChar();
+                signed = true;
             } else if (c == '-') {
                 sb.append((char) c);
                 c = nextChar();
+                signed = true;
+            }
+
+            // Guard against more than one sign character.
+            if (signed && !Character.isDigit(c)) {
+                throw new ParseError("number has more than one sign indicator", _column);
             }
 
             // Parse integer.
-            // Allow a leading zero before decimal point
+            // Allow at most one leading zero before decimal point.
             int leadingZeroes = 0;
             while (Character.isDigit(c)) {
                 if (c == '0') {
@@ -236,7 +237,7 @@ public class Lexer {
                 } while (Character.isDigit(c));
             }
             unreadChar(c);
-            return new Token(Token.Type.NUMBER, sb.toString());
+            return new Token(Token.Type.NUMBER, sb.toString(), startColumn);
         }
 
         throw new ParseError("unexpected character: '" + (char) c + "'", _column);

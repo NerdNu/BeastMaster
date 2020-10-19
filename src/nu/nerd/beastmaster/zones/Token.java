@@ -63,9 +63,11 @@ public class Token {
      * Constructor.
      * 
      * @param type the type of the Token.
+     * @param column the 1-based column number of the input where the Token text
+     *        started.
      */
-    public Token(Type type) {
-        this(type, type.getRepr());
+    public Token(Type type, int column) {
+        this(type, type.getRepr(), column);
     }
 
     // ------------------------------------------------------------------------
@@ -74,10 +76,13 @@ public class Token {
      * 
      * @param type the type of the Token.
      * @param text the text represented by the Token.
+     * @param column the 1-based column number of the input where the Token text
+     *        started.
      */
-    public Token(Type type, String text) {
+    public Token(Type type, String text, int column) {
         _type = type;
         _text = text;
+        _column = column;
     }
 
     // ------------------------------------------------------------------------
@@ -125,6 +130,18 @@ public class Token {
 
     // ------------------------------------------------------------------------
     /**
+     * Return the 1-based column number of the input where the Token text
+     * started.
+     * 
+     * @return the 1-based column number of the input where the Token text
+     *         started.
+     */
+    public int getColumn() {
+        return _column;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * The type of this token.
      */
     protected Type _type;
@@ -134,4 +151,8 @@ public class Token {
      */
     protected String _text;
 
+    /**
+     * The 1-based column number of the input where the Token text started.
+     */
+    protected int _column;
 } // class Token
