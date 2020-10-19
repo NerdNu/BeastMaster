@@ -1,7 +1,5 @@
 package nu.nerd.beastmaster.zones;
 
-import java.io.PrintWriter;
-
 import nu.nerd.beastmaster.zones.nodes.AndExpression;
 import nu.nerd.beastmaster.zones.nodes.NotExpression;
 import nu.nerd.beastmaster.zones.nodes.NumberExpression;
@@ -41,15 +39,15 @@ public class Parser {
     // ------------------------------------------------------------------------
 
     static void test(String input) {
-        PrintWriter pw = new PrintWriter(System.out, true);
-        DebugExpressionVisitor visitor = new DebugExpressionVisitor(pw);
+        DebugExpressionVisitor visitor = new DebugExpressionVisitor();
         Lexer lexer = null;
         try {
             lexer = new Lexer(input);
             Parser parser = new Parser(lexer);
             Expression expr = parser.parse();
-            expr.visit(visitor);
-            pw.println();
+            StringBuilder sb = new StringBuilder();
+            expr.visit(visitor, sb);
+            System.out.println(sb.toString());
         } catch (ParseError ex) {
             System.out.println("\nERROR: " + ex.getMessage() + " at column " + ex.getColumn());
         }

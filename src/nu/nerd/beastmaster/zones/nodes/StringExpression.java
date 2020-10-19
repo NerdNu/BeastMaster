@@ -31,11 +31,12 @@ public class StringExpression extends Expression {
 
     // ------------------------------------------------------------------------
     /**
-     * @see nu.nerd.beastmaster.zones.Expression#visit(nu.nerd.beastmaster.zones.ExpressionVisitor)
+     * @see nu.nerd.beastmaster.zones.Expression#visit(nu.nerd.beastmaster.zones.ExpressionVisitor,
+     *      java.lang.Object)
      */
     @Override
-    public void visit(ExpressionVisitor visitor) {
-        visitor.visit(this);
+    public Object visit(ExpressionVisitor visitor, Object context) {
+        return visitor.visit(this, context);
     }
 
     // ------------------------------------------------------------------------

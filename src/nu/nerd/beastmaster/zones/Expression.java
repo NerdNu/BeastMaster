@@ -67,8 +67,11 @@ public abstract class Expression {
      * @param visitor defines what it means to "visit" this node. That includes
      *        the order in which children are visited and what actions are
      *        performed.
+     * @param context context information representing the state of the
+     *        traversal prior to visiting the node.
+     * @return an object representing the result of visiting the node.
      */
-    public abstract void visit(ExpressionVisitor visitor);
+    public abstract Object visit(ExpressionVisitor visitor, Object context);
 
     // ------------------------------------------------------------------------
     /**

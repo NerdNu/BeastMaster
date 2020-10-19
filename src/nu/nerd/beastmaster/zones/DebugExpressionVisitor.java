@@ -1,7 +1,5 @@
 package nu.nerd.beastmaster.zones;
 
-import java.io.PrintWriter;
-
 import nu.nerd.beastmaster.zones.nodes.AndExpression;
 import nu.nerd.beastmaster.zones.nodes.NotExpression;
 import nu.nerd.beastmaster.zones.nodes.NumberExpression;
@@ -12,109 +10,113 @@ import nu.nerd.beastmaster.zones.nodes.XorExpression;
 
 // ----------------------------------------------------------------------------
 /**
- * An {@link ExpressionVisitor} that prints an {@link Expression} tree with
- * parentheses to a PrintWriter.
+ * An {@link ExpressionVisitor} that appends a String representation of an
+ * {@link Expression} tree to a StringBuilder in the context argument of
+ * visit().
  */
 public class DebugExpressionVisitor implements ExpressionVisitor {
     // ------------------------------------------------------------------------
     /**
-     * Constructor.
-     * 
-     * @param printer the PrintWriter. Note that, since none of the visit()
-     *        implementations flush() the PrintWriter, no output will be seen
-     *        unless the PrintWriter is flush()ed by the caller.
+     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.AndExpression,
+     *      java.lang.Object)
      */
-    public DebugExpressionVisitor(PrintWriter printer) {
-        _printer = printer;
+    @Override
+    public Object visit(AndExpression node, Object context) {
+        StringBuilder sb = (StringBuilder) context;
+        sb.append('(');
+        node.firstChild().visit(this, context);
+        sb.append(" & ");
+        node.secondChild().visit(this, context);
+        sb.append(')');
+        return null;
     }
 
     // ------------------------------------------------------------------------
     /**
-     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.AndExpression)
+     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.OrExpression,
+     *      java.lang.Object)
      */
     @Override
-    public void visit(AndExpression node) {
-        _printer.print('(');
-        node.firstChild().visit(this);
-        _printer.print(" & ");
-        node.secondChild().visit(this);
-        _printer.print(')');
+    public Object visit(OrExpression node, Object context) {
+        StringBuilder sb = (StringBuilder) context;
+        sb.append('(');
+        node.firstChild().visit(this, context);
+        sb.append(" | ");
+        node.secondChild().visit(this, context);
+        sb.append(')');
+        return null;
     }
 
     // ------------------------------------------------------------------------
     /**
-     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.OrExpression)
+     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.XorExpression,
+     *      java.lang.Object)
      */
     @Override
-    public void visit(OrExpression node) {
-        _printer.print('(');
-        node.firstChild().visit(this);
-        _printer.print(" | ");
-        node.secondChild().visit(this);
-        _printer.print(')');
+    public Object visit(XorExpression node, Object context) {
+        StringBuilder sb = (StringBuilder) context;
+        sb.append('(');
+        node.firstChild().visit(this, context);
+        sb.append(" ^ ");
+        node.secondChild().visit(this, context);
+        sb.append(')');
+        return null;
     }
 
     // ------------------------------------------------------------------------
     /**
-     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.XorExpression)
+     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.NotExpression,
+     *      java.lang.Object)
      */
     @Override
-    public void visit(XorExpression node) {
-        _printer.print('(');
-        node.firstChild().visit(this);
-        _printer.print(" ^ ");
-        node.secondChild().visit(this);
-        _printer.print(')');
+    public Object visit(NotExpression node, Object context) {
+        StringBuilder sb = (StringBuilder) context;
+        sb.append('!');
+        node.firstChild().visit(this, context);
+        return null;
     }
 
     // ------------------------------------------------------------------------
     /**
-     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.NotExpression)
+     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.PredicateExpression,
+     *      java.lang.Object)
      */
     @Override
-    public void visit(NotExpression node) {
-        _printer.print('!');
-        node.firstChild().visit(this);
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.PredicateExpression)
-     */
-    @Override
-    public void visit(PredicateExpression node) {
-        _printer.print(node.getIdent());
-        _printer.print("(");
+    public Object visit(PredicateExpression node, Object context) {
+        StringBuilder sb = (StringBuilder) context;
+        sb.append(node.getIdent());
+        sb.append("(");
         String sep = "";
         for (int i = 0; i < node.getChildCount(); ++i) {
-            _printer.print(sep);
-            node.getChild(i).visit(this);
+            sb.append(sep);
+            node.getChild(i).visit(this, context);
             sep = ",";
         }
-        _printer.print(")");
+        sb.append(")");
+        return null;
     }
 
     // ------------------------------------------------------------------------
     /**
-     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.NumberExpression)
+     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.NumberExpression,
+     *      java.lang.Object)
      */
     @Override
-    public void visit(NumberExpression node) {
-        _printer.print(node.getNumber());
+    public Object visit(NumberExpression node, Object context) {
+        StringBuilder sb = (StringBuilder) context;
+        sb.append(node.getNumber());
+        return null;
     }
 
     // ------------------------------------------------------------------------
     /**
-     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.StringExpression)
+     * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.StringExpression,
+     *      java.lang.Object)
      */
     @Override
-    public void visit(StringExpression node) {
-        _printer.print("\"" + node.getText() + "\"");
+    public Object visit(StringExpression node, Object context) {
+        StringBuilder sb = (StringBuilder) context;
+        sb.append("\"" + node.getText() + "\"");
+        return null;
     }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Prints the output.
-     */
-    protected PrintWriter _printer;
 } // class DebugExpressionVisitor
