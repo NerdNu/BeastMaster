@@ -24,9 +24,9 @@ public class Lexer {
         test("\"a string\"");
         test("ident");
         test("biome(\"END_BARRENS\") & (circle(1000,1000,200) | circle(500,-500,200))");
-        test("00");
-        test("\"");
-        test(".5");
+        test("00"); // error
+        test("\""); // error
+        test(".5"); // error
         test("0.123");
         test("12.3456");
         test("world(\"world\")");
@@ -50,7 +50,8 @@ public class Lexer {
             System.out.println();
             return lexer;
         } catch (ParseError ex) {
-            System.out.println("\nERROR: " + ex.getMessage() + " at column " + ex.getColumn());
+            System.out.println("\nERROR: column " + ex.getToken().getColumn() +
+                               ": " + ex.getMessage());
             return null;
         }
     }
@@ -109,7 +110,7 @@ public class Lexer {
             ++_column;
             return c;
         } catch (IOException ex) {
-            throw new ParseError("unexpected I/O error", _column);
+            throw new ParseError("unexpected I/O error", new Token(Token.Type.INVALID, _column));
         }
     }
 
@@ -127,7 +128,7 @@ public class Lexer {
             }
             --_column;
         } catch (IOException ex) {
-            throw new ParseError("buffer full pushing back: '" + (char) c + "'", _column);
+            throw new ParseError("buffer full pushing back: '" + (char) c + "'", new Token(Token.Type.INVALID, _column));
         }
     }
 
@@ -178,16 +179,14 @@ public class Lexer {
             // STRING
             int startColumn = _column;
             StringBuilder sb = new StringBuilder();
-            for (;;) {
-                c = nextChar();
-                if (c == '"' || c == -1) {
-                    break;
-                }
+            do {
                 sb.append((char) c);
-            }
+                c = nextChar();
+            } while (c != '"' && c != -1);
             if (c == -1) {
-                throw new ParseError("unterminated string", _column);
+                throw new ParseError("unterminated string", new Token(Token.Type.INVALID, _column));
             }
+            sb.append((char) c);
             return new Token(Token.Type.STRING, sb.toString(), startColumn);
         } else if (c == '+' || c == '-' || Character.isDigit(c)) {
             // NUMBER
@@ -206,7 +205,7 @@ public class Lexer {
 
             // Guard against more than one sign character.
             if (signed && !Character.isDigit(c)) {
-                throw new ParseError("number has more than one sign indicator", _column);
+                throw new ParseError("number has more than one sign indicator", new Token(Token.Type.INVALID, _column));
             }
 
             // Parse integer.
@@ -217,7 +216,7 @@ public class Lexer {
                     if (leadingZeroes >= 0) {
                         ++leadingZeroes;
                         if (leadingZeroes > 1) {
-                            throw new ParseError("number has too many leading zeroes", _column);
+                            throw new ParseError("number has too many leading zeroes", new Token(Token.Type.INVALID, _column));
                         }
                     }
                 } else {
@@ -240,7 +239,7 @@ public class Lexer {
             return new Token(Token.Type.NUMBER, sb.toString(), startColumn);
         }
 
-        throw new ParseError("unexpected character: '" + (char) c + "'", _column);
+        throw new ParseError("unexpected character: '" + (char) c + "'", new Token(Token.Type.INVALID, _column));
     }
 
     // ------------------------------------------------------------------------

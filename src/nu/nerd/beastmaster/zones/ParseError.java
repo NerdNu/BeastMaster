@@ -6,30 +6,31 @@ package nu.nerd.beastmaster.zones;
  */
 @SuppressWarnings("serial")
 public class ParseError extends RuntimeException {
+    // ------------------------------------------------------------------------
     /**
      * Constructor.
      * 
      * @param message the base error message.
-     * @param column the 1-based column where the error occurred.
+     * @param token the Token where the error occurred.
      */
-    public ParseError(String message, int column) {
+    public ParseError(String message, Token token) {
         super(message);
-        _column = column;
+        _token = token;
     }
 
     // ------------------------------------------------------------------------
     /**
-     * Return the 1-based column where the error occurred.
+     * Return the Token where the error occurred.
      * 
-     * @return the 1-based column where the error occurred.
+     * @return the Token where the error occurred.
      */
-    public int getColumn() {
-        return _column;
+    public Token getToken() {
+        return _token;
     }
 
     // ------------------------------------------------------------------------
     /**
-     * 1-based column where the error occurred.
+     * The Token where the error occurred.
      */
-    protected int _column;
-} // class ParseError
+    protected Token _token;
+} // class ParseErro

@@ -116,7 +116,7 @@ public class DebugExpressionVisitor implements ExpressionVisitor {
     @Override
     public Object visit(StringExpression node, Object context) {
         StringBuilder sb = (StringBuilder) context;
-        sb.append("\"" + node.getText() + "\"");
+        sb.append(node.getText());
         return null;
     }
 } // class DebugExpressionVisitor

@@ -1,5 +1,8 @@
 package nu.nerd.beastmaster.zones.nodes;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import nu.nerd.beastmaster.zones.Expression;
 import nu.nerd.beastmaster.zones.ExpressionVisitor;
 
@@ -38,6 +41,12 @@ public class PredicateExpression extends Expression {
     public Object visit(ExpressionVisitor visitor, Object context) {
         return visitor.visit(this, context);
     }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Predicate arguments from child nodes, cached and exposed for efficiency.
+     */
+    public List<Object> args = new ArrayList<>();
 
     // ------------------------------------------------------------------------
 

@@ -14,7 +14,7 @@ public class Token {
 
         AND("&"), OR("|"), XOR("^"), NOT("!"),
 
-        IDENT(null), STRING(null), NUMBER(null), END(null);
+        IDENT(null), STRING(null), NUMBER(null), END(null), INVALID("?");
 
         /**
          * Constructor.
@@ -45,6 +45,18 @@ public class Token {
          */
         public String getRepr() {
             return _repr;
+        }
+
+        /**
+         * Return the representation of this Token when expected as input.
+         * 
+         * This will be the string representation if it is fixed, or the symbol
+         * for tokens whose text varies, e.g. strings.
+         * 
+         * @return the representation of this Token when expected as input.
+         */
+        public String asExpected() {
+            return _repr != null ? "'" + _repr + "'" : _symbol;
         }
 
         /**
@@ -94,7 +106,24 @@ public class Token {
     @Override
     public String toString() {
         return getText() == null ? getType().toString()
-                                 : getType() + " \"" + getText() + "\"";
+                                 : getType() + " '" + getText() + "'";
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the argument value corresponding to a STRING or NUMBER Token.
+     * 
+     * @return the argument value corresponding to a STRING or NUMBER Token.
+     */
+    public Object getValue() {
+        switch (getType()) {
+        case STRING:
+            return _text.substring(1, _text.length() - 1);
+        case NUMBER:
+            return getDouble();
+        default:
+            return getText();
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -110,11 +139,23 @@ public class Token {
     // ------------------------------------------------------------------------
     /**
      * Return the text represented by this token.
+     *
+     * Note that for strings, that includes the surrounding double quotes.
      * 
      * @return the text represented by this token.
      */
     public String getText() {
         return _text;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the length of the Token text.
+     * 
+     * @return the length of the Token text.
+     */
+    public int getLength() {
+        return _text != null ? _text.length() : 0;
     }
 
     // ------------------------------------------------------------------------

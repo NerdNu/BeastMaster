@@ -1,5 +1,8 @@
 package nu.nerd.beastmaster.zones;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import nu.nerd.beastmaster.zones.nodes.AndExpression;
 import nu.nerd.beastmaster.zones.nodes.NotExpression;
 import nu.nerd.beastmaster.zones.nodes.NumberExpression;
@@ -31,25 +34,40 @@ public class Parser {
      */
     public static void main(String[] args) {
         test("circle(0,0,500)");
-        test("biome(\"END_BARRENS\")");
-        test("!circle(0,0,500) | !y(1,5) ^ biome(\"END_BARRENS\") & region(\"test\")");
-        test("biome(\"END_BARRENS\") & !wg(\"test\") ^ (circle(1000,1000,200) | circle(500,-500,200))");
+        test("biome(\"END_BARRENS\") &");
+        test("!donut(0,0,500,600) | !y(1,5) ^ biome(\"END_BARRENS\") & wg(\"test\")");
+        test("!biome(\"END_BARRENS\") & !wg(\"test\") ^ (circle(1000,1000,200) | circle(500,-500,200))");
     }
 
     // ------------------------------------------------------------------------
 
     static void test(String input) {
-        DebugExpressionVisitor visitor = new DebugExpressionVisitor();
         Lexer lexer = null;
         try {
             lexer = new Lexer(input);
             Parser parser = new Parser(lexer);
             Expression expr = parser.parse();
+
+            // Print expression.
+            DebugExpressionVisitor debug = new DebugExpressionVisitor();
             StringBuilder sb = new StringBuilder();
-            expr.visit(visitor, sb);
-            System.out.println(sb.toString());
+            expr.visit(debug, sb);
+            System.out.println("Expr: " + sb.toString());
+
+            // Evaluate, with tracing.
+            EvalExpressionVisitor eval = new EvalExpressionVisitor(sb);
+            sb.setLength(0);
+            eval.showBoolean(sb, (Boolean) expr.visit(eval, null));
+            System.out.println("Eval: " + sb.toString());
+
         } catch (ParseError ex) {
-            System.out.println("\nERROR: " + ex.getMessage() + " at column " + ex.getColumn());
+            int errorStart = ex.getToken().getColumn() - 1;
+            int errorEnd = Math.min(input.length(), errorStart + ex.getToken().getLength());
+            System.out.println(input.substring(0, errorStart) + ">>>" +
+                               input.substring(errorStart, errorEnd) +
+                               "<<<" + input.substring(errorEnd));
+            System.out.println("\nERROR: column " + errorStart +
+                               ": " + ex.getMessage());
         }
     }
 
@@ -153,7 +171,7 @@ public class Parser {
         } else {
             throw new ParseError("expecting parentheses, ! or a predicate, but got " +
                                  _lexer.current().getType(),
-                _lexer.current().getColumn());
+                _lexer.current());
         }
     }
 
@@ -168,24 +186,59 @@ public class Parser {
      */
     Expression predicate() {
         Token ident = expect(Token.Type.IDENT);
-        Expression pred = new PredicateExpression(ident.getText());
+        PredicateExpression predExpr = new PredicateExpression(ident.getText());
         expect(Token.Type.L_PAREN);
-        for (;;) {
-            if (have(Token.Type.NUMBER)) {
-                Token number = take();
-                pred.addChild(new NumberExpression(number.getDouble()));
-            } else if (have(Token.Type.STRING)) {
-                Token string = take();
-                pred.addChild(new StringExpression(string.getText()));
-            } else {
-                if (!take(Token.Type.COMMA)) {
-                    break;
-                }
+
+        List<Token> argTokens = new ArrayList<>();
+        do {
+            if (have(Token.Type.NUMBER) || have(Token.Type.STRING)) {
+                argTokens.add(take());
             }
+        } while (take(Token.Type.COMMA));
+
+        if (have(Token.Type.IDENT)) {
+            // Don't call take() so we avoid parsing next character, e.g.
+            // '_' in END_BARRENS.
+            Token unexpected = _lexer.current();
+            throw new ParseError("got an identifier when expecting a string or number (did you forget to put double quotes around a string?)",
+                unexpected);
+        }
+        Token rParen = expect(Token.Type.R_PAREN);
+
+        // Validate number and types of arguments before expecting the R_PAREN
+        // for a more informative error message.
+        ZonePredicate zonePred = ZonePredicate.byIdent(predExpr.getIdent());
+        if (zonePred == null) {
+            // TODO: replace ParseError with a call to an error() function with
+            // an error ID to allow us to show suggestions for predicate names.
+            throw new ParseError("unknown predicate \"" + predExpr.getIdent() + "\"", ident);
+        }
+        if (zonePred.getParameters().size() != argTokens.size()) {
+            throw new ParseError("expecting " + zonePred.getParameters().size() +
+                                 " predicate arguments but got " + argTokens.size(),
+                rParen);
+        }
+        zonePred.getParameters().validateTypes(argTokens);
+
+        for (int i = 0; i < argTokens.size(); ++i) {
+            Token token = argTokens.get(i);
+            if (token.getType() == Token.Type.NUMBER) {
+                predExpr.addChild(new NumberExpression(token.getDouble()));
+            } else { // (token.getType() == Token.Type.STRING)
+                predExpr.addChild(new StringExpression((String) token.getValue()));
+            }
+            predExpr.args.add(token.getValue());
         }
 
-        expect(Token.Type.R_PAREN);
-        return pred;
+        try {
+            zonePred.validateArgs(argTokens, predExpr.args);
+        } catch (ParseError ex) {
+            throw new ParseError("invalid arguments to " + predExpr.getIdent() +
+                                 "(): " + ex.getMessage(),
+                ex.getToken());
+        }
+
+        return predExpr;
     }
 
     // ------------------------------------------------------------------------
@@ -242,8 +295,12 @@ public class Parser {
         if (take(tokenType)) {
             return token;
         } else {
-            throw new ParseError("got " + _lexer.current() + " when expecting " + tokenType,
-                _lexer.current().getColumn());
+            Token current = _lexer.current();
+            if (current.getType() == Token.Type.END) {
+                throw new ParseError("unexpected end of input (forgot to close yor parentheses?)", current);
+            }
+
+            throw new ParseError("got " + current + " when expecting " + tokenType.asExpected(), current);
         }
     }
 
