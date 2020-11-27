@@ -276,7 +276,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
         getLogger().info("onWorldLoad: " + event.getWorld().getName());
         World world = event.getWorld();
         if (ZONES.getZone(world.getName()) == null) {
-            ZONES.addZone(new Zone(world.getName(), world));
+            ZONES.addZone(new Zone(world));
         }
 
         // ChunkLoadEvent is not raised for pre-loaded spawn chunks.

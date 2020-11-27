@@ -14,7 +14,7 @@ import nu.nerd.beastmaster.zones.nodes.XorExpression;
  * {@link Expression} tree to a StringBuilder in the context argument of
  * visit().
  */
-public class DebugExpressionVisitor implements ExpressionVisitor {
+public class FormatExpressionVisitor implements ExpressionVisitor {
     // ------------------------------------------------------------------------
     /**
      * @see nu.nerd.beastmaster.zones.ExpressionVisitor#visit(nu.nerd.beastmaster.zones.nodes.AndExpression,
@@ -116,7 +116,9 @@ public class DebugExpressionVisitor implements ExpressionVisitor {
     @Override
     public Object visit(StringExpression node, Object context) {
         StringBuilder sb = (StringBuilder) context;
+        sb.append('"');
         sb.append(node.getText());
+        sb.append('"');
         return null;
     }
-} // class DebugExpressionVisitor
+} // class FormatExpressionVisitor

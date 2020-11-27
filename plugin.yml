@@ -64,15 +64,20 @@ commands:
     usage: |
     
       §e/<command> help§f - Show usage help.
-      §e/<command> add <zone-id> <world>§f - Add a new zone in the specified world.
+      §e/<command> language§f - Show Zone Specification Language help.
+      §e/<command> add <zone-id> <parent-id> <specification>§f - Add a new zone with the specified parent and specification.
       §e/<command> remove <zone-id>§f - Remove the definition of the specified zone.
-      §e/<command> square <zone-id> <x> <z> <radius>§f - Set the square bounds of the zone to be a square centred on (x,z) with the specified radius (half side-length).
-      §e/<command> list§f - List all zones.
+      §e/<command> parent <zone-id> <parent-id>§f - Change the parent of an existing zone.
+      §e/<command> spec <zone-id> <specification>§f - Change the Zone Specification of an existing zone.
+      §e/<command> list [ <parent-id> ]§f - List all root zones, or list only the zones with the given parent, if specified.
+      §e/<command> get (here | there | <world> <x> <y> <z>)§f - Get the zone information where the player is, where the player is looking, or at specified coordinates. 
       §e/<command> replace-mob <zone-id> <entity-type> <loot-id>§f - Set the loot table that defines replacement of newly spawned mobs of the specified entity type in this zone. Use "none" as the loot table to disable replacement of a mob.
       §e/<command> list-replacements <zone-id>§f - List the loot tables responsible for defining mob replacements in the specified zone.
       §e/<command> add-block <zone-id> <material> <loot-id>§f - Add a block type to watch for break events. When a block of the specified material is broken, consult the specified loot table to see what drops. The <material> can be a case-insensitive Bukkit material name, or an integer ID.
       §e/<command> remove-block <zone-id> <material>§f - Remove the custom loot drop for the specified block type. The <material> can be a case-insensitive Bukkit material name, or an integer ID.
       §e/<command> list-blocks <zone-id>§f - List all block types in the zone that drop special loot, and their corresponding loot tables.
+      §e/<command> inherit-mobs <zone-id> <yes-or-no>§f - Specify whether the zone inherits custom mob replacements from its parent zone. 
+      §e/<command> inherit-blocks <zone-id> <yes-or-no>§f - Specify whether the zone inherits custom block drops from its parent zone. 
       §6See: §b§nhttps://github.com/NerdNu/BeastMaster/wiki/Command-Reference#zone-commands
 
   beast-item:

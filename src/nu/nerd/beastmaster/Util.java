@@ -367,6 +367,40 @@ public class Util {
 
     // ------------------------------------------------------------------------
     /**
+     * Return true if x is between and b, inclusive.
+     * 
+     * The function works correctly whether a is less than or greater than b.
+     * 
+     * @param x the value to test.
+     * @param a one end of the range to test.
+     * @param b the other end of the range to test.
+     * @return true if x is between and b, inclusive.
+     */
+    public static boolean between(double x, double a, double b) {
+        if (a < b) {
+            return a <= x && x <= b;
+        } else {
+            return b <= x && x <= a;
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if the point (x,z) is in the rectangle (x1,z1) to (x2,z2).
+     * 
+     * @param x the X coordinate of the test point (x,z).
+     * @param z the Z coordinate of the test point (x,z).
+     * @param x1 the X coordinate of the corner (x1,z1).
+     * @param z1 the Z coordinate of the corner (x1,z1).
+     * @param x2 the X coordinate of the corner (x2,z2).
+     * @param z2 the Z coordinate of the corner (x2,z2).
+     */
+    public static boolean inRect(double x, double z, double x1, double z1, double x2, double z2) {
+        return between(x, x1, x2) && between(z, z1, z2);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Return a random integer in the range [0,values-1].
      *
      * @param values the number of possible values.

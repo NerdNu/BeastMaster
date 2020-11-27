@@ -38,9 +38,9 @@ public class BeastMobExecutor extends ExecutorBase {
      */
     public BeastMobExecutor() {
         super("beast-mob", "help",
-              "add", "remove", "list",
-              "info", "parent",
-              "get", "set", "clear", "spawn", "statue");
+            "add", "remove", "list",
+            "info", "parent",
+            "get", "set", "clear", "spawn", "statue");
     }
 
     // ------------------------------------------------------------------------
@@ -120,7 +120,7 @@ public class BeastMobExecutor extends ExecutorBase {
                 }
 
                 List<String> predefinedMobs = BeastMaster.MOBS.getPredefinedMobTypes().stream()
-                .map(MobType::getId).sorted().collect(Collectors.toList());
+                    .map(MobType::getId).sorted().collect(Collectors.toList());
                 sender.sendMessage(ChatColor.GOLD + "Predefined mob types: " +
                                    Util.alternateColours(predefinedMobs, ChatColor.GRAY + " ", ChatColor.WHITE, ChatColor.YELLOW));
 
@@ -285,14 +285,14 @@ public class BeastMobExecutor extends ExecutorBase {
         return false;
     } // onCommand
 
-    // --------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     /**
      * Parse the "spawn" and "statue" sub-commands.
-     * 
+     *
      * Separated into its own method because it's such a long lump of code.
-     * 
+     *
      * @param sender the command sender.
-     * @param args the command arguments.
+     * @param args   the command arguments.
      * @return true if the command was handled by this method.
      */
     protected boolean onCommandSpawnOrStatue(CommandSender sender, String[] args) {
@@ -415,7 +415,7 @@ public class BeastMobExecutor extends ExecutorBase {
     // ------------------------------------------------------------------------
     /**
      * List all valid property IDs.
-     * 
+     *
      * @param sender the command sender to message.
      */
     protected void listPropertyIds(CommandSender sender) {
@@ -426,19 +426,19 @@ public class BeastMobExecutor extends ExecutorBase {
     // ------------------------------------------------------------------------
     /**
      * Message the CommandSender the value of the specified mob property.
-     * 
+     *
      * Where the property is unset, the inherited value is shown and the
      * ancestor MobType from which the property value was inherited is
      * indicated.
-     * 
-     * @param sender the command sender.
-     * @param mobType the type of the mob.
+     *
+     * @param sender     the command sender.
+     * @param mobType    the type of the mob.
      * @param propertyId the ID of the property whose value is shown.
-     * @param showUnset if true, show the values of properties that have not
-     *        been set (are null); otherwise don't show those.
+     * @param showUnset  if true, show the values of properties that have not
+     *                   been set (are null); otherwise don't show those.
      */
     protected void showProperty(CommandSender sender, MobType mobType,
-                                String propertyId, boolean showUnset) {
+        String propertyId, boolean showUnset) {
         MobProperty property = mobType.getProperty(propertyId);
         MobProperty derivedProperty = mobType.getDerivedProperty(propertyId);
 

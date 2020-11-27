@@ -329,10 +329,11 @@ public class ObjectiveManager {
                                                    (int) (dropLocation.getZ() + dZ));
         Location highestLocation = floorBlock.getLocation();
 
-        int minX = zone.getCentreX() - zone.getRadius();
-        int maxX = zone.getCentreX() + zone.getRadius();
-        int minZ = zone.getCentreZ() - zone.getRadius();
-        int maxZ = zone.getCentreZ() + zone.getRadius();
+        // TODO: Objectives are officially borked.
+        int minX = 0; // zone.getCentreX() - zone.getRadius();
+        int maxX = 0; // zone.getCentreX() + zone.getRadius();
+        int minZ = 0; // zone.getCentreZ() - zone.getRadius();
+        int maxZ = 0; // zone.getCentreZ() + zone.getRadius();
         int x = highestLocation.getBlockX();
         int highestY = highestLocation.getBlockY();
         int z = highestLocation.getBlockZ();

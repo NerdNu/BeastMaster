@@ -1,12 +1,17 @@
 package nu.nerd.beastmaster.zones;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.locks.Condition;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
@@ -19,23 +24,267 @@ import nu.nerd.beastmaster.DropSet;
  * A type of {@link Condition} that is predicated on only the Location of an
  * event in space.
  */
-public class Zone extends Condition {
+public class Zone {
+    // ------------------------------------------------------------------------
+    /**
+     * Default constructor, used for loading from the configuration.
+     */
+    public Zone() {
+        // Default initialisation.
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Constructor for Root Zones.
+     *
+     * @param world the World where this Zone is the root of the Zone hierarchy.
+     */
+    public Zone(World world) {
+        this(world.getName(), null, null);
+    }
+
     // ------------------------------------------------------------------------
     /**
      * Constructor.
-     * 
-     * @param id the identifier.
-     * @param world the containing world.
+     *
+     * @param id         the identifier.
+     * @param parent     the parent Zone, or null for a root (world) Zone.
+     * @param expression the Expression corresponding to the Zone Specification.
      */
-    public Zone(String id, World world) {
+    public Zone(String id, Zone parent, Expression expression) {
         _id = id;
-        _world = world;
+        _parent = parent;
+        _parent.children().add(this);
+        setExpression(expression);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the programmatic ID of this zone.
+     *
+     * @return the programmatic ID of this zone.
+     */
+    public String getId() {
+        return _id;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if this Zone is the root of the Zone hierarchy for its World.
+     *
+     * Root Zones are named after the World they are specific to.
+     *
+     * @return true if this Zone is the root of the Zone hierarchy for its
+     *         World.
+     */
+    public boolean isRoot() {
+        return _parent == null;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Set the parent of this Zone.
+     *
+     * @param parent the new parent Zone.
+     */
+    public void setParent(Zone parent) {
+        // In principle, parentless (root zones) cannot have a parent set.
+        if (_parent != null) {
+            _parent.children().remove(this);
+        }
+        parent.children().add(this);
+        _parent = parent;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the parent of this Zone, or null if this is a root Zone.
+     *
+     * @return the parent of this Zone, or null if this is a root Zone.
+     */
+    public Zone getParent() {
+        return _parent;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the root of this Zone's hierarchy.
+     *
+     * @return the root of this Zone's hierarchy.
+     */
+    public Zone getRoot() {
+        return isRoot() ? this : _parent.getRoot();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the World that this Zone belongs to.
+     *
+     * @return the World that this Zone belongs to.
+     */
+    public World getWorld() {
+        return Bukkit.getWorld(getRoot().getId());
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Mutable access to the children of this Zone.
+     *
+     * @return the child Zones.
+     */
+    public List<Zone> children() {
+        return _children;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the Zone Specification corresponding to this Zone's Expression, or
+     * null if this is a root Zone.
+     *
+     * @return the Zone Specification corresponding to this Zone's Expression,
+     *         or null if this is a root Zone.
+     */
+    public String getSpecification() {
+        return _specification;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Set the Zone Specification Language expression corresponding to this
+     * Zone.
+     *
+     * @param expression the expression.
+     */
+    public void setExpression(Expression expression) {
+        _expression = expression;
+        _specification = formatExpression(expression);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return this Zone's Expression, or null if this is a root Zone.
+     *
+     * @return this Zone's Expression, or null if this is a root Zone.
+     */
+    public Expression getExpression() {
+        return _expression;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if this Zone contains the specified Location.
+     *
+     * @param loc the Location.
+     * @return true if the Location is in this Zone.
+     */
+    public boolean contains(Location loc) {
+        return (_expression == null) ? getWorld().equals(loc.getWorld())
+                                     : (Boolean) _expression.visit(EVALUATOR, loc);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Specify whether this Zone inherits mining drops from its parent Zone.
+     *
+     * @param inheritsBlocks True if this Zone inherits mining drops from its
+     *                       parent Zone.
+     */
+    public void setInheritsBlocks(boolean inheritsBlocks) {
+        _inheritsBlocks = inheritsBlocks;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if this Zone inherits mining drops from its parent Zone.
+     *
+     * @return true if this Zone inherits mining drops from its parent Zone.
+     */
+    public boolean getInheritsBlocks() {
+        return _inheritsBlocks;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Specify whether this Zone inherits mob replacements from its parent Zone.
+     *
+     * @param inheritsMobs True if this Zone inherits mob replacements from its
+     *                     parent Zone.
+     */
+    public void setInheritsMobs(boolean inheritsMobs) {
+        _inheritsMobs = inheritsMobs;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if this Zone inherits mob replacements from its parent Zone.
+     *
+     * @return true if this Zone inherits mob replacements from its parent Zone.
+     */
+    public boolean getInheritsMobs() {
+        return _inheritsMobs;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Set the {@link DropSet} that will be consulted to determine what to drop
+     * when a block is mined when this Condition holds.
+     *
+     * @param material  the type of the mined block.
+     * @param dropSetId the ID of the set of drops to select from. If null,
+     *                  remove the entry for the specified Material.
+     */
+    public void setMiningDropsId(Material material, String dropSetId) {
+        if (dropSetId == null) {
+            _miningDropsIds.remove(material);
+        } else {
+            _miningDropsIds.put(material, dropSetId);
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the ID of the {@link DropSet} controlling drops when the specified
+     * Material is mined.
+     *
+     * @param material the type of the mined block.
+     * @return the ID of the {@link DropSet} controlling drops when the
+     *         specified Material is mined, or null if this Condition does not
+     *         override the drops.
+     */
+    public String getMiningDropsId(Material material) {
+        return _miningDropsIds.get(material);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the {@link DropSet} controlling drops when the specified Material
+     * is mined.
+     *
+     * @param material the type of the mined block.
+     * @return the {@link DropSet} controlling drops when the specified Material
+     *         is mined, or null if this Condition does not override the drops.
+     */
+    public DropSet getMiningDrops(Material material) {
+        String id = getMiningDropsId(material);
+        return (id != null) ? BeastMaster.LOOTS.getDropSet(id) : null;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the set of all entries in the map of Materials to corresponding
+     * mining loot tables.
+     *
+     * @return the set of all entries in the map of Materials to corresponding
+     *         mining loot tables.
+     */
+    public Set<Entry<Material, String>> getAllMiningDrops() {
+        return _miningDropsIds.entrySet();
     }
 
     // ------------------------------------------------------------------------
     /**
      * Return the set of EntityTypes replaced in this zone.
-     * 
+     *
      * @return the set of EntityTypes replaced in this zone.
      */
     public Set<EntityType> getAllReplacedEntityTypes() {
@@ -46,7 +295,7 @@ public class Zone extends Condition {
     /**
      * Return the ID of the DropSet of replacements for newly spawned mobs of
      * the specified EntityType in this zone.
-     * 
+     *
      * @param entityType the EntityType of a newly spawned mob.
      * @return the ID of the DropSet of replacements for newly spawned mobs of
      *         the specified EntityType in this zone.
@@ -59,7 +308,7 @@ public class Zone extends Condition {
     /**
      * Return the DropSet of replacements for newly spawned mobs of the
      * specified EntityType in this zone.
-     * 
+     *
      * @param entityType the EntityType of a newly spawned mob.
      * @return the DropSet of replacements for newly spawned mobs of the
      *         specified EntityType in this zone.
@@ -72,9 +321,9 @@ public class Zone extends Condition {
     /**
      * Set the ID of the DropSet that defines replacement of newly spawned mobs
      * of the specified EntityType in this zone.
-     * 
+     *
      * @param entityType the EntityType of a newly spawned mob.
-     * @param dropSetId the ID of the DropSet, or null to disable replacement.
+     * @param dropSetId  the ID of the DropSet, or null to disable replacement.
      */
     public void setMobReplacementDropSetId(EntityType entityType, String dropSetId) {
         if (dropSetId == null) {
@@ -86,32 +335,58 @@ public class Zone extends Condition {
 
     // ------------------------------------------------------------------------
     /**
-     * Load this zone from the specified configuration section, whose name is
-     * the zone ID.
-     * 
-     * @param section the configuration section.
-     * @param logger the logger.
+     * Load the properties of this Zone from the specified configuration
+     * section, whose name is the Zone ID.
+     *
+     * This method doesn't load the parent-child hierarchy information; see
+     * {@link #loadHierarchy(ConfigurationSection, Logger)}.
+     *
+     * @param zoneSection the configuration section.
+     * @param logger      the logger.
      * @return true if the zone was loaded successfully.
      */
-    @Override
-    public boolean load(ConfigurationSection section, Logger logger) {
-        _id = section.getName();
+    public boolean loadProperties(ConfigurationSection zoneSection, Logger logger) {
+        _id = zoneSection.getName();
 
-        if (!super.load(section, logger)) {
-            return false;
+        _specification = null;
+        _expression = null;
+        String specification = zoneSection.getString("specification");
+        if (specification != null && !specification.isEmpty()) {
+            try {
+                Lexer lexer = new Lexer(specification);
+                Parser parser = new Parser(lexer);
+                setExpression(parser.parse());
+
+            } catch (ParseError ex) {
+                logger.severe("Error loading spec in zone " + _id +
+                              " at column " + ex.getToken().getColumn() +
+                              ": " + ex.getMessage());
+            }
         }
 
-        String worldName = section.getString("world");
-        _world = (worldName != null) ? Bukkit.getWorld(worldName) : null;
-        if (_world == null) {
-            logger.severe("Could not load zone: " + getId() + ": invalid world " + worldName);
-            return false;
-        }
-        _centreX = section.getInt("centre-x");
-        _centreZ = section.getInt("centre-z");
-        _radius = section.getInt("radius");
+        _inheritsBlocks = zoneSection.getBoolean("inherits-blocks");
+        _inheritsMobs = zoneSection.getBoolean("inherits-mobs");
 
-        ConfigurationSection replacements = section.getConfigurationSection("replacements");
+        _parent = null;
+        _children.clear();
+
+        _miningDropsIds.clear();
+        ConfigurationSection miningDropsSection = zoneSection.getConfigurationSection("mining-drops");
+        if (miningDropsSection != null) {
+            for (String materialName : miningDropsSection.getKeys(false)) {
+                try {
+                    Material material = Material.valueOf(materialName);
+                    String dropSetId = miningDropsSection.getString(materialName);
+                    setMiningDropsId(material, dropSetId);
+                } catch (IllegalArgumentException ex) {
+                    logger.severe(getId() + " defined mining drops that could not be loaded for unknown material " +
+                                  materialName);
+                }
+            }
+        }
+
+        _mobReplacementDropSetIDs.clear();
+        ConfigurationSection replacements = zoneSection.getConfigurationSection("replacements");
         if (replacements != null) {
             for (String entityTypeName : replacements.getKeys(false)) {
                 try {
@@ -125,22 +400,80 @@ public class Zone extends Condition {
 
     // ------------------------------------------------------------------------
     /**
-     * Save this zone as a child of the specified parent configuration section.
-     * 
-     * @param parentSection the parent configuration section.
-     * @param logger the logger.
+     * Load the parent and children of this Zone.
+     *
+     * The parent and children of a Zone cannot be resolved by ID until they
+     * have all been registered with the {@link ZoneManager}. So creation of
+     * Zones and loading of basic properties happens in
+     * {@link Zone#loadProperties(ConfigurationSection, Logger)} before this
+     * method loads the hierarchy.
+     *
+     * @param zoneSection the configuration section.
+     * @param logger      the logger.
+     * @return true if the zone was loaded successfully.
      */
-    @Override
+    public boolean loadHierarchy(ConfigurationSection zoneSection, Logger logger) {
+        String parentId = zoneSection.getString("parent");
+        if (parentId == null || parentId.isEmpty()) {
+            _parent = null;
+        } else {
+            _parent = BeastMaster.ZONES.getZone(parentId);
+            if (_parent == null) {
+                // Parent ID, if specified, should be resolvable.
+                logger.severe("zone " + getId() + " cannot load parent zone " + parentId);
+                return false;
+            }
+        }
+
+        _children.clear();
+        List<String> childrenIds = zoneSection.getStringList("children");
+        if (childrenIds != null) {
+            for (int i = 0; i < childrenIds.size(); ++i) {
+                String childId = childrenIds.get(i);
+                Zone child = BeastMaster.ZONES.getZone(childId);
+                if (child != null) {
+                    _children.add(child);
+                } else {
+                    logger.severe("zone " + getId() +
+                                  " cannot load child zone " + childId +
+                                  " at index " + i);
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Save this zone as a child of the specified parent configuration section.
+     *
+     * @param parentSection the parent configuration section.
+     * @param logger        the logger.
+     */
     public void save(ConfigurationSection parentSection, Logger logger) {
-        ConfigurationSection section = parentSection.createSection(getId());
+        ConfigurationSection zoneSection = parentSection.createSection(getId());
+        zoneSection.set("specification", formatExpression(_expression));
+        zoneSection.set("inherits-blocks", _inheritsBlocks);
+        zoneSection.set("inherits-mobs", _inheritsMobs);
 
-        super.save(section, logger);
-        section.set("world", _world.getName());
-        section.set("centre-x", _centreX);
-        section.set("centre-z", _centreZ);
-        section.set("radius", _radius);
+        if (_parent != null) {
+            zoneSection.set("parent", _parent.getId());
+        }
 
-        ConfigurationSection replacements = section.createSection("replacements");
+        List<String> childZoneIds = new ArrayList<>();
+        for (int i = 0; i < _children.size(); ++i) {
+            childZoneIds.add(_children.get(i).getId());
+        }
+        zoneSection.set("children", childZoneIds);
+
+        ConfigurationSection miningDropsSection = zoneSection.createSection("mining-drops");
+        for (Entry<Material, String> entry : _miningDropsIds.entrySet()) {
+            miningDropsSection.set(entry.getKey().toString(), entry.getValue());
+        }
+
+        ConfigurationSection replacements = zoneSection.createSection("replacements");
         for (EntityType entityType : _mobReplacementDropSetIDs.keySet()) {
             replacements.set(entityType.toString(), getMobReplacementDropSetId(entityType));
         }
@@ -148,136 +481,113 @@ public class Zone extends Condition {
 
     // ------------------------------------------------------------------------
     /**
-     * Return the programmatic ID of this zone.
-     * 
-     * @return the programmatic ID of this zone.
-     */
-    @Override
-    public String getId() {
-        return _id;
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Set the square bounds of the zone as a centre position and a radius that
-     * is half the side length of the square.
-     * 
-     * @param centreX the centre X coordinate.
-     * @param centreZ the centre Z coordinate.
-     * @param radius the radius.
-     */
-    public void setSquareBounds(int centreX, int centreZ, int radius) {
-        _centreX = centreX;
-        _centreZ = centreZ;
-        _radius = radius;
-    }
-
-    // --------------------------------------------------------------------------
-    /**
-     * @see java.util.function.Predicate#test(java.lang.Object)
-     */
-    @Override
-    public boolean test(Location loc) {
-        return contains(loc);
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Return true if the zone contains the specified location.
-     * 
-     * @param loc the Location.
-     * @return true if the zone contains the specified location.
-     */
-    public boolean contains(Location loc) {
-        return loc.getWorld().equals(getWorld()) &&
-               Math.abs(loc.getX() - _centreX) < _radius &&
-               Math.abs(loc.getZ() - _centreZ) < _radius;
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Return the World containing this zone.
-     * 
-     * @return the World containing this zone.
-     */
-    public World getWorld() {
-        return _world;
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Return the centre X coordinate.
-     * 
-     * @return the centre X coordinate.
-     */
-    public int getCentreX() {
-        return _centreX;
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Return the centre Z coordinate.
-     * 
-     * @return the centre Z coordinate.
-     */
-    public int getCentreZ() {
-        return _centreZ;
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Return the zone radius (half the square side length) in blocks.
-     * 
-     * @return the zone radius (half the square side length) in blocks.
-     */
-    public int getRadius() {
-        return _radius;
-    }
-
-    // ------------------------------------------------------------------------
-    /**
      * Return the human-readable description of the zone.
-     * 
+     *
      * @return the human-readable description of the zone.
      */
     public String getDescription() {
-        return ChatColor.YELLOW + _id +
-               ChatColor.WHITE + " in world " +
-               ChatColor.YELLOW + _world.getName() +
-               ChatColor.WHITE + " square, radius " +
-               ChatColor.YELLOW + _radius +
-               ChatColor.WHITE + " centred on " +
-               ChatColor.YELLOW + "(" + _centreX + "," + _centreZ + ")";
+        StringBuilder s = new StringBuilder();
+        s.append(ChatColor.YELLOW.toString());
+        s.append(getId());
+
+        int childCount = children().size();
+        if (childCount != 0) {
+            s.append(ChatColor.GRAY);
+            if (childCount == 1) {
+                s.append(" (1 child)");
+            } else {
+                s.append(" (");
+                s.append(childCount);
+                s.append(" children)");
+            }
+        }
+
+        if (!isRoot()) {
+            s.append(ChatColor.WHITE.toString());
+            s.append(" in ");
+            s.append(ChatColor.YELLOW.toString());
+            // Safe if the root zone's World is not loaded:
+            s.append(getRoot().getId());
+
+            s.append(ChatColor.WHITE.toString());
+            s.append(": ");
+            s.append(getSpecification());
+        }
+        return s.toString();
     }
 
     // ------------------------------------------------------------------------
+    /**
+     * Format the specified Expression as a String.
+     *
+     * @param expression the Expression.
+     * @return the String representation of the Expression, or null if the
+     *         Expression is null.
+     */
+    protected static String formatExpression(Expression expression) {
+        if (expression != null) {
+            StringBuilder formattedExpression = new StringBuilder();
+            expression.visit(FORMAT, formattedExpression);
+            return formattedExpression.toString();
+        } else {
+            return null;
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Visitor that evaluates {@link Expression}s.
+     */
+    protected static EvalExpressionVisitor EVALUATOR = new EvalExpressionVisitor(null);
+
+    /**
+     * Visitor that formats {@link Expression}s as Strings.
+     */
+    protected static FormatExpressionVisitor FORMAT = new FormatExpressionVisitor();
+
     /**
      * Unique programmatic identifier.
      */
     protected String _id;
 
     /**
-     * The world containing the zone.
+     * The parent of this Zone, or null for root (world) zones.
      */
-    protected World _world;
+    protected Zone _parent;
 
     /**
-     * Centre X coordinate.
+     * The children of this Zone.
      */
-    protected int _centreX;
+    protected List<Zone> _children = new ArrayList<>();
 
     /**
-     * Centre Z coordinate.
+     * The text of this Zone's specification; null for root Zones.
      */
-    protected int _centreZ;
+    protected String _specification;
 
     /**
-     * Radius of the zone (half the square side length) in blocks.
+     * The {@link Expression} derived from parsing the specification.
      */
-    protected int _radius;
+    protected Expression _expression;
+
+    /**
+     * Map from mined block type to ID of corresponding {@link DropSet}.
+     */
+    protected HashMap<Material, String> _miningDropsIds = new HashMap<>();
 
     /**
      * Map from EntityType to ID of DropSet to replace it with on spawn.
      */
     protected HashMap<EntityType, String> _mobReplacementDropSetIDs = new HashMap<>();
+
+    /**
+     * True if this Zone inherits mining drops from its parent Zone.
+     */
+    protected boolean _inheritsBlocks;
+
+    /**
+     * True if this Zone inherits mob replacements from its parent Zone.
+     */
+    protected boolean _inheritsMobs;
+
 } // class Zone

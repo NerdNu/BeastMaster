@@ -2,6 +2,9 @@ package nu.nerd.beastmaster.zones;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import org.bukkit.ChatColor;
 
 // ----------------------------------------------------------------------------
 /**
@@ -12,10 +15,10 @@ public class ZonePredicateParameters {
     // ------------------------------------------------------------------------
     /**
      * Constructor.
-     * 
+     *
      * @param parameters the parameter list as name1, type1, name2, type2, etc.
-     *        where names are strings and types are either String.class or
-     *        Double.class.
+     *                   where names are strings and types are either
+     *                   String.class or Double.class.
      */
     public ZonePredicateParameters(Object... parameters) {
         if (parameters.length % 2 != 0) {
@@ -32,7 +35,7 @@ public class ZonePredicateParameters {
     // ------------------------------------------------------------------------
     /**
      * Return the number of parameters.
-     * 
+     *
      * @return the number of parameters.
      */
     public int size() {
@@ -42,7 +45,7 @@ public class ZonePredicateParameters {
     // ------------------------------------------------------------------------
     /**
      * Verify that the types of the arguments to a predicate are as expected.
-     * 
+     *
      * @param argTokens the predicate arguments as Tokens.
      * @throws ParseError if arguments have the wrong types.
      */
@@ -62,8 +65,23 @@ public class ZonePredicateParameters {
 
     // ------------------------------------------------------------------------
     /**
+     * Return the parameter names of the predicate, formatted with colours for
+     * presentation in chat.
+     *
+     *
+     * @return the parameter names of the predicate, formatted with colours for
+     *         presentation in chat.
+     */
+    public String getParameterNames() {
+        return _names.stream()
+            .map(n -> ChatColor.YELLOW + n)
+            .collect(Collectors.joining(ChatColor.WHITE + ","));
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Return the name of a type as it should be presented to the user.
-     * 
+     *
      * @param type the type of an argument or parameter.
      * @return the name of a type as it should be presented to the user.
      */

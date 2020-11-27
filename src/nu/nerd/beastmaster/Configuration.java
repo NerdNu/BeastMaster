@@ -51,7 +51,7 @@ public class Configuration {
     // ------------------------------------------------------------------------
     /**
      * Load the plugin configuration.
-     * 
+     *
      * @param log if true, the configuration is logged to console.
      */
     public void reload(boolean log) {
@@ -89,10 +89,10 @@ public class Configuration {
             logger.info("CHANCE_WITHER_SKELETON: " + CHANCE_WITHER_SKELETON);
 
             logger.info("EXCLUDED_ENTITY_TYPES: " + EXCLUDED_ENTITY_TYPES.stream()
-            .map(EntityType::toString).collect(Collectors.joining(", ")));
+                .map(EntityType::toString).collect(Collectors.joining(", ")));
 
             logger.info("ZONES: " + BeastMaster.ZONES.getZones().stream()
-            .map(Zone::getDescription).collect(Collectors.joining(", ")));
+                .map(Zone::getId).collect(Collectors.joining(", ")));
 
             logger.info("ITEMS: ");
             for (Item item : BeastMaster.ITEMS.getAllItems()) {

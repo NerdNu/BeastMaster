@@ -14,16 +14,16 @@ import nu.nerd.beastmaster.zones.nodes.XorExpression;
 /**
  * An ExpressionVisitor implementation that evaluates the nodes of an Expression
  * tree.
- * 
+ *
  * This implementation uses short-circuit evaluation of Boolean AND and OR.
- * 
+ *
  * The context of the visit() method should be the Location to test.
  */
 public class EvalExpressionVisitor implements ExpressionVisitor {
     // ------------------------------------------------------------------------
     /**
      * Constructor.
-     * 
+     *
      * @param trace if not null, is used to record a log of evaluation.
      */
     public EvalExpressionVisitor(StringBuilder trace) {
@@ -132,9 +132,7 @@ public class EvalExpressionVisitor implements ExpressionVisitor {
             _trace.append(")");
         }
 
-        Location loc = (Location) context;
-        // TODO: Code to evaluate predicate here.
-        return false;
+        return node.matches((Location) context);
     }
 
     // ------------------------------------------------------------------------
@@ -166,9 +164,9 @@ public class EvalExpressionVisitor implements ExpressionVisitor {
     // ------------------------------------------------------------------------
     /**
      * Append the value of a boolean expression to the trace.
-     * 
+     *
      * @param trace used to log a record of the evaluation.
-     * @param b the boolean value.
+     * @param b     the boolean value.
      */
     public void showBoolean(StringBuilder trace, boolean b) {
         trace.append(b ? " => T, " : " => F, ");

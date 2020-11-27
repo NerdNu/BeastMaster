@@ -14,7 +14,7 @@ import nu.nerd.beastmaster.zones.nodes.XorExpression;
 // ----------------------------------------------------------------------------
 /**
  * Parser for Zone Specifications.
- * 
+ *
  * <pre>
  * desc     ::= or-expr EOF
  * or-expr  ::= xor-expr ( '|' xor-expr )*
@@ -29,12 +29,12 @@ public class Parser {
     // ------------------------------------------------------------------------
     /**
      * Main program for informal testing.
-     * 
+     *
      * @param args
      */
     public static void main(String[] args) {
         test("circle(0,0,500)");
-        test("biome(\"END_BARRENS\") &");
+        test("biome(\"END_BARRENS\")");
         test("!donut(0,0,500,600) | !y(1,5) ^ biome(\"END_BARRENS\") & wg(\"test\")");
         test("!biome(\"END_BARRENS\") & !wg(\"test\") ^ (circle(1000,1000,200) | circle(500,-500,200))");
     }
@@ -49,7 +49,7 @@ public class Parser {
             Expression expr = parser.parse();
 
             // Print expression.
-            DebugExpressionVisitor debug = new DebugExpressionVisitor();
+            FormatExpressionVisitor debug = new FormatExpressionVisitor();
             StringBuilder sb = new StringBuilder();
             expr.visit(debug, sb);
             System.out.println("Expr: " + sb.toString());
@@ -61,12 +61,13 @@ public class Parser {
             System.out.println("Eval: " + sb.toString());
 
         } catch (ParseError ex) {
-            int errorStart = ex.getToken().getColumn() - 1;
+            int errorColumn = ex.getToken().getColumn();
+            int errorStart = errorColumn - 1;
             int errorEnd = Math.min(input.length(), errorStart + ex.getToken().getLength());
             System.out.println(input.substring(0, errorStart) + ">>>" +
                                input.substring(errorStart, errorEnd) +
                                "<<<" + input.substring(errorEnd));
-            System.out.println("\nERROR: column " + errorStart +
+            System.out.println("\nERROR: column " + errorColumn +
                                ": " + ex.getMessage());
         }
     }
@@ -74,7 +75,7 @@ public class Parser {
     // ------------------------------------------------------------------------
     /**
      * Constructor.
-     * 
+     *
      * @param lexer the Lexer used to extract tokens from the input.
      */
     public Parser(Lexer lexer) {
@@ -178,7 +179,7 @@ public class Parser {
     // ------------------------------------------------------------------------
     /**
      * Allow zero-arg predicates.
-     * 
+     *
      * <pre>
      * pred     ::= ident '(' ( arg ( ',' arg )* )? ')'
      * arg      ::= number | string
@@ -244,7 +245,7 @@ public class Parser {
     // ------------------------------------------------------------------------
     /**
      * Return true if the current token has the specified type.
-     * 
+     *
      * @param tokenType the type of the token.
      * @return true if the current token matched.
      */
@@ -256,7 +257,7 @@ public class Parser {
     /**
      * If the current token has the specified type, advance to the next Token
      * and return true.
-     * 
+     *
      * Otherwise, don't advance and return false.
      *
      * @param tokenType the type of Token to take.
@@ -274,7 +275,7 @@ public class Parser {
     // ------------------------------------------------------------------------
     /**
      * Return the current token and advance the Lexer to the next token.
-     * 
+     *
      * @return the current token.
      */
     Token take() {
@@ -286,7 +287,7 @@ public class Parser {
     // ------------------------------------------------------------------------
     /**
      * Throw a ParseError if the current token is not of the expected type.
-     * 
+     *
      * @return the expected Token and advance to the next Token.
      * @throws ParseError if the expected Token cannot be taken.
      */
