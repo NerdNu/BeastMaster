@@ -43,7 +43,7 @@ public class BeastZoneExecutor extends ExecutorBase {
             "add", "remove", "parent", "spec", "list", "get",
             "replace-mob", "list-replacements",
             "add-block", "remove-block", "list-blocks",
-            "inherit-mobs", "inherit-blocks");
+            "inherit-replacements", "inherit-blocks");
     }
 
     // ------------------------------------------------------------------------
@@ -302,25 +302,35 @@ public class BeastZoneExecutor extends ExecutorBase {
                     return true;
                 }
 
-                if (zone.getAllReplacedEntityTypes().isEmpty()) {
+                Set<Entry<EntityType, String>> allReplacements = zone.getAllReplacedEntityTypes(true).entrySet();
+                if (allReplacements.isEmpty()) {
                     sender.sendMessage(ChatColor.GOLD + "Zone " + ChatColor.YELLOW + zoneArg +
                                        ChatColor.GOLD + " doesn't replace any mobs.");
                 } else {
                     sender.sendMessage(ChatColor.GOLD + "Loot tables replacing mobs in zone " +
                                        ChatColor.YELLOW + zoneArg +
                                        ChatColor.GOLD + ":");
-                    List<EntityType> sortedTypes = zone.getAllReplacedEntityTypes().stream()
-                        .sorted(Comparator.comparing(EntityType::name))
+                    List<Entry<EntityType, String>> sortedReplacements = allReplacements.stream()
+                        .sorted(Comparator.comparing(e -> e.getKey().name()))
                         .collect(Collectors.toList());
-                    for (EntityType entityType : sortedTypes) {
-                        String lootId = zone.getMobReplacementDropSetId(entityType);
-                        boolean lootTableExists = (BeastMaster.LOOTS.getDropSet(lootId) != null);
-                        ChatColor lootTableColour = (lootTableExists ? ChatColor.YELLOW : ChatColor.RED);
+                    for (Entry<EntityType, String> replacement : sortedReplacements) {
+                        EntityType entityType = replacement.getKey();
+                        String dropsId = replacement.getValue();
+
+                        boolean dropSetExists = (BeastMaster.LOOTS.getDropSet(dropsId) != null);
+                        String dropsDescription = (dropSetExists) ? ChatColor.GREEN + dropsId
+                                                                  : ChatColor.RED + dropsId + ChatColor.WHITE + " (not defined)";
+
+                        Zone definingZone = zone.getMobReplacementDefiningZone(entityType);
+                        String inheritance = (definingZone == zone) ? ""
+                                                                    : ChatColor.WHITE + " inherited from " +
+                                                                      ChatColor.YELLOW + definingZone.getId();
                         sender.sendMessage(ChatColor.YELLOW + entityType.name() + ChatColor.WHITE + " -> " +
-                                           lootTableColour + lootId);
+                                           dropsDescription + inheritance);
                     }
                 }
                 return true;
+
             } else if (args[0].equals("add-block")) {
                 if (args.length != 4) {
                     Commands.invalidArguments(sender, getName() + " add-block <zone-id> <material> <loot-id>");
@@ -390,10 +400,10 @@ public class BeastZoneExecutor extends ExecutorBase {
                     return true;
                 }
 
-                String oldDropsId = zone.getMiningDropsId(material);
+                String oldDropsId = zone.getMiningDropsId(material, false);
                 DropSet drops = BeastMaster.LOOTS.getDropSet(oldDropsId);
                 String dropsDescription = (drops != null) ? drops.getDescription()
-                                                          : ChatColor.RED + oldDropsId + ChatColor.GOLD + " (not defined)";
+                                                          : ChatColor.RED + oldDropsId + ChatColor.WHITE + " (not defined)";
                 if (oldDropsId == null) {
                     sender.sendMessage(ChatColor.RED + "Zone " + zoneArg +
                                        " has no custom mining drops for " + material + "!");
@@ -420,8 +430,7 @@ public class BeastZoneExecutor extends ExecutorBase {
                     return true;
                 }
 
-                Set<Entry<Material, String>> allMiningDrops = zone.getAllMiningDrops();
-
+                Set<Entry<Material, String>> allMiningDrops = zone.getAllMiningDrops(true).entrySet();
                 if (allMiningDrops.isEmpty()) {
                     sender.sendMessage(ChatColor.GOLD + "Zone " + ChatColor.YELLOW + zoneArg +
                                        ChatColor.GOLD + " has no configured block drops.");
@@ -430,18 +439,95 @@ public class BeastZoneExecutor extends ExecutorBase {
                                        ChatColor.YELLOW + zoneArg +
                                        ChatColor.GOLD + ": ");
                     List<Entry<Material, String>> sortedMiningDrops = allMiningDrops.stream()
-                        .sorted(Comparator.comparing(Entry<Material, String>::getKey))
+                        .sorted(Comparator.comparing(e -> e.getKey().name()))
                         .collect(Collectors.toList());
                     for (Entry<Material, String> entry : sortedMiningDrops) {
+
                         Material material = entry.getKey();
                         String dropsId = entry.getValue();
                         DropSet drops = BeastMaster.LOOTS.getDropSet(dropsId);
-                        String dropsDescription = (drops != null) ? ChatColor.YELLOW + dropsId
-                                                                  : ChatColor.RED + dropsId + ChatColor.GOLD + " (not defined)";
-                        sender.sendMessage(ChatColor.WHITE + material.toString() + ": " + dropsDescription);
+                        String dropsDescription = (drops != null) ? ChatColor.GREEN + dropsId
+                                                                  : ChatColor.RED + dropsId + ChatColor.WHITE + " (not defined)";
+
+                        Zone definingZone = zone.getMiningDropsDefiningZone(material);
+                        String inheritance = (definingZone == zone) ? ""
+                                                                    : ChatColor.WHITE + " inherited from " +
+                                                                      ChatColor.YELLOW + definingZone.getId();
+
+                        sender.sendMessage(ChatColor.YELLOW + material.toString() +
+                                           ChatColor.WHITE + " -> " + dropsDescription + inheritance);
                     }
                 }
                 return true;
+
+            } else if (args[0].equals("inherit-replacements")) {
+                if (args.length != 3) {
+                    Commands.invalidArguments(sender, getName() + " inherit-replacements <zone-id> <yes-or-no>");
+                    return true;
+                }
+
+                String zoneArg = args[1];
+                Zone zone = BeastMaster.ZONES.getZone(zoneArg);
+                if (zone == null) {
+                    Commands.errorNull(sender, "zone", zoneArg);
+                    return true;
+                }
+
+                if (zone.isRoot()) {
+                    sender.sendMessage(ChatColor.RED + "Root zones can't inherit mob replacements (they have no parent)!");
+                    return true;
+                }
+
+                String yesNoArg = args[2];
+                Boolean inheritsReplacements = Commands.parseBoolean(sender, yesNoArg, "inherits replacements");
+                if (inheritsReplacements == null) {
+                    return true;
+                }
+
+                zone.setInheritsReplacements(inheritsReplacements);
+                BeastMaster.CONFIG.save();
+                sender.sendMessage(ChatColor.GOLD + "Zone " + ChatColor.YELLOW + zoneArg +
+                                   ChatColor.GOLD + " will now " +
+                                   ChatColor.YELLOW + (inheritsReplacements ? "inherit" : "not inherit") +
+                                   ChatColor.GOLD + " mob replacements from parent zone " +
+                                   ChatColor.YELLOW + zone.getParent().getId() +
+                                   ChatColor.GOLD + ".");
+                return true;
+
+            } else if (args[0].equals("inherit-blocks")) {
+                if (args.length != 3) {
+                    Commands.invalidArguments(sender, getName() + " inherit-blocks <zone-id> <yes-or-no>");
+                    return true;
+                }
+
+                String zoneArg = args[1];
+                Zone zone = BeastMaster.ZONES.getZone(zoneArg);
+                if (zone == null) {
+                    Commands.errorNull(sender, "zone", zoneArg);
+                    return true;
+                }
+
+                if (zone.isRoot()) {
+                    sender.sendMessage(ChatColor.RED + "Root zones can't inherit mining drops (they have no parent)!");
+                    return true;
+                }
+
+                String yesNoArg = args[2];
+                Boolean inheritsBlocks = Commands.parseBoolean(sender, yesNoArg, "inherits blocks");
+                if (inheritsBlocks == null) {
+                    return true;
+                }
+
+                zone.setInheritsBlocks(inheritsBlocks);
+                BeastMaster.CONFIG.save();
+                sender.sendMessage(ChatColor.GOLD + "Zone " + ChatColor.YELLOW + zoneArg +
+                                   ChatColor.GOLD + " will now " +
+                                   ChatColor.YELLOW + (inheritsBlocks ? "inherit" : "not inherit") +
+                                   ChatColor.GOLD + " mining drops from parent zone " +
+                                   ChatColor.YELLOW + zone.getParent().getId() +
+                                   ChatColor.GOLD + ".");
+                return true;
+
             }
         }
 

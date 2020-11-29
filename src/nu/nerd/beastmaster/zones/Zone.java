@@ -3,9 +3,8 @@ package nu.nerd.beastmaster.zones;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.locks.Condition;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
@@ -21,8 +20,8 @@ import nu.nerd.beastmaster.DropSet;
 
 // ----------------------------------------------------------------------------
 /**
- * A type of {@link Condition} that is predicated on only the Location of an
- * event in space.
+ * Defines a hierarchy of 2-D volumes delineated by Zone Specification Language
+ * where specific mining drops and mob replacements apply.
  */
 public class Zone {
     // ------------------------------------------------------------------------
@@ -56,6 +55,8 @@ public class Zone {
         _parent = parent;
         _parent.children().add(this);
         setExpression(expression);
+        _inheritsBlocks = true;
+        _inheritsReplacements = true;
     }
 
     // ------------------------------------------------------------------------
@@ -207,11 +208,11 @@ public class Zone {
     /**
      * Specify whether this Zone inherits mob replacements from its parent Zone.
      *
-     * @param inheritsMobs True if this Zone inherits mob replacements from its
-     *                     parent Zone.
+     * @param inheritsReplacements True if this Zone inherits mob replacements
+     *                             from its parent Zone.
      */
-    public void setInheritsMobs(boolean inheritsMobs) {
-        _inheritsMobs = inheritsMobs;
+    public void setInheritsReplacements(boolean inheritsReplacements) {
+        _inheritsReplacements = inheritsReplacements;
     }
 
     // ------------------------------------------------------------------------
@@ -220,14 +221,14 @@ public class Zone {
      *
      * @return true if this Zone inherits mob replacements from its parent Zone.
      */
-    public boolean getInheritsMobs() {
-        return _inheritsMobs;
+    public boolean getInheritsReplacements() {
+        return _inheritsReplacements;
     }
 
     // ------------------------------------------------------------------------
     /**
      * Set the {@link DropSet} that will be consulted to determine what to drop
-     * when a block is mined when this Condition holds.
+     * when a block is mined where this Zone applies.
      *
      * @param material  the type of the mined block.
      * @param dropSetId the ID of the set of drops to select from. If null,
@@ -247,12 +248,19 @@ public class Zone {
      * Material is mined.
      *
      * @param material the type of the mined block.
+     * @param inherit  if true, mining drops inherited from the parent zone are
+     *                 considered.
      * @return the ID of the {@link DropSet} controlling drops when the
-     *         specified Material is mined, or null if this Condition does not
+     *         specified Material is mined, or null if this Zone does not
      *         override the drops.
      */
-    public String getMiningDropsId(Material material) {
-        return _miningDropsIds.get(material);
+    public String getMiningDropsId(Material material, boolean inherit) {
+        String id = _miningDropsIds.get(material);
+        if (id == null && _parent != null && inherit && _inheritsBlocks) {
+            return _parent.getMiningDropsId(material, inherit);
+        } else {
+            return id;
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -261,60 +269,51 @@ public class Zone {
      * is mined.
      *
      * @param material the type of the mined block.
+     * @param inherit  if true, mining drops inherited from the parent zone are
+     *                 considered.
      * @return the {@link DropSet} controlling drops when the specified Material
-     *         is mined, or null if this Condition does not override the drops.
+     *         is mined, or null if this Zone does not override the drops.
      */
-    public DropSet getMiningDrops(Material material) {
-        String id = getMiningDropsId(material);
-        return (id != null) ? BeastMaster.LOOTS.getDropSet(id) : null;
+    public DropSet getMiningDrops(Material material, boolean inherit) {
+        return BeastMaster.LOOTS.getDropSet(getMiningDropsId(material, inherit));
     }
 
     // ------------------------------------------------------------------------
     /**
-     * Return the set of all entries in the map of Materials to corresponding
-     * mining loot tables.
+     * Return the Zone that defines mining drops for a given block material.
      *
-     * @return the set of all entries in the map of Materials to corresponding
-     *         mining loot tables.
+     * If this Zone defines drops directly, then return this Zone. Otherwise, if
+     * mining drops are inherited, consider ancestor Zones.
+     *
+     * @param material the material of the broken block.
+     * @return the Zone that defines mining drops for the specified block
+     *         material, or null if neither this Zone nor its ancestors define
+     *         such drops.
      */
-    public Set<Entry<Material, String>> getAllMiningDrops() {
-        return _miningDropsIds.entrySet();
+    public Zone getMiningDropsDefiningZone(Material material) {
+        if (_miningDropsIds.get(material) != null) {
+            return this;
+        } else {
+            return (_parent != null && _inheritsBlocks) ? _parent.getMiningDropsDefiningZone(material)
+                                                        : null;
+        }
     }
 
     // ------------------------------------------------------------------------
     /**
-     * Return the set of EntityTypes replaced in this zone.
+     * Return the map of Materials to corresponding mining loot tables.
      *
-     * @return the set of EntityTypes replaced in this zone.
+     * @param inherit if true, mining drops inherited from the parent zone are
+     *                considered.
+     * @return the map of Materials to corresponding mining loot tables.
      */
-    public Set<EntityType> getAllReplacedEntityTypes() {
-        return _mobReplacementDropSetIDs.keySet();
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Return the ID of the DropSet of replacements for newly spawned mobs of
-     * the specified EntityType in this zone.
-     *
-     * @param entityType the EntityType of a newly spawned mob.
-     * @return the ID of the DropSet of replacements for newly spawned mobs of
-     *         the specified EntityType in this zone.
-     */
-    public String getMobReplacementDropSetId(EntityType entityType) {
-        return _mobReplacementDropSetIDs.get(entityType);
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Return the DropSet of replacements for newly spawned mobs of the
-     * specified EntityType in this zone.
-     *
-     * @param entityType the EntityType of a newly spawned mob.
-     * @return the DropSet of replacements for newly spawned mobs of the
-     *         specified EntityType in this zone.
-     */
-    public DropSet getMobReplacementDropSet(EntityType entityType) {
-        return BeastMaster.LOOTS.getDropSet(getMobReplacementDropSetId(entityType));
+    public Map<Material, String> getAllMiningDrops(boolean inherit) {
+        Map<Material, String> drops = new HashMap<>();
+        if (_parent != null && inherit && _inheritsBlocks) {
+            drops.putAll(_parent.getAllMiningDrops(inherit));
+        }
+        drops.putAll(_miningDropsIds);
+        return drops;
     }
 
     // ------------------------------------------------------------------------
@@ -331,6 +330,80 @@ public class Zone {
         } else {
             _mobReplacementDropSetIDs.put(entityType, dropSetId);
         }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the ID of the DropSet of replacements for newly spawned mobs of
+     * the specified EntityType in this zone.
+     *
+     * @param entityType the EntityType of a newly spawned mob.
+     * @param inherit    if true, mob replacements inherited from the parent
+     *                   zone are considered.
+     * @return the ID of the DropSet of replacements for newly spawned mobs of
+     *         the specified EntityType in this zone.
+     */
+    public String getMobReplacementDropSetId(EntityType entityType, boolean inherit) {
+        String id = _mobReplacementDropSetIDs.get(entityType);
+        if (id == null && _parent != null && inherit && _inheritsReplacements) {
+            return _parent.getMobReplacementDropSetId(entityType, inherit);
+        } else {
+            return id;
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the DropSet of replacements for newly spawned mobs of the
+     * specified EntityType in this zone.
+     *
+     * @param entityType the EntityType of a newly spawned mob.
+     * @param inherit    if true, mob replacements inherited from the parent
+     *                   zone are considered.
+     * @return the DropSet of replacements for newly spawned mobs of the
+     *         specified EntityType in this zone.
+     */
+    public DropSet getMobReplacementDropSet(EntityType entityType, boolean inherit) {
+        return BeastMaster.LOOTS.getDropSet(getMobReplacementDropSetId(entityType, inherit));
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the Zone that defines mob replacement for a given EntityType.
+     *
+     * If this Zone defines drops directly, then return this Zone. Otherwise, if
+     * mining drops are inherited, consider ancestor Zones.
+     *
+     * @param entityType the EntityType of a newly spawned mob.
+     * @return the Zone that defines mob replacement for a given EntityType, or
+     *         null if neither this Zone nor its ancestors define such
+     *         replacements.
+     */
+    public Zone getMobReplacementDefiningZone(EntityType entityType) {
+        if (_mobReplacementDropSetIDs.get(entityType) != null) {
+            return this;
+        } else {
+            return (_parent != null && _inheritsBlocks) ? _parent.getMobReplacementDefiningZone(entityType)
+                                                        : null;
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return the map of EntityType to corresponding mob replacement loot table.
+     *
+     * @param inherit if true, mob replacements inherited from the parent zone
+     *                are considered.
+     * @return the map of EntityType to corresponding mob replacement loot
+     *         table.
+     */
+    public Map<EntityType, String> getAllReplacedEntityTypes(boolean inherit) {
+        Map<EntityType, String> replacements = new HashMap<>();
+        if (_parent != null && inherit && _inheritsReplacements) {
+            replacements.putAll(_parent.getAllReplacedEntityTypes(inherit));
+        }
+        replacements.putAll(_mobReplacementDropSetIDs);
+        return replacements;
     }
 
     // ------------------------------------------------------------------------
@@ -365,7 +438,7 @@ public class Zone {
         }
 
         _inheritsBlocks = zoneSection.getBoolean("inherits-blocks");
-        _inheritsMobs = zoneSection.getBoolean("inherits-mobs");
+        _inheritsReplacements = zoneSection.getBoolean("inherits-replacements");
 
         _parent = null;
         _children.clear();
@@ -456,7 +529,7 @@ public class Zone {
         ConfigurationSection zoneSection = parentSection.createSection(getId());
         zoneSection.set("specification", formatExpression(_expression));
         zoneSection.set("inherits-blocks", _inheritsBlocks);
-        zoneSection.set("inherits-mobs", _inheritsMobs);
+        zoneSection.set("inherits-replacements", _inheritsReplacements);
 
         if (_parent != null) {
             zoneSection.set("parent", _parent.getId());
@@ -470,12 +543,12 @@ public class Zone {
 
         ConfigurationSection miningDropsSection = zoneSection.createSection("mining-drops");
         for (Entry<Material, String> entry : _miningDropsIds.entrySet()) {
-            miningDropsSection.set(entry.getKey().toString(), entry.getValue());
+            miningDropsSection.set(entry.getKey().name(), entry.getValue());
         }
 
         ConfigurationSection replacements = zoneSection.createSection("replacements");
-        for (EntityType entityType : _mobReplacementDropSetIDs.keySet()) {
-            replacements.set(entityType.toString(), getMobReplacementDropSetId(entityType));
+        for (Entry<EntityType, String> entry : _mobReplacementDropSetIDs.entrySet()) {
+            replacements.set(entry.getKey().name(), entry.getValue());
         }
     }
 
@@ -502,12 +575,30 @@ public class Zone {
             }
         }
 
+        // Only show parent zone and inheritance for non-root zones.
         if (!isRoot()) {
             s.append(ChatColor.WHITE.toString());
             s.append(" in ");
             s.append(ChatColor.YELLOW.toString());
             // Safe if the root zone's World is not loaded:
             s.append(getRoot().getId());
+
+            if (getInheritsReplacements() || getInheritsBlocks()) {
+                s.append(ChatColor.WHITE.toString());
+                s.append(" inherits ");
+                s.append(ChatColor.YELLOW.toString());
+                if (getInheritsReplacements()) {
+                    s.append("replacements");
+                    if (getInheritsBlocks()) {
+                        s.append(ChatColor.WHITE.toString());
+                        s.append(", ");
+                        s.append(ChatColor.YELLOW.toString());
+                    }
+                }
+                if (getInheritsBlocks()) {
+                    s.append("blocks");
+                }
+            }
 
             s.append(ChatColor.WHITE.toString());
             s.append(": ");
@@ -588,6 +679,6 @@ public class Zone {
     /**
      * True if this Zone inherits mob replacements from its parent Zone.
      */
-    protected boolean _inheritsMobs;
+    protected boolean _inheritsReplacements;
 
 } // class Zone

@@ -19,16 +19,16 @@ public class Commands {
     /**
      * Parse a numerical command argument and return the boxed result of parsing
      * it, or return null if it could not be parsed or was out of range.
-     * 
-     * @param valueArg the command line argument to parse.
-     * @param parse a function that parses valueArg into a value of type T or
-     *        throws NumberFormatException.
-     * @param inRange a predicate that returns true if the parsed number is in
-     *        range.
-     * @param rangeError code to run if the parsed number is out of range.
+     *
+     * @param valueArg    the command line argument to parse.
+     * @param parse       a function that parses valueArg into a value of type T
+     *                    or throws NumberFormatException.
+     * @param inRange     a predicate that returns true if the parsed number is
+     *                    in range.
+     * @param rangeError  code to run if the parsed number is out of range.
      * @param formatError code to run if the argument cannot be parsed as a
-     *        number, such that a NumberFormatException was thrown. If null, use
-     *        run rangeError instead.
+     *                    number, such that a NumberFormatException was thrown.
+     *                    If null, use run rangeError instead.
      * @return the parsed number, or null on error.
      */
     public static <T> T parseNumber(String valueArg,
@@ -57,18 +57,20 @@ public class Commands {
      * an Optional<>, or return an empty Optional<> if the argument was a
      * distinguished value. If there is an error, return null instead of an
      * Optional<>.
-     * 
-     * @param valueArg the command line argument to parse.
+     *
+     * @param valueArg              the command line argument to parse.
      * @param distinguishedValueArg the distinguished value that causes an empty
-     *        Optional<> to be returned.
-     * @param parse a function that parses valueArg into a value of type T or
-     *        throws NumberFormatException.
-     * @param inRange a predicate that returns true if the parsed number is in
-     *        range.
-     * @param rangeError code to run if the parsed number is out of range.
-     * @param formatError code to run if the argument cannot be parsed as a
-     *        number, such that a NumberFormatException was thrown. If null, use
-     *        run rangeError instead.
+     *                              Optional<> to be returned.
+     * @param parse                 a function that parses valueArg into a value
+     *                              of type T or throws NumberFormatException.
+     * @param inRange               a predicate that returns true if the parsed
+     *                              number is in range.
+     * @param rangeError            code to run if the parsed number is out of
+     *                              range.
+     * @param formatError           code to run if the argument cannot be parsed
+     *                              as a number, such that a
+     *                              NumberFormatException was thrown. If null,
+     *                              use run rangeError instead.
      * @return an Optional<T> containing the parsed number, or Optional<T>
      *         containing null if the valueArg is the distinguishedValueArg;
      *         return null (not an Optional<>) on error.
@@ -94,7 +96,7 @@ public class Commands {
      * The generics in here are to convince the compiler that T can be a Double.
      * Double::parseDouble doesn't cut it as a method reference when passed to
      * parseDefaulted().
-     * 
+     *
      * @param s the string.
      * @return a boxed double.
      * @throws NumberFormatException
@@ -111,7 +113,7 @@ public class Commands {
      * The generics in here are to convince the compiler that T can be a Float.
      * Float::parseFloat doesn't cut it as a method reference when passed to
      * parseDefaulted().
-     * 
+     *
      * @param s the string.
      * @return a boxed double.
      * @throws NumberFormatException
@@ -128,7 +130,7 @@ public class Commands {
      * The generics in here are to convince the compiler that T can be an
      * Integer. Integer::parseInt doesn't cut it as a method reference when
      * passed to parseDefaulted().
-     * 
+     *
      * @param s the string.
      * @return a boxed int.
      * @throws NumberFormatException
@@ -141,15 +143,15 @@ public class Commands {
     // ------------------------------------------------------------------------
     /**
      * Parse a Material, specified as either a case-insensitive name.
-     * 
-     * @param sender the ComamndSender.
+     *
+     * @param sender      the ComamndSender.
      * @param materialArg the command argument containing the material name.
      * @return the Material
      */
     public static Material parseMaterial(CommandSender sender, String materialArg) {
         Material material = Material.getMaterial(materialArg.toUpperCase());
         if (material == null) {
-            sender.sendMessage(ChatColor.RED + materialArg + " is not a valid material name.");
+            sender.sendMessage(ChatColor.RED + "\"" + materialArg + "\" is not a valid material name.");
         }
         return material;
     }
@@ -158,11 +160,11 @@ public class Commands {
     /**
      * Case insensitively parse a command argument as a boolean value (t/f,
      * true/false, y/n, yes/no, on/off).
-     * 
-     * @param sender the CommandSender.
-     * @param arg the command argument to parse as boolean.
+     *
+     * @param sender  the CommandSender.
+     * @param arg     the command argument to parse as boolean.
      * @param argName a name identifying the purpose of the argument, to be
-     *        shown in error messages.
+     *                shown in error messages.
      * @return true or false, respectively, for values that are unambiguously
      *         true or false, and null for everything else.
      */
@@ -173,7 +175,7 @@ public class Commands {
         } else if (FALSE_STRINGS.contains(lowerArg)) {
             return false;
         } else {
-            sender.sendMessage(ChatColor.RED + arg + " is not a valid " + argName + " argument.");
+            sender.sendMessage(ChatColor.RED + "\"" + arg + "\" is not a valid " + argName + " argument.");
             sender.sendMessage(ChatColor.RED + "Valid values are: yes/no/y/n/true/false/t/f/on/off");
             return null;
         }
@@ -183,9 +185,9 @@ public class Commands {
     /**
      * Return a predicate that is true if its argument is greater than or min
      * and less than or equal to max.
-     * 
+     *
      * If a bound is specified as null, it is not enforced.
-     * 
+     *
      * @param min the optional lower bound.
      * @param max the optional upper bound.
      * @return the predicate.
@@ -199,9 +201,9 @@ public class Commands {
     /**
      * Return a predicate that is true if its argument is greater than or min
      * and less than or equal to max.
-     * 
+     *
      * If a bound is specified as null, it is not enforced.
-     * 
+     *
      * @param min the optional lower bound.
      * @param max the optional upper bound.
      * @return the predicate.
@@ -215,10 +217,10 @@ public class Commands {
     /**
      * Show the standard error message for when a thing is null and should not
      * be.
-     * 
-     * @param sender the command sender.
+     *
+     * @param sender           the command sender.
      * @param thingDescription a human-readable description of the thing.
-     * @param thingId the ID used to look up the thing.
+     * @param thingId          the ID used to look up the thing.
      */
     public static void errorNull(CommandSender sender, String thingDescription, String thingId) {
         sender.sendMessage(ChatColor.RED + "There is no " + thingDescription + " named \"" + thingId + "\"!");
@@ -228,10 +230,10 @@ public class Commands {
     /**
      * Show the standard error message for when a thing is not null, but should
      * be.
-     * 
-     * @param sender the command sender.
+     *
+     * @param sender           the command sender.
      * @param thingDescription a human-readable description of the thing.
-     * @param thingId the ID used to look up the thing.
+     * @param thingId          the ID used to look up the thing.
      */
     public static void errorNotNull(CommandSender sender, String thingDescription, String thingId) {
         String vowels = "aeiou";
@@ -243,7 +245,7 @@ public class Commands {
     // ------------------------------------------------------------------------
     /**
      * Show the standard message for invalid arguments.
-     * 
+     *
      * @param usage the correct usage of the command, omitting the leading "/".
      * @return true if the argument count was correct.
      */

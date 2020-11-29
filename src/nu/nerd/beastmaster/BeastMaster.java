@@ -122,7 +122,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
     // ------------------------------------------------------------------------
     /**
      * Log a debug message.
-     * 
+     *
      * @param message the message.
      */
     public void debug(String message) {
@@ -182,7 +182,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
     // ------------------------------------------------------------------------
     /**
      * Return the MobType of the specified entity.
-     * 
+     *
      * @param entity the entity.
      * @return the MobType, or null if the entity is not living, or has no
      *         custom MobType. Note that generally vanilla mobs do have one even
@@ -199,12 +199,12 @@ public class BeastMaster extends JavaPlugin implements Listener {
     // ------------------------------------------------------------------------
     /**
      * Spawn a mob of the specified custom mob type.
-     * 
-     * @param loc the Location where the mob spawns.
-     * @param mobType the custom mob type.
+     *
+     * @param loc         the Location where the mob spawns.
+     * @param mobType     the custom mob type.
      * @param checkCanFit if true, the available space at the location is
-     *        checked to see if it can accommodate the mob, and if not, the mob
-     *        is removed.
+     *                    checked to see if it can accommodate the mob, and if
+     *                    not, the mob is removed.
      * @return the new LivingEntity, or null if it could not fit or an invalid
      *         type was specified.
      */
@@ -243,12 +243,12 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * Spawn multiple mobs according to a mob property that is either a DropSet
      * ID or MobType ID.
-     * 
-     * @param loc the location to spawn the mob(s).
+     *
+     * @param loc         the location to spawn the mob(s).
      * @param lootOrMobId the DropSet or MobType ID.
      * @param checkCanFit whether to check if the mobs can fit.
-     * @param results DropResults recording whether vanilla drops happened.
-     * @param trigger the trigger string to log for logged {@link Drop}s.
+     * @param results     DropResults recording whether vanilla drops happened.
+     * @param trigger     the trigger string to log for logged {@link Drop}s.
      * @return a list of the spawned mobs.
      */
     public List<LivingEntity> spawnMultipleMobs(Location loc, String lootOrMobId, boolean checkCanFit, DropResults results, String trigger) {
@@ -289,10 +289,10 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * If a player breaks an objective block, do treasure drops and stop that
      * the particle effects.
-     * 
+     *
      * Handle players breaking ore blocks by consulting the most specific loot
      * table for the applicable Zone/Condition and block type.
-     * 
+     *
      * Don't drop special items for player-placed blocks.
      */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -327,13 +327,13 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * When a mob spawns, perform zone-appropriate replacement with custom mob
      * types.
-     * 
+     *
      * Mobs that are not replaced are customised according to their EntityType.
-     * 
+     *
      * All mobs that go through this process end up with persistent metadata
      * value "mob-type" set to the ID of their MobType. Note, however, that
      * CUSTOM spawns from other plugins will not have the "mob-type" metadata.
-     * 
+     *
      * All mobs are tagged with their spawn reason as metadata. I would like to
      * tag slimes that spawn by splitting according to whether the original
      * slime came from a spawner, but there's no easy way to find the parent
@@ -371,7 +371,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
             Location loc = event.getLocation();
             Zone zone = ZONES.getZone(loc);
             if (zone != null) {
-                DropSet replacement = zone.getMobReplacementDropSet(entity.getType());
+                DropSet replacement = zone.getMobReplacementDropSet(entity.getType(), true);
                 if (replacement != null) {
                     Drop drop = replacement.chooseOneDrop(true);
                     switch (drop.getDropType()) {
@@ -385,7 +385,8 @@ public class BeastMaster extends JavaPlugin implements Listener {
                     case ITEM:
                         entity.remove();
                         DropResults results = new DropResults();
-                        drop.generate(results, "Mob replacement", null, entity.getLocation());
+                        drop.generate(results, "Mob replacement of " + entity.getType() + " in " + zone.getId(),
+                                      null, entity.getLocation());
                         break;
                     }
                 } else {
@@ -512,7 +513,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * When a mob is damaged, play the `projectile-hurt-sound`, or the
      * `melee-hurt-sound` for all other damage types.
-     * 
+     *
      * Note: onEntityDamange() is called after onEntityDamageByEntity().
      */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -656,7 +657,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * Tag mobs hurt by players with the time stamp of the damage event to
      * facilitate custom dropped XP.
-     * 
+     *
      * Also, apply attack-potions {@link PotionSet} to the victim, where
      * configured on the attacker.
      */
@@ -910,9 +911,9 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * Handle block break in a zone where that block type should drop custom
      * drops.
-     * 
+     *
      * Only survival mode players should trigger drops.
-     * 
+     *
      * @param event the BlockBreakEvent.
      * @param block the broken block.
      */
@@ -927,7 +928,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
             return;
         }
 
-        DropSet drops = zone.getMiningDrops(block.getType());
+        DropSet drops = zone.getMiningDrops(block.getType(), true);
         if (drops == null) {
             return;
         }
@@ -946,7 +947,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * In the plains biome in the nether environment, replace the configured
      * percentage of Skeletons with WitherSkeletons.
-     * 
+     *
      * This code dates back to PvE Rev 19 when vanilla Minecraft separated
      * wither skeletons from regular skeltons, breaking wither spawning in
      * nether plains biomes. It will eventually be obsoleted by more general
@@ -973,11 +974,11 @@ public class BeastMaster extends JavaPlugin implements Listener {
     // ------------------------------------------------------------------------
     /**
      * Return true if the specified entity can fit at its spawn location.
-     * 
+     *
      * This check is important when replacing mobs, because the replacement may
      * be larger than the mob it replaced and may suffocate. Mobs that don't fit
      * are simply removed.
-     * 
+     *
      * @return true if the specified entity can fit at its spawn location.
      */
     protected boolean canFit(Entity entity) {
@@ -1008,7 +1009,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
     // ------------------------------------------------------------------------
     /**
      * Add the specified CommandExecutor and set it as its own TabCompleter.
-     * 
+     *
      * @param executor the CommandExecutor.
      */
     protected void addCommandExecutor(ExecutorBase executor) {
@@ -1052,7 +1053,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
      * If true, and if _spawningMobType is non-null, then a size check is made
      * on mobs with SpawnReason.CUSTOM and those that don't fit the available
      * space at their spawn location are removed.
-     * 
+     *
      * The size check is there to gracefully handle replacement of naturally
      * spawned mobs with different size mobs. However, when spawnMob() is called
      * because of the /beast-mob spawn or /beast-mob statue commands, the size
@@ -1064,7 +1065,7 @@ public class BeastMaster extends JavaPlugin implements Listener {
     /**
      * The number of {@link #spawnMob(Location, MobType, boolean)} calls
      * currently on the call stack.
-     * 
+     *
      * {@link #spawnMob(Location, MobType, boolean)} triggers a
      * {@link CreatureSpawnEvent} that can result in more
      * {@link #spawnMob(Location, MobType, boolean)} calls due to mob
