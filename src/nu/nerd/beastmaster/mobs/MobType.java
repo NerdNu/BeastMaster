@@ -44,7 +44,7 @@ public class MobType {
     /**
      * Return the set of property names that are immutable for predefined Mob
      * Types.
-     * 
+     *
      * @return the set of property names that are immutable for predefined Mob
      *         Types.
      */
@@ -63,7 +63,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Constructor for custom mob types.
-     * 
+     *
      * @param id the programmatic ID of this mob type.
      * @param id the programmatic ID of the parent mob type.
      */
@@ -75,8 +75,8 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * General purpose constructor.
-     * 
-     * @param id the programmatic ID of this mob type.
+     *
+     * @param id         the programmatic ID of this mob type.
      * @param entityType the EntityType of the underlying vanilla mob.
      * @param predefined true if this mob type can be changed.
      */
@@ -91,7 +91,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Return the programmatic ID of this mob type.
-     * 
+     *
      * @return the programmatic ID of this mob type.
      */
     public String getId() {
@@ -101,10 +101,10 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Return true if this mob type is predefined.
-     * 
+     *
      * Predefined mob types correspond to the vanilla mob types. They cannot
      * have their "entity-type" or "parent-type" property changed.
-     * 
+     *
      * @return true if this mob type is predefined.
      */
     public boolean isPredefined() {
@@ -114,7 +114,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Set the parent mob type ID.
-     * 
+     *
      * @param parentTypeId the parent type ID.
      */
     public void setParentTypeId(String parentTypeId) {
@@ -124,7 +124,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Return the parent mob type ID, or null if unset.
-     * 
+     *
      * @return the parent mob type ID, or null if unset.
      */
     public String getParentTypeId() {
@@ -134,7 +134,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Return the parent mob type, or null if unset or invalid.
-     * 
+     *
      * @return the parent mob type, or null if unset or invalid.
      */
     public MobType getParentType() {
@@ -144,7 +144,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Set the drops loot table ID.
-     * 
+     *
      * @param dropsId the drops loot table ID.
      */
     public void setDropsId(String dropsId) {
@@ -154,7 +154,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Return the ID of the DropSet consulted when this mob dies.
-     * 
+     *
      * @return the ID of the DropSet consulted when this mob dies.
      */
     public String getDropsId() {
@@ -164,7 +164,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Return the DropSet consulted when this mob dies.
-     * 
+     *
      * @return the DropSet consulted when this mob dies.
      */
     public DropSet getDrops() {
@@ -176,9 +176,10 @@ public class MobType {
     /**
      * Return true if this mob is friendly to (will not target, will not
      * intentionally damage) a specified other MobType.
-     * 
+     *
      * @param targetMobType the MobType of the other mob potentially being
-     *        targeted. If null, then this MobType is hostile to it by default.
+     *                      targeted. If null, then this MobType is hostile to
+     *                      it by default.
      * @return true if this mob should not target or damage potential targets of
      *         the specified MobType.
      */
@@ -213,7 +214,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Return a collection of all properties that this mob type can override.
-     * 
+     *
      * @return a collection of all properties that this mob type can override.
      */
     public Collection<MobProperty> getAllProperties() {
@@ -223,7 +224,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Return the set of all property IDs.
-     * 
+     *
      * @return the set of all property IDs.
      */
     public static Set<String> getAllPropertyIds() {
@@ -234,7 +235,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Return a list of all property IDs, sorted case insensitively.
-     * 
+     *
      * @return a list of all property IDs, sorted case insensitively.
      */
     public static List<String> getSortedPropertyIds() {
@@ -244,10 +245,10 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Return the property of this mob type with the specified ID.
-     * 
+     *
      * Note that this method does not consider property values inherited from
      * the parent type.
-     * 
+     *
      * @param id the property ID.
      * @return the property.
      */
@@ -260,10 +261,10 @@ public class MobType {
      * Return the property with the specified ID derived by considering
      * inherited property values as well as the properties overridden by this
      * mob type.
-     * 
+     *
      * Properties that have a null value ({@link MobProperty#getValue()}) do not
      * override whatever was inherited from the ancestor mob types.
-     * 
+     *
      * @param id the property ID.
      * @return the {@link MobProperty} instance that has a non-null value
      *         belonging to the most-derived mob type in the hierarchy, or the
@@ -298,7 +299,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Load this mob type from the specified section.
-     * 
+     *
      * @param section the configuration file section.
      * @return true if successful.
      */
@@ -321,9 +322,9 @@ public class MobType {
     /**
      * Save this mob type as a child of the specified parent configuration
      * section.
-     * 
+     *
      * @param parentSection the parent configuration section.
-     * @param logger the logger.
+     * @param logger        the logger.
      */
     public void save(ConfigurationSection parentSection, Logger logger) {
         ConfigurationSection section = parentSection.createSection(getId());
@@ -336,7 +337,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Configure a mob according to this mob type.
-     * 
+     *
      * @param mob the mob.
      */
     public void configureMob(LivingEntity mob) {
@@ -350,10 +351,10 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Return a short string description of this type.
-     * 
+     *
      * This is a short (single line) description with just the basic details.
      * Immutable (built-in) mob types have their ID shown in green.
-     * 
+     *
      * @return a short string description of this type.
      */
     public String getShortDescription() {
@@ -375,7 +376,7 @@ public class MobType {
     /**
      * This method is called to check that the mob type is mutable before an
      * attempt is made to change its properties.
-     * 
+     *
      * @throws AssertionException if the mob type is not mutable.
      */
     protected void checkMutable() {
@@ -387,7 +388,7 @@ public class MobType {
     // ------------------------------------------------------------------------
     /**
      * Add the specified property.
-     * 
+     *
      * @param property the property.
      */
     protected void addProperty(MobProperty property) {
@@ -570,6 +571,9 @@ public class MobType {
         addProperty(new MobProperty("attack-potions", DataType.POTION_SET, (mob, logger) -> {
         }));
 
+        addProperty(new MobProperty("hurt-potions", DataType.POTION_SET, (mob, logger) -> {
+        }));
+
         // Equipment ----------------------------------------------------------
 
         addProperty(new MobProperty("helmet", DataType.LOOT_OR_ITEM,
@@ -712,13 +716,13 @@ public class MobType {
     /**
      * Return an equipment ItemStack to apply to a mob in
      * {@link #configureMob(LivingEntity)}.
-     * 
+     *
      * Mob properties corresponding to equipment items (helmet, chest-plate,
      * leggings, boots, main-hand, off-hand) are Strings that are interpreted as
      * either the ID of a {@link DropSet} or the ID of an {@link Item}. This
      * method attempts to look up the DropSet first, and if one with the
      * specified ID doesn't exist, the ID is interpreted as that of an Item.
-     * 
+     *
      * @param id the ID of the DropSet or Item to generate.
      * @return the equipment as an ItemStack, or null if the equipment should
      *         not change (be default).
@@ -760,7 +764,7 @@ public class MobType {
 
     /**
      * Map from property ID to {@link MobProperty} instance.
-     * 
+     *
      * `/beast-mob info` enumerates properties in the order they were added by
      * {@link #addProperties()}.
      */

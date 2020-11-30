@@ -597,6 +597,13 @@ public class BeastMaster extends JavaPlugin implements Listener {
                 Bukkit.getScheduler().runTaskLater(this, () -> hurtSound.play(mobLocation), 1);
             }
 
+            // Impart hurt-potions effects on the mob when hurt.
+            String potionSetId = (String) mobType.getDerivedProperty("hurt-potions").getValue();
+            PotionSet potionSet = POTIONS.getPotionSet(potionSetId);
+            if (potionSet != null) {
+                potionSet.apply(damagedLiving);
+            }
+
             // Don't teleport if the damage is low to allow for slight falls.
             if (event.getFinalDamage() <= 3.0) {
                 return;
