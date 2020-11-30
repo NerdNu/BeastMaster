@@ -661,12 +661,11 @@ public class BeastZoneExecutor extends ExecutorBase {
             int errorColumn = ex.getToken().getColumn();
             int errorStart = errorColumn - 1;
             int errorEnd = Math.min(spec.length(), errorStart + ex.getToken().getLength());
-            sender.sendMessage(ChatColor.RED + "Error at column " + errorColumn + ": " + ex.getMessage() + ".");
-            sender.sendMessage(ChatColor.RED + "In specification: " +
-                               ChatColor.WHITE + spec.substring(0, errorStart) +
-                               ChatColor.RED + ">" +
-                               spec.substring(errorStart, errorEnd) +
-                               ChatColor.RED + "<" +
+            sender.sendMessage(ChatColor.RED + "Error at column " + errorColumn + ": " + ex.getMessage() + ":");
+            sender.sendMessage(ChatColor.WHITE + spec.substring(0, errorStart) +
+                               ChatColor.GOLD + "►" +
+                               ChatColor.DARK_RED + spec.substring(errorStart, errorEnd) +
+                               ChatColor.GOLD + "◄" +
                                ChatColor.WHITE + spec.substring(errorEnd));
             return null;
         }

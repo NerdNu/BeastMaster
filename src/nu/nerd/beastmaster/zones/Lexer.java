@@ -13,7 +13,7 @@ public class Lexer {
     // ------------------------------------------------------------------------
     /**
      * Main program for informal testing.
-     * 
+     *
      * @param args
      */
     public static void main(String[] args) {
@@ -28,14 +28,14 @@ public class Lexer {
         test("\""); // error
         test(".5"); // error
         test("0.123");
-        test("12.3456");
+        test("+12.3456");
         test("world(\"world\")");
     }
 
     // ------------------------------------------------------------------------
     /**
      * Print all tokens in the input.
-     * 
+     *
      * @param input the input.
      */
     static Lexer test(String input) {
@@ -59,7 +59,7 @@ public class Lexer {
     // ------------------------------------------------------------------------
     /**
      * Constructor.
-     * 
+     *
      * @param spec the Zone specification.
      */
     public Lexer(String spec) {
@@ -69,7 +69,7 @@ public class Lexer {
     // ------------------------------------------------------------------------
     /**
      * Constructor.
-     * 
+     *
      * @param spec the Zone specification.
      */
     public Lexer(Reader reader) {
@@ -79,7 +79,7 @@ public class Lexer {
     // ------------------------------------------------------------------------
     /**
      * Return the most recently read token.
-     * 
+     *
      * @return the most recently read token.
      */
     public Token current() {
@@ -89,7 +89,7 @@ public class Lexer {
     // ------------------------------------------------------------------------
     /**
      * Advance to the next token in the input and return it.
-     * 
+     *
      * @return the next Token.
      */
     public Token next() {
@@ -100,7 +100,7 @@ public class Lexer {
     // ------------------------------------------------------------------------
     /**
      * Return the next character of input, or -1 for END.
-     * 
+     *
      * @return the next character of input or -1 for END.
      * @throws ParseError on I/O error.
      */
@@ -117,7 +117,7 @@ public class Lexer {
     // ------------------------------------------------------------------------
     /**
      * Un-read at most one character of input.
-     * 
+     *
      * @param c the character to return to the input stream.
      */
     protected void unreadChar(int c) {
@@ -135,7 +135,7 @@ public class Lexer {
     // ------------------------------------------------------------------------
     /**
      * Read the next token from input.
-     * 
+     *
      * @return the next TokenType.
      * @throws ParseError on I/O error.
      */
@@ -193,11 +193,7 @@ public class Lexer {
             int startColumn = _column;
             StringBuilder sb = new StringBuilder();
             boolean signed = false;
-            if (c == '+') {
-                // Don't append '+'.
-                c = nextChar();
-                signed = true;
-            } else if (c == '-') {
+            if (c == '+' || c == '-') {
                 sb.append((char) c);
                 c = nextChar();
                 signed = true;
@@ -205,7 +201,7 @@ public class Lexer {
 
             // Guard against more than one sign character.
             if (signed && !Character.isDigit(c)) {
-                throw new ParseError("number has more than one sign indicator", new Token(Token.Type.INVALID, _column));
+                throw new ParseError("unexpected number sign indicator", new Token(Token.Type.INVALID, _column));
             }
 
             // Parse integer.

@@ -13,7 +13,9 @@ import nu.nerd.beastmaster.zones.nodes.XorExpression;
 
 // ----------------------------------------------------------------------------
 /**
- * Parser for Zone Specifications.
+ * Recursive descent parser for Zone Specifications.
+ *
+ * The EBNF syntax of the Zone Specification Language is as follows:
  *
  * <pre>
  * desc     ::= or-expr EOF
@@ -21,7 +23,7 @@ import nu.nerd.beastmaster.zones.nodes.XorExpression;
  * xor-expr ::= and-expr ( '^' and-expr )*
  * and-expr ::= primary ( '&' primary )*
  * primary  ::= pred | '(' or-expr ')' | '!' primary
- * pred     ::= ident '(' arg ( ',' arg )* ')'
+ * pred     ::= ident '(' ( arg ( ',' arg )* )? ')'
  * arg      ::= number | string
  * </pre>
  */
@@ -40,7 +42,11 @@ public class Parser {
     }
 
     // ------------------------------------------------------------------------
-
+    /**
+     * Parse the specified input for informal testing.
+     *
+     * @param input the Zone Specification to parse.
+     */
     static void test(String input) {
         Lexer lexer = null;
         try {
@@ -84,9 +90,18 @@ public class Parser {
 
     // ------------------------------------------------------------------------
     /**
+     * Return an {@link Expression} representing a Zone Specification in the
+     * parsed input.
+     *
+     * The EBNF syntax rule describing the part of the Zone Specification parsed
+     * by this method is:
+     *
      * <pre>
      * desc     ::= or-expr EOF
      * </pre>
+     *
+     * @return an {@link Expression} representing a Zone Specification in the
+     *         parsed input.
      */
     public Expression parse() {
         Expression expr = orExpr();
@@ -96,6 +111,9 @@ public class Parser {
 
     // ------------------------------------------------------------------------
     /**
+     * The EBNF syntax rule describing the part of the Zone Specification parsed
+     * by this method is:
+     *
      * <pre>
      * or-expr  ::= xor-expr ( '|' xor-expr )*
      * </pre>
@@ -115,6 +133,9 @@ public class Parser {
 
     // ------------------------------------------------------------------------
     /**
+     * The EBNF syntax rule describing the part of the Zone Specification parsed
+     * by this method is:
+     *
      * <pre>
      * xor-expr ::= and-expr ( '^' and-expr )*
      * </pre>
@@ -134,6 +155,9 @@ public class Parser {
 
     // ------------------------------------------------------------------------
     /**
+     * The EBNF syntax rule describing the part of the Zone Specification parsed
+     * by this method is:
+     *
      * <pre>
      * and-expr ::= primary ( '&' primary )*
      * </pre>
@@ -153,6 +177,9 @@ public class Parser {
 
     // ------------------------------------------------------------------------
     /**
+     * The EBNF syntax rule describing the part of the Zone Specification parsed
+     * by this method is:
+     *
      * <pre>
      * primary  ::= pred | '(' or-expr ')' | '!' primary
      * </pre>
@@ -170,20 +197,22 @@ public class Parser {
             not.addChild(primary());
             return not;
         } else {
-            throw new ParseError("expecting parentheses, ! or a predicate, but got " +
-                                 _lexer.current().getType(),
+            throw new ParseError("expecting parentheses, ! or a predicate, but got " + _lexer.current(),
                 _lexer.current());
         }
     }
 
     // ------------------------------------------------------------------------
     /**
-     * Allow zero-arg predicates.
+     * The EBNF syntax rule describing the part of the Zone Specification parsed
+     * by this method is:
      *
      * <pre>
      * pred     ::= ident '(' ( arg ( ',' arg )* )? ')'
      * arg      ::= number | string
      * </pre>
+     *
+     * Note that predicates can take zero or more arguments.
      */
     Expression predicate() {
         Token ident = expect(Token.Type.IDENT);
@@ -214,9 +243,12 @@ public class Parser {
             // an error ID to allow us to show suggestions for predicate names.
             throw new ParseError("unknown predicate \"" + predExpr.getIdent() + "\"", ident);
         }
-        if (zonePred.getParameters().size() != argTokens.size()) {
-            throw new ParseError("expecting " + zonePred.getParameters().size() +
-                                 " predicate arguments but got " + argTokens.size(),
+
+        int expectedArgCount = zonePred.getParameters().size();
+        if (expectedArgCount != argTokens.size()) {
+            String plural = (expectedArgCount == 1) ? "" : "s";
+            throw new ParseError("expecting " + expectedArgCount +
+                                 " predicate argument" + plural + " but got " + argTokens.size(),
                 rParen);
         }
         zonePred.getParameters().validateTypes(argTokens);
@@ -298,7 +330,7 @@ public class Parser {
         } else {
             Token current = _lexer.current();
             if (current.getType() == Token.Type.END) {
-                throw new ParseError("unexpected end of input (forgot to close yor parentheses?)", current);
+                throw new ParseError("unexpected end of input (forgot to close your parentheses?)", current);
             }
 
             throw new ParseError("got " + current + " when expecting " + tokenType.asExpected(), current);
