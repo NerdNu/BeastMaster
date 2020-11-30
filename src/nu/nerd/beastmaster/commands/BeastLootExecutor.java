@@ -32,8 +32,8 @@ public class BeastLootExecutor extends ExecutorBase {
     public BeastLootExecutor() {
         super("beast-loot", "help", "add", "remove", "info", "list",
               "add-drop", "remove-drop", "list-drops",
-              "single", "objective", "logged", "restricted", "sound", "xp",
-              "invulnerable", "glowing", "direct");
+              "single", "objective", "logged", "restricted", "always-fits",
+              "sound", "xp", "invulnerable", "glowing", "direct");
     }
 
     // ------------------------------------------------------------------------
@@ -403,6 +403,38 @@ public class BeastLootExecutor extends ExecutorBase {
                 drop.setRestricted(restricted);
                 String change = (restricted ? "Restricted" : "Unrestricted");
                 sender.sendMessage(ChatColor.GOLD + change + " dropping of " + drop.getLongDescription());
+                BeastMaster.CONFIG.save();
+                return true;
+
+            } else if (args[0].equals("always-fits")) {
+                if (args.length != 4) {
+                    Commands.invalidArguments(sender, getName() + " always-fits <loot-id> <id> <yes-or-no>");
+                    return true;
+                }
+
+                String lootIdArg = args[1];
+                DropSet dropSet = BeastMaster.LOOTS.getDropSet(lootIdArg);
+                if (dropSet == null) {
+                    Commands.errorNull(sender, "loot table", lootIdArg);
+                    return true;
+                }
+
+                String dropIdArg = args[2];
+                Drop drop = dropSet.getDrop(dropIdArg);
+                if (drop == null) {
+                    Commands.errorNull(sender, "drop of " + lootIdArg, dropIdArg);
+                    return true;
+                }
+
+                String yesNoArg = args[3];
+                Boolean alwaysFits = Commands.parseBoolean(sender, yesNoArg, "always-fits");
+                if (alwaysFits == null) {
+                    return true;
+                }
+
+                drop.setAlwaysFits(alwaysFits);
+                String check = (alwaysFits ? "Don't check" : "Check");
+                sender.sendMessage(ChatColor.GOLD + check + " for sufficient space before dropping " + drop.getLongDescription());
                 BeastMaster.CONFIG.save();
                 return true;
 

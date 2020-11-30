@@ -164,7 +164,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
             LivingEntity livingEntity = null;
             if (mobType != null) {
                 for (int i = 0; i < randomAmount(); ++i) {
-                    livingEntity = BeastMaster.PLUGIN.spawnMob(loc, mobType, true);
+                    livingEntity = BeastMaster.PLUGIN.spawnMob(loc, mobType, !alwaysFits());
                     if (livingEntity != null) {
                         ++spawnCount;
                         livingEntity.setInvulnerable(isInvulnerable());
@@ -344,6 +344,33 @@ public class Drop implements Cloneable, Comparable<Drop> {
      */
     public boolean isRestricted() {
         return _restricted;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Specify whether the drop is allowed to occur regardless of whether there
+     * is sufficient space to spawn it.
+     *
+     * TODO: currently the dropping implementation may not be as stringent as
+     * "restricted".
+     *
+     * @param alwaysFits if true, the drop is considered to always fit the
+     *                   available space.
+     */
+    public void setAlwaysFits(boolean alwaysFits) {
+        _alwaysFits = alwaysFits;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if the drop is allowed to occur regardless of whether there
+     * is sufficient space to spawn it.
+     *
+     * @return true if the drop is allowed to occur regardless of whether there
+     *         is sufficient space to spawn it.
+     */
+    public boolean alwaysFits() {
+        return _alwaysFits;
     }
 
     // ------------------------------------------------------------------------
@@ -546,7 +573,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
      * The description does not include a full explanation of the dropped item
      * or mob; only its ID.
      *
-     * Example: 10% [1,3] ITEM steak (logged)
+     * Example: 10% [1,3] ITEM steak logged
      *
      * @return a short description of this drop, suitable for display in-line.
      */
@@ -568,6 +595,10 @@ public class Drop implements Cloneable, Comparable<Drop> {
 
         if (_restricted) {
             s.append(ChatColor.LIGHT_PURPLE).append(" restricted");
+        }
+
+        if (_alwaysFits) {
+            s.append(ChatColor.YELLOW).append(" always-fits");
         }
 
         if (_logged) {
@@ -605,6 +636,10 @@ public class Drop implements Cloneable, Comparable<Drop> {
 
         if (_restricted) {
             s.append(ChatColor.LIGHT_PURPLE).append(" restricted");
+        }
+
+        if (_alwaysFits) {
+            s.append(ChatColor.YELLOW).append(" always-fits");
         }
 
         if (_logged) {
@@ -746,6 +781,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
         _id = section.getName();
         // Need to default restricted to true for ITEMs in old configs.
         _restricted = section.getBoolean("restricted", _dropType == DropType.ITEM);
+        _alwaysFits = section.getBoolean("always-fits");
         _logged = section.getBoolean("logged");
         _dropChance = section.getDouble("chance", 0.0);
         _min = section.getInt("min", 1);
@@ -779,6 +815,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
         ConfigurationSection section = parentSection.createSection(_id);
         section.set("type", _dropType.name());
         section.set("restricted", _restricted);
+        section.set("always-fits", _alwaysFits);
         section.set("logged", _logged);
         section.set("chance", _dropChance);
         section.set("min", _min);
@@ -928,6 +965,12 @@ public class Drop implements Cloneable, Comparable<Drop> {
      * The custom item or mob ID.
      */
     protected String _id;
+
+    /**
+     * If true, the drop is allowed to occur regardless of whether there is
+     * sufficient space to spawn it.
+     */
+    protected boolean _alwaysFits;
 
     /**
      * If true (the default) then the player must be involved in precipitating
