@@ -26,7 +26,7 @@ import nu.nerd.beastmaster.zones.Zone;
 // ----------------------------------------------------------------------------
 /**
  * Represents a possible item drop.
- * 
+ *
  * TODO: spawn between min and max mobs (if configured), between minR and maxR
  * and minY and maxY, and in accordance with floating (allows feet off the
  * ground). floating false and minY > highest block (at most 255) => surface.
@@ -34,7 +34,7 @@ import nu.nerd.beastmaster.zones.Zone;
 public class Drop implements Cloneable, Comparable<Drop> {
     /**
      * This represents a 100% chance of dropping nothing.
-     * 
+     *
      * It's used to avoid returning null when selecting a single entry in an
      * empty single-mode DropSet (or a DropSet that is effectively empty after
      * filtering out restricted Drops.
@@ -51,13 +51,13 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Constructor.
-     * 
-     * @param dropType the type of the drop.
-     * @param id the ID of the item or mob; ignored for NOTHING and DEFAULT
-     *        drops.
+     *
+     * @param dropType   the type of the drop.
+     * @param id         the ID of the item or mob; ignored for NOTHING and
+     *                   DEFAULT drops.
      * @param dropChance the drop chance in the range [0.0, 1.0].
-     * @param min the minimum number of drops.
-     * @param max the maximum number of drops.
+     * @param min        the minimum number of drops.
+     * @param max        the maximum number of drops.
      */
     public Drop(DropType dropType, String id, double dropChance, int min, int max) {
         _dropType = dropType;
@@ -85,7 +85,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return a random integer between getMinAmount() and getMaxAmount().
-     * 
+     *
      * @return a random integer between getMinAmount() and getMaxAmount().
      */
     public int randomAmount() {
@@ -96,7 +96,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     /**
      * Make a new random-sized ItemStack for this drop, which must be of type
      * {@link DropType#ITEM}.
-     * 
+     *
      * @return the ItemStack.
      * @throws AssertionError if this is not an item Drop.
      */
@@ -121,15 +121,15 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Do all actions associated with this drop, including effects and XP.
-     * 
+     *
      * If the drop is an item that spawns an objective, then check that the
      * objective can be spawned before dropping the item.
-     * 
+     *
      * @param results records some details about what was dropped.
      * @param trigger a description of the event that triggered the drop, for
-     *        logging.
-     * @param player the player that triggered the drop, or null.
-     * @param loc the Location of the drop.
+     *                logging.
+     * @param player  the player that triggered the drop, or null.
+     * @param loc     the Location of the drop.
      * @return true if the default vanilla drop should be dropped.
      */
     public void generate(DropResults results, String trigger, Player player, Location loc) {
@@ -202,7 +202,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Play the sound of this drop at the specified Location.
-     * 
+     *
      * @param loc the location.
      */
     public void playSound(Location loc) {
@@ -214,7 +214,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Drop the experience associated with this drop at the specified Location.
-     * 
+     *
      * @param loc the location.
      */
     public void dropExperience(Location loc) {
@@ -227,7 +227,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Set the type of the drop.
-     * 
+     *
      * @param dropType the type of the drop.
      */
     public void setDropType(DropType dropType) {
@@ -237,7 +237,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return the type of the drop.
-     * 
+     *
      * @return the type of the drop.
      */
     public DropType getDropType() {
@@ -247,7 +247,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Set the probability of this drop, in the range [0.0,1.0].
-     * 
+     *
      * @param dropChance the drop chance in the range [0.0, 1.0].
      */
     public void setDropChance(double dropChance) {
@@ -257,7 +257,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return the probability of this drop, in the range [0.0,1.0].
-     * 
+     *
      * @return the probability of this drop, in the range [0.0,1.0].
      */
     public double getDropChance() {
@@ -267,7 +267,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Set the minimum number of items or mobs dropped together.
-     * 
+     *
      * @param min the minimum number of items or mobs dropped together.
      */
     public void setMinAmount(int min) {
@@ -277,7 +277,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return the minimum number of items or mobs dropped together.
-     * 
+     *
      * @return the minimum number of items or mobs dropped together.
      */
     public int getMinAmount() {
@@ -287,7 +287,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Set the maximum number of items or mobs dropped together.
-     * 
+     *
      * @param max the maximum number of items or mobs dropped together.
      */
     public void setMaxAmount(int max) {
@@ -297,7 +297,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return the maximum number of items or mobs dropped together.
-     * 
+     *
      * @return the maximum number of items or mobs dropped together.
      */
     public int getMaxAmount() {
@@ -307,7 +307,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return the item or mob ID of this drop.
-     * 
+     *
      * @return the item or mob ID of this drop.
      */
     public String getId() {
@@ -317,14 +317,14 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Set this drop restricted.
-     * 
+     *
      * Restricted drops require player involvement to occur, usually in the case
      * of a mob being killed. If the mob dies of natural causes, the restricted
      * drops are filtered out.
-     * 
+     *
      * Only item drops can be set restricted. Item drops are set restricted by
      * default upon creation.
-     * 
+     *
      * @param restricted whether this drop is restricted.
      */
     public void setRestricted(boolean restricted) {
@@ -335,11 +335,11 @@ public class Drop implements Cloneable, Comparable<Drop> {
     /**
      * Return true if the player must be involved in precipitating the drop for
      * it to occur.
-     * 
+     *
      * Otherwise, the drop is filtered out. Only item drops can be restricted.
      * Item drops are set restricted upon creation. All other drops default to
      * false for restricted.
-     * 
+     *
      * @return true if the player must be the cause of the drop for it to occur.
      */
     public boolean isRestricted() {
@@ -349,7 +349,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Specify whether this drop should be logged to console when dropped.
-     * 
+     *
      * @param logged if true, log this drop.
      */
     public void setLogged(boolean logged) {
@@ -359,7 +359,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return true if this drop is logged to console when dropped.
-     * 
+     *
      * @return true if this drop is logged to console when dropped.
      */
     public boolean isLogged() {
@@ -370,7 +370,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     /**
      * Set the type ID of the objective associated with this drop, or null if
      * this drop does not denote an objective.
-     * 
+     *
      * @param objectiveType the type ID of the objective.
      */
     public void setObjectiveType(String objectiveType) {
@@ -381,7 +381,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     /**
      * Return the type ID of the objective associated with this drop, or null if
      * this drop does not denote an objective.
-     * 
+     *
      * @return the type ID of the objective associated with this drop, or null
      *         if this drop does not denote an objective.
      */
@@ -392,7 +392,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Set the experience to drop.
-     * 
+     *
      * @param experience the amount of XP; use 0 to not drop an orb.
      */
     public void setExperience(int experience) {
@@ -402,7 +402,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return the experience to drop, or 0 to not drop an XP orb.
-     * 
+     *
      * @return the experience to drop, or 0 to not drop an XP orb.
      */
     public int getExperience() {
@@ -412,10 +412,10 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Set the sound to play when this drop drops.
-     * 
+     *
      * Note that a sound can be played even when the {@link Item} has a null
      * ItemStack.
-     * 
+     *
      * @param sound the sound to play, or null to play nothing.
      */
     public void setSound(Sound sound) {
@@ -425,7 +425,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return the sound to play, or null for silence.
-     * 
+     *
      * @return the sound to play, or null for silence.
      */
     public Sound getSound() {
@@ -435,9 +435,9 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Set the sound volume.
-     * 
+     *
      * @param soundVolume sets the range of the sound to approximately
-     *        (15*soundVolume) blocks.
+     *                    (15*soundVolume) blocks.
      */
 
     public void setSoundVolume(float soundVolume) {
@@ -448,7 +448,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     /**
      * Return the volume of the sound, which is approximately the range of the
      * sound in blocks divided by 15.
-     * 
+     *
      * @return the volume of the sound, which is approximately the range of the
      *         sound in blocks divided by 15.
      */
@@ -459,7 +459,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Set the pitch of the sound.
-     * 
+     *
      * @param soundPitch the pitch (playback speed) in the range [0.5,2.0].
      */
     public void setSoundPitch(float soundPitch) {
@@ -469,7 +469,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return the sound pitch (playback speed) in the range [0.5,2.0].
-     * 
+     *
      * @return the sound pitch (playback speed) in the range [0.5,2.0].
      */
     public float getSoundPitch() {
@@ -479,7 +479,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Specify whether this drop is invulnerable.
-     * 
+     *
      * @param invulnerable if true, the drop is invulnerable.
      */
     public void setInvulnerable(boolean invulnerable) {
@@ -489,7 +489,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return true if this drop is invulnerable.
-     * 
+     *
      * @return true if this drop is invulnerable.
      */
     public boolean isInvulnerable() {
@@ -499,7 +499,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Specify whether this drop is glowing.
-     * 
+     *
      * @param glowing if true, the drop is glowing.
      */
     public void setGlowing(boolean glowing) {
@@ -509,7 +509,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return true if this drop is glowing.
-     * 
+     *
      * @return true if this drop is glowing.
      */
     public boolean isGlowing() {
@@ -521,7 +521,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
      * Specify whether this drop should be put into the player's inventory.
      *
      * @param direct if true, the drop is directly put into the player's
-     *        inventory.
+     *               inventory.
      */
     public void setDirect(boolean direct) {
         _directToInventory = direct;
@@ -542,12 +542,12 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return a short description of this drop, suitable for display in-line.
-     * 
+     *
      * The description does not include a full explanation of the dropped item
      * or mob; only its ID.
      *
      * Example: 10% [1,3] ITEM steak (logged)
-     * 
+     *
      * @return a short description of this drop, suitable for display in-line.
      */
     public String getShortDescription() {
@@ -567,11 +567,11 @@ public class Drop implements Cloneable, Comparable<Drop> {
         }
 
         if (_restricted) {
-            s.append(ChatColor.RED).append(" restricted");
+            s.append(ChatColor.LIGHT_PURPLE).append(" restricted");
         }
 
         if (_logged) {
-            s.append(ChatColor.GOLD).append(" (logged)");
+            s.append(ChatColor.GOLD).append(" logged");
         }
         return s.toString();
     }
@@ -579,7 +579,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return a longer description of the drop ID, item, probability and count.
-     * 
+     *
      * @return a longer description of the drop.
      */
     public String getLongDescription() {
@@ -604,11 +604,11 @@ public class Drop implements Cloneable, Comparable<Drop> {
         }
 
         if (_restricted) {
-            s.append(ChatColor.RED).append(" restricted");
+            s.append(ChatColor.LIGHT_PURPLE).append(" restricted");
         }
 
         if (_logged) {
-            s.append(ChatColor.GOLD).append(" (logged)");
+            s.append(ChatColor.GOLD).append(" logged");
         }
 
         if (getExperience() > 0 || getSound() != null || isInvulnerable() || isGlowing() || isDirect()) {
@@ -643,7 +643,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return a description of the chance of this drop.
-     * 
+     *
      * @return a description of the chance of this drop.
      */
     public String getChanceDescription() {
@@ -661,7 +661,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     /**
      * Return a string representing the number of items or mobs dropped, for
      * presentation to the user.
-     * 
+     *
      * @return a string representing the number of items or mobs dropped, for
      *         presentation to the user.
      */
@@ -681,7 +681,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return a description of the sound of this drop.
-     * 
+     *
      * @return a description of the sound of this drop.
      */
     public String getSoundDescription() {
@@ -703,7 +703,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return the long description of this drop.
-     * 
+     *
      * @return the long description of this drop.
      */
     @Override
@@ -714,7 +714,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Return a clone of this Drop.
-     * 
+     *
      * @return a clone of this Drop.
      */
     @Override
@@ -731,9 +731,9 @@ public class Drop implements Cloneable, Comparable<Drop> {
     /**
      * Load a custom drop from a configuration file section named after the
      * custom item ID.
-     * 
+     *
      * @param section the configuration section.
-     * @param logger the logger.
+     * @param logger  the logger.
      */
     public boolean load(ConfigurationSection section, Logger logger) {
         try {
@@ -771,9 +771,9 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * Save this drop as a child of the specified parent configuration section.
-     * 
+     *
      * @param parentSection the parent configuration section.
-     * @param logger the logger.
+     * @param logger        the logger.
      */
     public void save(ConfigurationSection parentSection, Logger logger) {
         ConfigurationSection section = parentSection.createSection(_id);
@@ -796,7 +796,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * @see java.lang.Comparable#compareTo(java.lang.Object)
-     * 
+     *
      *      Compare by DropType enum ordinal first, then case-insensitive ID.
      */
     @Override
@@ -812,8 +812,8 @@ public class Drop implements Cloneable, Comparable<Drop> {
     /**
      * Drops an item naturally near a player with a short delay.
      *
-     * @param loc the location.
-     * @param player the player.
+     * @param loc       the location.
+     * @param player    the player.
      * @param itemStack the item.
      */
     protected void doItemDrop(Location loc, Player player, ItemStack itemStack) {
@@ -837,9 +837,9 @@ public class Drop implements Cloneable, Comparable<Drop> {
     /**
      * Return true if the specified Block can accomodate an item drop without
      * warping it up to the stratosphere.
-     * 
+     *
      * We only check for some of the more common non-full-block materials.
-     * 
+     *
      * @param block the Block.
      * @return true if the block is passable or not a "full" block.
      */
@@ -850,7 +850,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     // ------------------------------------------------------------------------
     /**
      * If this drop has an accompanying objective, try to spawn it.
-     * 
+     *
      * @param item the generated dropped item.
      * @return true if the drop is not an objective drop, or if it is and an
      *         objective was successfully spawned. (Return false if an objective
@@ -883,12 +883,12 @@ public class Drop implements Cloneable, Comparable<Drop> {
     /**
      * Substitute formatting parameters into the text of dropped items that are
      * for objectives.
-     * 
+     *
      * Text substitution is performed on lore and book page text. The
      * substitution parameters are:
-     * 
+     *
      * @param item the dropped item.
-     * @param loc the location to format into text.
+     * @param loc  the location to format into text.
      */
     protected void substituteObjectiveText(ItemStack item, Location loc) {
         ItemMeta meta = item.getItemMeta();
@@ -932,7 +932,7 @@ public class Drop implements Cloneable, Comparable<Drop> {
     /**
      * If true (the default) then the player must be involved in precipitating
      * the drop for it to occur.
-     * 
+     *
      * Otherwise, the drop is filtered out. Only item drops can be restricted.
      * Item drops are set restricted upon creation. All other drops default to
      * false for restricted.

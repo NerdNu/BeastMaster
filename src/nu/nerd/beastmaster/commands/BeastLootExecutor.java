@@ -32,7 +32,7 @@ public class BeastLootExecutor extends ExecutorBase {
     public BeastLootExecutor() {
         super("beast-loot", "help", "add", "remove", "info", "list",
               "add-drop", "remove-drop", "list-drops",
-              "single", "objective", "logged", "sound", "xp",
+              "single", "objective", "logged", "restricted", "sound", "xp",
               "invulnerable", "glowing", "direct");
     }
 
@@ -119,8 +119,8 @@ public class BeastLootExecutor extends ExecutorBase {
                 ArrayList<DropSet> sortedDropSets = new ArrayList<>(BeastMaster.LOOTS.getDropSets());
                 sortedDropSets.sort((s1, s2) -> s1.getId().compareTo(s2.getId()));
                 sender.sendMessage(sortedDropSets.stream()
-                .map((dropSet) -> ChatColor.YELLOW + dropSet.getId())
-                .collect(Collectors.joining(ChatColor.WHITE + ", ")));
+                    .map((dropSet) -> ChatColor.YELLOW + dropSet.getId())
+                    .collect(Collectors.joining(ChatColor.WHITE + ", ")));
                 return true;
 
             } else if (args[0].equals("add-drop")) {
@@ -141,7 +141,7 @@ public class BeastLootExecutor extends ExecutorBase {
                     sender.sendMessage(ChatColor.RED + dropTypeArg + " is not a valid drop type.");
                     sender.sendMessage(ChatColor.GOLD + "Drop types: " +
                                        Util.alternateColours(Stream.of(DropType.values()).map(t -> t.toString().toLowerCase())
-                                       .collect(Collectors.toList()), ChatColor.GRAY + " ", ChatColor.WHITE, ChatColor.YELLOW));
+                                           .collect(Collectors.toList()), ChatColor.GRAY + " ", ChatColor.WHITE, ChatColor.YELLOW));
                     return true;
                 }
 
@@ -167,7 +167,7 @@ public class BeastLootExecutor extends ExecutorBase {
                 Double chance = Commands.parseNumber(chanceArg, Commands::parseDouble,
                                                      x -> x >= 0.0 && x <= 100.0,
                                                      () -> sender
-                                                     .sendMessage(ChatColor.RED + "The chance must be a percentage in the range 0 through 100!"),
+                                                         .sendMessage(ChatColor.RED + "The chance must be a percentage in the range 0 through 100!"),
                                                      null);
                 if (chance == null) {
                     return true;
@@ -497,7 +497,7 @@ public class BeastLootExecutor extends ExecutorBase {
                 Integer newXp = Commands.parseNumber(xpArg, Commands::parseInt,
                                                      (x) -> (x >= 0),
                                                      () -> sender
-                                                     .sendMessage(ChatColor.RED + "The amount of experience must be a non-negative integer."),
+                                                         .sendMessage(ChatColor.RED + "The amount of experience must be a non-negative integer."),
                                                      null);
                 if (newXp == null) {
                     return true;
@@ -618,16 +618,18 @@ public class BeastLootExecutor extends ExecutorBase {
     // ------------------------------------------------------------------------
     /**
      * Handle commands that set properties of a {@link DropSet}.
-     * 
-     * @param sender the command sender.
-     * @param args the command arguments after /beast-loot.
-     * @param expectedCommandArg the subcommand name.
-     * @param propertyName the human-readable name of the property for messages.
-     * @param inRange a predicate that should return true if the value is valid.
+     *
+     * @param sender                the command sender.
+     * @param args                  the command arguments after /beast-loot.
+     * @param expectedCommandArg    the subcommand name.
+     * @param propertyName          the human-readable name of the property for
+     *                              messages.
+     * @param inRange               a predicate that should return true if the
+     *                              value is valid.
      * @param valueCheckDescription the description of valid values shown in
-     *        error messages.
-     * @param setMethod a reference to the DropSet instance method used to set
-     *        the property.
+     *                              error messages.
+     * @param setMethod             a reference to the DropSet instance method
+     *                              used to set the property.
      * @return the boolean return value of the onCommand() handler.
      */
     protected boolean handleDropSetSetProperty(CommandSender sender, String[] args,
