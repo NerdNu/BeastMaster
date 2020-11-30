@@ -25,6 +25,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
@@ -367,10 +368,11 @@ public class BeastMaster extends JavaPlugin implements Listener {
         case VILLAGE_DEFENSE:
         case SILVERFISH_BLOCK:
         case ENDER_PEARL:
+        case SPAWNER:
             // Vanilla spawns.
             Location loc = event.getLocation();
             Zone zone = ZONES.getZone(loc);
-            if (zone != null) {
+            if (zone != null && (zone.replacesSpawnerMobs() || event.getSpawnReason() != SpawnReason.SPAWNER)) {
                 DropSet replacement = zone.getMobReplacementDropSet(entity.getType(), true);
                 if (replacement != null) {
                     Drop drop = replacement.chooseOneDrop(true);

@@ -43,7 +43,7 @@ public class BeastZoneExecutor extends ExecutorBase {
             "add", "remove", "parent", "spec", "list", "move-child", "get",
             "replace-mob", "list-replacements",
             "add-block", "remove-block", "list-blocks",
-            "inherit-replacements", "inherit-blocks");
+            "inherit-replacements", "inherit-blocks", "replaces-spawner-mobs");
     }
 
     // ------------------------------------------------------------------------
@@ -585,6 +585,32 @@ public class BeastZoneExecutor extends ExecutorBase {
                                    ChatColor.GOLD + ".");
                 return true;
 
+            } else if (args[0].equals("replaces-spawner-mobs")) {
+                if (args.length != 3) {
+                    Commands.invalidArguments(sender, getName() + " replaces-spawner-mobs <zone-id> <yes-or-no>");
+                    return true;
+                }
+
+                String zoneArg = args[1];
+                Zone zone = BeastMaster.ZONES.getZone(zoneArg);
+                if (zone == null) {
+                    Commands.errorNull(sender, "zone", zoneArg);
+                    return true;
+                }
+
+                String yesNoArg = args[2];
+                Boolean replacesSpawnerMobs = Commands.parseBoolean(sender, yesNoArg, "replaces spawner mobs");
+                if (replacesSpawnerMobs == null) {
+                    return true;
+                }
+
+                zone.setReplacesSpawnerMobs(replacesSpawnerMobs);
+                BeastMaster.CONFIG.save();
+                sender.sendMessage(ChatColor.GOLD + "Zone " + ChatColor.YELLOW + zoneArg +
+                                   ChatColor.GOLD + " will now " +
+                                   ChatColor.YELLOW + (replacesSpawnerMobs ? "replace" : "not replace") +
+                                   ChatColor.GOLD + " mobs spawned by spawner blocks.");
+                return true;
             }
         }
 

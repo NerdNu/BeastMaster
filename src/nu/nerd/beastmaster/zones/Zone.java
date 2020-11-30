@@ -408,6 +408,27 @@ public class Zone {
 
     // ------------------------------------------------------------------------
     /**
+     * Specify whether this Zone replaces mobs spawned by spawner blocks.
+     *
+     * @param replacesSpawnerMobs true if this Zone replaces mobs spawned by
+     *                            spawner blocks.
+     */
+    public void setReplacesSpawnerMobs(boolean replacesSpawnerMobs) {
+        _replacesSpawnerMobs = replacesSpawnerMobs;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return true if this Zone replaces mobs spawned by spawner blocks.
+     *
+     * @return true if this Zone replaces mobs spawned by spawner blocks.
+     */
+    public boolean replacesSpawnerMobs() {
+        return _replacesSpawnerMobs;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Load the properties of this Zone from the specified configuration
      * section, whose name is the Zone ID.
      *
@@ -439,6 +460,7 @@ public class Zone {
 
         _inheritsBlocks = zoneSection.getBoolean("inherits-blocks");
         _inheritsReplacements = zoneSection.getBoolean("inherits-replacements");
+        _replacesSpawnerMobs = zoneSection.getBoolean("replaces-spawner-mobs");
 
         _parent = null;
         _children.clear();
@@ -530,6 +552,7 @@ public class Zone {
         zoneSection.set("specification", formatExpression(_expression));
         zoneSection.set("inherits-blocks", _inheritsBlocks);
         zoneSection.set("inherits-replacements", _inheritsReplacements);
+        zoneSection.set("replaces-spawner-mobs", _replacesSpawnerMobs);
 
         if (_parent != null) {
             zoneSection.set("parent", _parent.getId());
@@ -598,6 +621,13 @@ public class Zone {
                 if (getInheritsBlocks()) {
                     s.append("blocks");
                 }
+            }
+
+            if (_replacesSpawnerMobs) {
+                s.append(ChatColor.WHITE.toString());
+                s.append(" includes");
+                s.append(ChatColor.YELLOW.toString());
+                s.append(" spawners");
             }
 
             s.append(ChatColor.WHITE.toString());
@@ -680,5 +710,10 @@ public class Zone {
      * True if this Zone inherits mob replacements from its parent Zone.
      */
     protected boolean _inheritsReplacements;
+
+    /**
+     * True if this Zone replaces mobs spawned by spawner blocks.
+     */
+    protected boolean _replacesSpawnerMobs;
 
 } // class Zone
