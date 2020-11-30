@@ -40,7 +40,7 @@ public class BeastZoneExecutor extends ExecutorBase {
      */
     public BeastZoneExecutor() {
         super("beast-zone", "help", "language",
-            "add", "remove", "parent", "spec", "list", "get",
+            "add", "remove", "parent", "spec", "list", "move-child", "get",
             "replace-mob", "list-replacements",
             "add-block", "remove-block", "list-blocks",
             "inherit-replacements", "inherit-blocks");
@@ -241,6 +241,56 @@ public class BeastZoneExecutor extends ExecutorBase {
                         sender.sendMessage(zone.getDescription());
                     }
                 }
+                return true;
+
+            } else if (args[0].equals("move-child")) {
+                if (args.length != 4) {
+                    Commands.invalidArguments(sender, getName() + " move-child <zone-id> <from-pos> <to-pos>");
+                    return true;
+                }
+
+                String zoneArg = args[1];
+                Zone zone = BeastMaster.ZONES.getZone(zoneArg);
+                if (zone == null) {
+                    Commands.errorNull(sender, "zone", zoneArg);
+                    return true;
+                }
+
+                int childCount = zone.children().size();
+                if (childCount == 0) {
+                    sender.sendMessage(ChatColor.RED + "Zone " + zone.getId() + " has no children to reorder!");
+                    return true;
+                } else if (childCount == 1) {
+                    sender.sendMessage(ChatColor.RED + "Zone " + zone.getId() + " only has a single child!");
+                    return true;
+                }
+
+                String fromArg = args[2];
+                Integer fromPos = parseChildZonePosition(sender, zone, "\"from\"", fromArg);
+                if (fromPos == null) {
+                    return true;
+                }
+
+                String toArg = args[3];
+                Integer toPos = parseChildZonePosition(sender, zone, "\"to\"", toArg);
+                if (toPos == null) {
+                    return true;
+                }
+
+                if (fromPos.equals(toPos)) {
+                    sender.sendMessage(ChatColor.RED + "The \"from\" and \"to\" positions are the same; nothing to do!");
+                    return true;
+                }
+
+                Zone movedZone = zone.children().remove(fromPos - 1);
+                zone.children().add(toPos - 1, movedZone);
+                BeastMaster.CONFIG.save();
+
+                sender.sendMessage(ChatColor.GOLD + "Zone " + ChatColor.YELLOW + movedZone.getId() +
+                                   ChatColor.GOLD + ", child of " + ChatColor.YELLOW + zone.getId() +
+                                   ChatColor.GOLD + ", was moved from position " + ChatColor.YELLOW + fromPos +
+                                   ChatColor.GOLD + " to position " + ChatColor.YELLOW + toPos +
+                                   ChatColor.GOLD + ".");
                 return true;
 
             } else if (args[0].equals("get")) {
@@ -640,6 +690,49 @@ public class BeastZoneExecutor extends ExecutorBase {
         }
         return;
     } // onCommandGet
+
+    // ------------------------------------------------------------------------
+    /**
+     * Parse a command argument representing the numerical position of a child
+     * zone in the list of a zone's children.
+     *
+     * Position arguments are 1-based, and must be integers in the range 1 to
+     * the number of children of the zone, or the special values "first" and
+     * "last", respectively signifying 1 and the number of child zones.
+     *
+     * @param sender the CommandSender.
+     * @param zone   the Zone.
+     * @param role   a description of the role of the argument as it is used by
+     *               the command, for error messages.
+     * @param arg    the argument to be parsed.
+     * @return the 1-based position of the child in the list of children, or
+     *         null on error.
+     */
+    protected Integer parseChildZonePosition(CommandSender sender, Zone zone, String role, String arg) {
+        if (arg.equalsIgnoreCase("first")) {
+            return 1;
+        } else if (arg.equalsIgnoreCase("last")) {
+            return zone.children().size();
+        } else {
+            int childCount = zone.children().size();
+            try {
+                Integer position = Integer.parseInt(arg);
+                if (position < 1) {
+                    sender.sendMessage(ChatColor.RED + "The " + role + " position must be greater than or equal to 1!");
+                    return null;
+                } else if (position > childCount) {
+                    sender.sendMessage(ChatColor.RED + "The " + role + " position must be less than or equal to " + childCount + "!");
+                    return null;
+                } else {
+                    return position;
+                }
+            } catch (NumberFormatException ex) {
+                sender.sendMessage(ChatColor.RED + "The " + role + " position must be an integer between 1 and " + childCount
+                                   + ", inclusive, or the word \"first\" signifying 1, or \"last\" signifying " + childCount + "!");
+                return null;
+            }
+        }
+    }
 
     // ------------------------------------------------------------------------
     /**
