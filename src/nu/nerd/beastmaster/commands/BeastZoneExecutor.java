@@ -105,13 +105,15 @@ public class BeastZoneExecutor extends ExecutorBase {
                 }
 
                 Expression expression = parseZoneSpecification(sender, specArg);
-                if (expression != null) {
-                    zone = new Zone(zoneArg, parent, expression);
-                    BeastMaster.ZONES.addZone(zone);
-                    BeastMaster.CONFIG.save();
-                    sender.sendMessage(ChatColor.GOLD + "Added zone " + zone.getDescription() +
-                                       ChatColor.GOLD + ".");
+                if (expression == null) {
+                    return true;
                 }
+
+                zone = new Zone(zoneArg, parent, expression);
+                BeastMaster.ZONES.addZone(zone);
+                BeastMaster.CONFIG.save();
+                sender.sendMessage(ChatColor.GOLD + "Added zone " + zone.getDescription() +
+                                   ChatColor.GOLD + ".");
 
                 return true;
 
@@ -199,16 +201,18 @@ public class BeastZoneExecutor extends ExecutorBase {
                 }
 
                 Expression expression = parseZoneSpecification(sender, specArg);
-                if (expression != null) {
-                    String oldSpecification = zone.getSpecification();
-                    zone.setExpression(expression);
-                    BeastMaster.CONFIG.save();
-                    sender.sendMessage(ChatColor.GOLD + "Redefined zone " + zone.getDescription() +
-                                       ChatColor.GOLD + ".");
-                    sender.sendMessage(ChatColor.GOLD + "The old specification was " +
-                                       ChatColor.WHITE + oldSpecification +
-                                       ChatColor.GOLD + ".");
+                if (expression == null) {
+                    return true;
                 }
+
+                String oldSpecification = zone.getSpecification();
+                zone.setExpression(expression);
+                BeastMaster.CONFIG.save();
+                sender.sendMessage(ChatColor.GOLD + "Redefined zone " + zone.getDescription() +
+                                   ChatColor.GOLD + ".");
+                sender.sendMessage(ChatColor.GOLD + "The old specification was " +
+                                   ChatColor.WHITE + oldSpecification +
+                                   ChatColor.GOLD + ".");
                 return true;
 
             } else if (args[0].equals("list")) {
@@ -451,20 +455,23 @@ public class BeastZoneExecutor extends ExecutorBase {
                 }
 
                 String oldDropsId = zone.getMiningDropsId(material, false);
-                DropSet drops = BeastMaster.LOOTS.getDropSet(oldDropsId);
-                String dropsDescription = (drops != null) ? drops.getDescription()
-                                                          : ChatColor.RED + oldDropsId + ChatColor.WHITE + " (not defined)";
                 if (oldDropsId == null) {
                     sender.sendMessage(ChatColor.RED + "Zone " + zoneArg +
                                        " has no custom mining drops for " + material + "!");
-                } else {
-                    sender.sendMessage(ChatColor.GOLD + "When " + ChatColor.YELLOW + material +
-                                       ChatColor.GOLD + " is broken in zone " + ChatColor.YELLOW + zoneArg +
-                                       ChatColor.GOLD + " loot will no longer drop from table " + dropsDescription +
-                                       ChatColor.GOLD + ".");
+                    return true;
                 }
+
                 zone.setMiningDropsId(material, null);
                 BeastMaster.CONFIG.save();
+
+                DropSet drops = BeastMaster.LOOTS.getDropSet(oldDropsId);
+                String dropsDescription = (drops != null) ? drops.getDescription()
+                                                          : ChatColor.RED + oldDropsId + ChatColor.WHITE + " (not defined)";
+                sender.sendMessage(ChatColor.GOLD + "When " + ChatColor.YELLOW + material +
+                                   ChatColor.GOLD + " is broken in zone " + ChatColor.YELLOW + zoneArg +
+                                   ChatColor.GOLD + " loot will no longer drop from table " + dropsDescription +
+                                   ChatColor.GOLD + ".");
+
                 return true;
 
             } else if (args[0].equals("list-blocks")) {
