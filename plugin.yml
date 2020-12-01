@@ -70,6 +70,7 @@ commands:
       §e/<command> parent <zone-id> <parent-id>§f - Change the parent of an existing zone.
       §e/<command> spec <zone-id> <specification>§f - Change the Zone Specification of an existing zone.
       §e/<command> list [ <parent-id> ]§f - List all root zones, or list only the zones with the given parent, if specified.
+      §e/<command> move-child <zone-id> <from-pos> <to-pos>§f - Move one child of the specified zone from the list position <from-pos> to position <to-pos>, preserving the relative ordering of all other children. Position arguments can be specified as numbers, from 1 to the number of children, or the word "first" as a synonym for "1" and "last" to signify the number of child zones.
       §e/<command> get (here | there | <world> <x> <y> <z>)§f - Get the zone information where the player is, where the player is looking, or at specified coordinates.
       §e/<command> replace-mob <zone-id> <entity-type> <loot-id>§f - Set the loot table that defines replacement of newly spawned mobs of the specified entity type in this zone. Use "none" as the loot table to disable replacement of a mob.
       §e/<command> list-replacements <zone-id>§f - List the loot tables responsible for defining mob replacements in the specified zone.
@@ -78,6 +79,7 @@ commands:
       §e/<command> list-blocks <zone-id>§f - List all block types in the zone that drop special loot, and their corresponding loot tables.
       §e/<command> inherit-replacements <zone-id> <yes-or-no>§f - Specify whether the zone inherits custom mob replacements from its parent zone.
       §e/<command> inherit-blocks <zone-id> <yes-or-no>§f - Specify whether the zone inherits custom block drops from its parent zone.
+      §e/<command> replaces-spawner-mobs <zone-id> <yes-or-no>§f - Specify whether the zone replaces mobs spawned by spawner blocks.
       §6See: §b§nhttps://github.com/NerdNu/BeastMaster/wiki/Command-Reference#zone-commands
 
   beast-item:
@@ -124,6 +126,7 @@ commands:
       §e/<command> logged <loot-id> <id> <yes-or-no>§f - Enables or disables console logging of this item or mob drop.
       §e/<command> objective <loot-id> <item-id> (<obj-id>|none)§f - Signify that this drop causes an objective to spawn, or not if the objective ID is "none". Only item drops can trigger an objective.
       §e/<command> restricted <loot-id> <id> <yes-or-no>§f - Specifies whether an item drop requires player involvement to happen. Only item drops can be restricted. Restricted drops only occur when a player kills a mob; not when it dies of natural causes.
+      §e/<command> always-fits <loot-id> <id> <yes-or-no>§f - Specifies whether a drop is spawned regardless of available space (when always-fits is true).
       §e/<command> sound <loot-id> <id> <sound> §f[§e<range> <pitch>§f] - Signify that this item or mob drop causes a sound to play. <sound> is a sound name from the Bukkit API or "none". <range> is the range of the sound in blocks. <pitch> is playback speed, from 0.5 to 2.0. <range> and <pitch> can be omitted, in which case they default to 15.0 and 1.0, respectively.
       §e/<command> xp <loot-id> <id> <xp>§f - Signify that this item or mob drop will be accompanied by a specified amount of XP, or 0 to suppress the XP. NOTE: This option does not affect XP from vanilla default drops.
       §6Truthy arguments such as §e<yes-or-no>§6 are case insensitive and can be one of yes/no/y/n/true/false/t/f/on/off.
