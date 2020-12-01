@@ -674,35 +674,47 @@ public class BeastMaster extends JavaPlugin implements Listener {
     protected void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         Entity damagedEntity = event.getEntity();
         LivingEntity attackingMob = null;
+        Player attackingPlayer = null;
 
         if (event.getDamager() instanceof Player) {
-            Player attacker = (Player) event.getDamager();
-            EntityMeta.api().set(damagedEntity, this, DAMAGED_BY_PLAYER_NAME, attacker.getName());
+            attackingPlayer = (Player) event.getDamager();
+            EntityMeta.api().set(damagedEntity, this, DAMAGED_BY_PLAYER_NAME, attackingPlayer.getName());
             EntityMeta.api().set(damagedEntity, this, DAMAGED_BY_PLAYER_TIME, damagedEntity.getWorld().getFullTime());
         } else if (event.getDamager() instanceof LivingEntity) {
             attackingMob = (LivingEntity) event.getDamager();
         } else if (event.getDamager() instanceof Projectile) {
             Projectile projectile = (Projectile) event.getDamager();
             if (projectile.getShooter() instanceof Player) {
-                Player attacker = (Player) projectile.getShooter();
-                EntityMeta.api().set(damagedEntity, this, DAMAGED_BY_PLAYER_NAME, attacker.getName());
+                attackingPlayer = (Player) projectile.getShooter();
+                EntityMeta.api().set(damagedEntity, this, DAMAGED_BY_PLAYER_NAME, attackingPlayer.getName());
                 EntityMeta.api().set(damagedEntity, this, DAMAGED_BY_PLAYER_TIME, damagedEntity.getWorld().getFullTime());
             } else if (projectile.getShooter() instanceof LivingEntity) {
                 attackingMob = (LivingEntity) projectile.getShooter();
             }
         }
 
+        // Should damaged mobs immediately switch target to the damager?
+        MobType damagedMobType = getMobType(damagedEntity);
+        if (damagedMobType != null && damagedEntity instanceof Mob) {
+            Boolean targetDamager = (Boolean) damagedMobType.getDerivedProperty("target-damager").getValue();
+            if (targetDamager != null && targetDamager) {
+                Mob damagedMob = (Mob) damagedEntity;
+                if (attackingPlayer != null) {
+                    damagedMob.setTarget(attackingPlayer);
+                } else if (attackingMob != null) {
+                    damagedMob.setTarget(attackingMob);
+                }
+            }
+        }
+
         // What to do if the attacker is a mob.
-        if (attackingMob != null && damagedEntity instanceof LivingEntity) {
+        if (attackingMob != null) {
             MobType attackingMobType = getMobType(attackingMob);
             if (attackingMobType != null) {
                 // Mob attacking mob?
-                if (damagedEntity instanceof LivingEntity) {
-                    MobType damagedMobType = getMobType(damagedEntity);
-                    if (attackingMobType.isFriendlyTo(damagedMobType)) {
-                        event.setCancelled(true);
-                        return;
-                    }
+                if (damagedMobType != null && attackingMobType.isFriendlyTo(damagedMobType)) {
+                    event.setCancelled(true);
+                    return;
                 }
 
                 // Apply attackingMob's attack-potions, if set.

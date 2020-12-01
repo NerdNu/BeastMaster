@@ -682,6 +682,7 @@ public class MobType {
             // } else if (mob instanceof Enderman) {
             // Sadface.
         }));
+        addProperty(new MobProperty("target-damager", DataType.BOOLEAN, null));
 
         // Added after custom name => will clear PersistenceRequired NBT.
         addProperty(new MobProperty("can-despawn", DataType.BOOLEAN,
