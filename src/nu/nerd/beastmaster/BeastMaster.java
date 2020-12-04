@@ -693,42 +693,46 @@ public class BeastMaster extends JavaPlugin implements Listener {
             }
         }
 
-        // Should damaged mobs immediately switch target to the damager?
         MobType damagedMobType = getMobType(damagedEntity);
-        if (damagedMobType != null && damagedEntity instanceof Mob) {
-            Boolean targetDamager = (Boolean) damagedMobType.getDerivedProperty("target-damager").getValue();
-            if (targetDamager != null && targetDamager) {
-                Mob damagedMob = (Mob) damagedEntity;
-                if (attackingPlayer != null) {
-                    damagedMob.setTarget(attackingPlayer);
-                } else if (attackingMob != null) {
-                    damagedMob.setTarget(attackingMob);
-                }
-            }
-        }
+        MobType attackingMobType = getMobType(attackingMob);
 
         // What to do if the attacker is a mob.
-        if (attackingMob != null) {
-            MobType attackingMobType = getMobType(attackingMob);
-            if (attackingMobType != null) {
-                // Mob attacking mob?
-                if (damagedMobType != null && attackingMobType.isFriendlyTo(damagedMobType)) {
+        if (attackingMobType != null) {
+            // Mob attacking mob?
+            if (damagedMobType != null) {
+                if (attackingMobType.isFriendlyTo(damagedMobType)) {
+                    // Attacking mob did not do any damage after all.
                     event.setCancelled(true);
                     return;
                 }
 
-                // Apply attackingMob's attack-potions, if set.
-                String potionSetId = (String) attackingMobType.getDerivedProperty("attack-potions").getValue();
-                PotionSet potionSet = POTIONS.getPotionSet(potionSetId);
-                if (potionSet != null) {
-                    potionSet.apply((LivingEntity) damagedEntity);
+                // Should damaged mobs immediately switch target to the damager?
+                if (damagedEntity instanceof Mob) {
+                    Boolean targetDamager = (Boolean) damagedMobType.getDerivedProperty("target-damager").getValue();
+                    if (targetDamager != null && targetDamager) {
+                        Mob damagedMob = (Mob) damagedEntity;
+                        if (attackingPlayer != null) {
+                            damagedMob.setTarget(attackingPlayer);
+                        } else if (attackingMob != null) {
+                            if (!damagedMobType.isFriendlyTo(attackingMobType)) {
+                                damagedMob.setTarget(attackingMob);
+                            }
+                        }
+                    }
                 }
+            }
 
-                // Play the melee-attack-sound.
-                SoundEffect sound = (SoundEffect) attackingMobType.getDerivedProperty("melee-attack-sound").getValue();
-                if (sound != null) {
-                    sound.play(damagedEntity.getLocation());
-                }
+            // Apply attackingMob's attack-potions, if set.
+            String potionSetId = (String) attackingMobType.getDerivedProperty("attack-potions").getValue();
+            PotionSet potionSet = POTIONS.getPotionSet(potionSetId);
+            if (potionSet != null) {
+                potionSet.apply((LivingEntity) damagedEntity);
+            }
+
+            // Play the melee-attack-sound.
+            SoundEffect sound = (SoundEffect) attackingMobType.getDerivedProperty("melee-attack-sound").getValue();
+            if (sound != null) {
+                sound.play(damagedEntity.getLocation());
             }
         }
     }
