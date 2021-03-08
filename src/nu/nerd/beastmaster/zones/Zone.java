@@ -53,7 +53,9 @@ public class Zone {
     public Zone(String id, Zone parent, Expression expression) {
         _id = id;
         _parent = parent;
-        _parent.children().add(this);
+        if (_parent != null) {
+            _parent.children().add(this);
+        }
         setExpression(expression);
         _inheritsBlocks = true;
         _inheritsReplacements = true;
