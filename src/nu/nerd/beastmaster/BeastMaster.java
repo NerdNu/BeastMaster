@@ -37,7 +37,6 @@ import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.entity.SlimeSplitEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldLoadEvent;
@@ -405,8 +404,17 @@ public class BeastMaster extends JavaPlugin implements Listener {
         case BUILD_SNOWMAN:
         case BUILD_IRONGOLEM:
         case BUILD_WITHER:
-        case DEFAULT: // For the EnderDragon.
+        case DEFAULT: // For the EnderDragon. And also for portals.
         case SLIME_SPLIT: // For slimes.
+            // Already-configured mobs going through a portal spawn with
+            // reason DEFAULT.
+            MobType existingMobType = getMobType(entity);
+            if (existingMobType != null) {
+                // This is necessary to configure the mob's disguise, at least.
+                existingMobType.configureMob(entity);
+                break;
+            }
+
             MobType vanillaMobType = MOBS.getMobType(entity.getType());
             if (vanillaMobType != null) {
                 vanillaMobType.configureMob(entity);
@@ -417,6 +425,27 @@ public class BeastMaster extends JavaPlugin implements Listener {
             break;
         }
     } // onCreatureSpawn
+
+    // ------------------------------------------------------------------------
+    /**
+     * When the player joins, send them all nearby disguises in the world.
+     */
+    @EventHandler(ignoreCancelled = true)
+    protected void onPlayerJoin(PlayerJoinEvent event) {
+        if (BeastMaster.CONFIG.DEBUG_DISGUISES) {
+            debug("onPlayerJoin()");
+        }
+        Bukkit.getScheduler().runTaskLater(this, () -> DISGUISES.sendNearbyDisguises(event.getPlayer()), 1);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * When the player respawns, refresh nearby disguises.
+     */
+    @EventHandler(ignoreCancelled = true)
+    protected void onPlayerRespawn(PlayerRespawnEvent event) {
+        Bukkit.getScheduler().runTaskLater(this, () -> DISGUISES.sendNearbyDisguises(event.getPlayer()), 1);
+    }
 
     // ------------------------------------------------------------------------
     /**
@@ -867,40 +896,6 @@ public class BeastMaster extends JavaPlugin implements Listener {
                 // Mysteriously doesn't work unless delayed 1 tick. Disguises?
                 Bukkit.getScheduler().runTaskLater(this, () -> sound.play(event.getFrom()), 1);
             }
-        }
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * When the player joins, send them all pertinent disguises in the world.
-     */
-    @EventHandler(ignoreCancelled = true)
-    protected void onPlayerJoin(PlayerJoinEvent event) {
-        if (BeastMaster.CONFIG.DEBUG_DISGUISES) {
-            debug("onPlayerJoin()");
-        }
-        DISGUISES.sendAllDisguises(event.getPlayer().getWorld(), event.getPlayer());
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * When the player respawns, refresh disguises.
-     */
-    @EventHandler(ignoreCancelled = true)
-    protected void onPlayerRespawn(PlayerRespawnEvent event) {
-        Bukkit.getScheduler().runTaskLater(this, () -> DISGUISES.sendAllDisguises(event.getPlayer().getWorld(), event.getPlayer()), 1);
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * When the player changes world, send disguises for the new world.
-     */
-    @EventHandler(ignoreCancelled = true)
-    protected void onPlayerTeleport(PlayerTeleportEvent event) {
-        World fromWorld = event.getFrom().getWorld();
-        World toWorld = event.getTo().getWorld();
-        if (!fromWorld.equals(toWorld)) {
-            Bukkit.getScheduler().runTaskLater(this, () -> DISGUISES.sendAllDisguises(toWorld, event.getPlayer()), 1);
         }
     }
 

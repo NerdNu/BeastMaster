@@ -1,11 +1,5 @@
 package nu.nerd.beastmaster;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
@@ -21,13 +15,13 @@ import nu.nerd.beastmaster.mobs.MobType;
 
 // ----------------------------------------------------------------------------
 /**
- * Tracks mob disguises on a per-world basis.
+ * Tracks mob disguises.
  */
 public class DisguiseManager {
     // ------------------------------------------------------------------------
     /**
      * Create disguises for all disguised custom mobs in the specified chunk.
-     * 
+     *
      * @param chunk the chunk.
      */
     public void loadDisguises(Chunk chunk) {
@@ -45,7 +39,27 @@ public class DisguiseManager {
                     createDisguise(entity, chunk.getWorld(), encodedDisguise);
                 }
             } else if (entity instanceof Projectile) {
+                // TODO: re-disguise projectile. Does this require metadata?
+            }
+        }
+    }
 
+    // ------------------------------------------------------------------------
+    /**
+     * Re-send disguises of all nearby entities within +/-4 chunks from the
+     * player.
+     *
+     * @param player the player.
+     */
+    public void sendNearbyDisguises(Player player) {
+        Chunk centreChunk = player.getLocation().getChunk();
+        World world = centreChunk.getWorld();
+        for (int dx = -4; dx <= 4; ++dx) {
+            for (int dz = -4; dz <= 4; ++dz) {
+                Chunk chunk = world.getChunkAt(centreChunk.getX() + dx, centreChunk.getZ() + dz);
+                if (chunk.isLoaded()) {
+                    loadDisguises(chunk);
+                }
             }
         }
     }
@@ -53,11 +67,11 @@ public class DisguiseManager {
     // ------------------------------------------------------------------------
     /**
      * Record an entity's current disguise.
-     * 
-     * @param entity the entity.
-     * @param world the world where the disguise will apply.
+     *
+     * @param entity          the entity.
+     * @param world           the world where the disguise will apply.
      * @param encodedDisguise the disguise encoded as a string; can be null or
-     *        empty.
+     *                        empty.
      */
     public void createDisguise(Entity entity, World world, String encodedDisguise) {
         if (encodedDisguise == null || encodedDisguise.isEmpty()) {
@@ -80,124 +94,35 @@ public class DisguiseManager {
     // ------------------------------------------------------------------------
     /**
      * Record an entity's current disguise.
-     * 
-     * @param entity the entity.
-     * @param world the world where the disguise will apply.
+     *
+     * @param entity   the entity.
+     * @param world    the world where the disguise will apply.
      * @param disguise the disguise.
      */
     public void createDisguise(Entity entity, World world, Disguise disguise) {
-        getWorldDisguises(world).put(entity, disguise);
         if (BeastMaster.CONFIG.DEBUG_DISGUISES) {
-            BeastMaster.PLUGIN.debug("Sending disguise in " + world.getName() + " to: " +
-                                     world.getPlayers().stream()
-                                     .map(Player::getName).collect(Collectors.joining(", ")));
+            MobType mobType = BeastMaster.getMobType(entity);
+            String mobTypeId = mobType != null ? mobType.getId() : entity.getType().name();
+            BeastMaster.PLUGIN.debug("Sending disguise of " + mobTypeId + " in " + world.getName());
         }
-        DisguiseAPI.disguiseToPlayers(entity, disguise, world.getPlayers());
+        DisguiseAPI.disguiseToAll(entity, disguise);
     }
 
     // ------------------------------------------------------------------------
     /**
      * Remove the disguise associated with the specified entity.
-     * 
+     *
      * All players are notified of disguise removal in the subsequent tick so
      * that if the entity has died the disguise plugin has a chance to play the
      * death packet as a disguised mob.
-     * 
+     *
      * @param entity the entity.
-     * @param world the world where the disguised applied.
+     * @param world  the world where the disguised applied.
      */
     public void destroyDisguise(Entity entity, World world) {
-        Disguise disguise = getWorldDisguises(world).remove(entity);
-        if (disguise != null) {
-            Bukkit.getScheduler().runTaskLater(BeastMaster.PLUGIN, () -> {
-                disguise.stopDisguise();
-            }, 1);
-        }
+        Bukkit.getScheduler().runTaskLater(BeastMaster.PLUGIN, () -> {
+            DisguiseAPI.undisguiseToAll(entity);
+        }, 1);
     }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Move an entity's disguise from one world to another.
-     * 
-     * This method only needs to be called if the fromWorld and toWorld args are
-     * different worlds.
-     * 
-     * @param entity the entity.
-     * @param fromWorld the world where the entity used to be.
-     * @param toWorld the new world where the entity exists.
-     */
-    public void teleportDisguise(Entity entity, World fromWorld, World toWorld) {
-        if (fromWorld.equals(toWorld)) {
-            // Nothing to be done when teleporting within the same world.
-            return;
-        }
-
-        // We cannot call destroyDisguise(); it would call
-        // DisguiseAPI.undisguiseToAll() next tick.
-        Disguise disguise = getWorldDisguises(fromWorld).remove(entity);
-        disguise.stopDisguise();
-        getWorldDisguises(toWorld).put(entity, disguise);
-        DisguiseAPI.disguiseToPlayers(entity, disguise, toWorld.getPlayers());
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Send the specified player the disguises of all disguised entities in the
-     * specified world.
-     */
-    public void sendAllDisguises(World world, Player player) {
-        // After iterating, remove invalid entities and re-index entities that
-        // have moved between worlds.
-        ArrayList<Entity> invalidEntities = new ArrayList<>();
-        ArrayList<Entity> teleportedEntities = new ArrayList<>();
-
-        UUID worldUuid = world.getUID();
-        HashMap<Entity, Disguise> worldDisguises = getWorldDisguises(world);
-        for (Map.Entry<Entity, Disguise> entry : worldDisguises.entrySet()) {
-            Entity entity = entry.getKey();
-            Disguise disguise = entry.getValue();
-
-            if (entity.isValid()) {
-                if (entity.getWorld().getUID().equals(worldUuid)) {
-                    DisguiseAPI.disguiseToPlayers(entity, disguise, player);
-                } else {
-                    teleportedEntities.add(entity);
-                }
-            } else {
-                invalidEntities.add(entity);
-            }
-        }
-
-        for (Entity entity : invalidEntities) {
-            destroyDisguise(entity, entity.getWorld());
-        }
-
-        for (Entity entity : teleportedEntities) {
-            teleportDisguise(entity, world, entity.getWorld());
-        }
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * Return a map from Entity to Disguise in a specified world.
-     * 
-     * @param world the world.
-     * @return the map.
-     */
-    protected HashMap<Entity, Disguise> getWorldDisguises(World world) {
-        UUID worldUuid = world.getUID();
-        HashMap<Entity, Disguise> disguises = _worldToEntityToDisguise.get(worldUuid);
-        if (disguises == null) {
-            disguises = new HashMap<Entity, Disguise>();
-            _worldToEntityToDisguise.put(worldUuid, disguises);
-        }
-        return disguises;
-    }
-
-    // ------------------------------------------------------------------------
-    /**
-     * A map from World UUID to a map from Entity to Disguise.
-     */
-    protected HashMap<UUID, HashMap<Entity, Disguise>> _worldToEntityToDisguise = new HashMap<>();
 
 } // class DisguiseManager
