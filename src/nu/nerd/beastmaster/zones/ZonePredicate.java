@@ -150,14 +150,20 @@ public enum ZonePredicate {
                     // applicableRegions does NOT include the global region.
                     ApplicableRegionSet applicableRegions = regionManager.getApplicableRegions(weLoc.toVector().toBlockPoint());
                     String name = (String) args.get(0);
-                    if (name.equals("*") && applicableRegions.size() != 0) {
-                        // Any (non-global) region will do.
-                        return true;
-                    }
-
-                    for (ProtectedRegion region : applicableRegions) {
-                        if (name.equals(region.getId())) {
+                    if (applicableRegions.size() == 0) {
+                        if (name.equalsIgnoreCase("__global__")) {
                             return true;
+                        }
+                    } else { // There are non-global regions.
+                        if (name.equals("*")) {
+                            // Any (non-global) region will do.
+                            return true;
+                        }
+
+                        for (ProtectedRegion region : applicableRegions) {
+                            if (name.equals(region.getId())) {
+                                return true;
+                            }
                         }
                     }
                 }
