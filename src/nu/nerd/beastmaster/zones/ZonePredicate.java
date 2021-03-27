@@ -178,9 +178,6 @@ public enum ZonePredicate {
             @Override
             public void validateArgs(List<Token> argTokens, List<Object> args) {
                 double min = (Double) args.get(0);
-                if (min < 0.0) {
-                    throw new ParseError("the minimum Y must be greater than or equal to 0", argTokens.get(0));
-                }
                 double max = (Double) args.get(1);
                 if (max <= min) {
                     throw new ParseError("the maximum Y must be greater than the minimum Y", argTokens.get(1));
