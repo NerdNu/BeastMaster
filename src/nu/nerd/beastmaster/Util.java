@@ -9,6 +9,9 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -37,15 +40,36 @@ import nu.nerd.beastmaster.mobs.MobType;
 public class Util {
     // ------------------------------------------------------------------------
     /**
+     * Return a string Predicate that matches a glob, or null if the glob
+     * contains no wildcards.
+     *
+     * @param glob the glob-style pattern to match; only the "*" wildcard is
+     *             supported.
+     * @return a string Predicate that returns true if its argument matches the
+     *         glob, or null if the glob contains no wildcards, in which case,
+     *         ordinary string equality should be used instead.
+     * @throws PatternSyntaxException
+     */
+    public static Predicate<String> globToStringPredicate(String glob) throws PatternSyntaxException {
+        if (glob.contains("*")) {
+            String regex = glob.replace("*", ".*");
+            final Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+            return (s) -> pattern.matcher(s).matches();
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
      * Return true if the specified Material is not a full block.
-     * 
+     *
      * This is used for determining whether to drop an item at a particular
      * location, avoiding full-block materials that might cause the item to
      * shoot up into the air. This method is only consulted if a block is not
      * passable. Passable blocks include, air and liquids as well as stuff like
      * string, saplings and crops. So to the extent that this check returns true
      * for any of those, it is just being extra cautious.
-     * 
+     *
      * @return true if the specified Material is not a full block.
      */
     public static boolean isNotFullBlock(Material material) {
@@ -108,9 +132,9 @@ public class Util {
     /**
      * Return true if the 3x3x3 blocks centred horizontally on the specified
      * location, with the location in the bottom row of the three, are passable.
-     * 
+     *
      * @param loc the location of the middle, bottom row of the 3x3x3 box to
-     *        check.
+     *            check.
      * @return true if it's air.
      */
     public static boolean isPassable3x3x3(Location loc) {
@@ -134,7 +158,7 @@ public class Util {
     /**
      * Show particles that resemble an enderman teleport at the specified mob
      * location.
-     * 
+     *
      * @param mobLoc the mob's Location.
      */
     public static void showTeleportParticles(Location mobLoc) {
@@ -146,9 +170,9 @@ public class Util {
     /**
      * Show teleport particles and play the MobType's "teleport-sound" at the
      * specified mob Location.
-     * 
+     *
      * @param mobType the mob's type.
-     * @param mobLoc the mob's Location.
+     * @param mobLoc  the mob's Location.
      */
     public static void doTeleportEffects(MobType mobType, Location mobLoc) {
         if (mobType != null) {
@@ -166,10 +190,10 @@ public class Util {
      * Computes the transitive closure of the specified relation in a directed
      * graph of nodes of type T, starting at the specified root.
      *
-     * @param visited the return set of visited nodes.
-     * @param root the starting node.
+     * @param visited  the return set of visited nodes.
+     * @param root     the starting node.
      * @param relation a function that returns a collection of all nodes
-     *        directly related to the current node.
+     *                 directly related to the current node.
      */
     public static <T> void transitiveClosure(Set<T> visited, T root, Function<T, Collection<T>> relation) {
         Collection<T> related = relation.apply(root);
@@ -317,13 +341,13 @@ public class Util {
      * concatenation of all elements in the collection, alternately colour1 then
      * colour2, with the specified separator interposed between consecutive
      * sequence elements.
-     * 
-     * @param strings the sequence of strings.
+     *
+     * @param strings   the sequence of strings.
      * @param separator the separator, which can include colour codes.
-     * @param colour1 the colour of the first element and every second element
-     *        after that.
-     * @param colour2 the colour of the second element and every second element
-     *        after that.
+     * @param colour1   the colour of the first element and every second element
+     *                  after that.
+     * @param colour2   the colour of the second element and every second
+     *                  element after that.
      * @returns a string representing the list, alternating the colours of
      *          elements.
      */
@@ -342,8 +366,8 @@ public class Util {
     // ------------------------------------------------------------------------
     /**
      * Return x clamped to the range [min,max].
-     * 
-     * @param x the value to consider.
+     *
+     * @param x   the value to consider.
      * @param min the minimum result returned.
      * @param max the maximum result returned.
      * @return x clamped to the range [min,max].
@@ -355,8 +379,8 @@ public class Util {
     // ------------------------------------------------------------------------
     /**
      * Return x clamped to the range [min,max].
-     * 
-     * @param x the value to consider.
+     *
+     * @param x   the value to consider.
      * @param min the minimum result returned.
      * @param max the maximum result returned.
      * @return x clamped to the range [min,max].
@@ -368,9 +392,9 @@ public class Util {
     // ------------------------------------------------------------------------
     /**
      * Return true if x is between and b, inclusive.
-     * 
+     *
      * The function works correctly whether a is less than or greater than b.
-     * 
+     *
      * @param x the value to test.
      * @param a one end of the range to test.
      * @param b the other end of the range to test.
@@ -387,9 +411,9 @@ public class Util {
     // ------------------------------------------------------------------------
     /**
      * Return true if the point (x,z) is in the rectangle (x1,z1) to (x2,z2).
-     * 
-     * @param x the X coordinate of the test point (x,z).
-     * @param z the Z coordinate of the test point (x,z).
+     *
+     * @param x  the X coordinate of the test point (x,z).
+     * @param z  the Z coordinate of the test point (x,z).
      * @param x1 the X coordinate of the corner (x1,z1).
      * @param z1 the Z coordinate of the corner (x1,z1).
      * @param x2 the X coordinate of the corner (x2,z2).
@@ -458,10 +482,10 @@ public class Util {
     // ------------------------------------------------------------------------
     /**
      * A set of common Materials that are not a full block.
-     * 
+     *
      * The set is initialised on first use, because I'm not sure when
      * Tag<Material> gets set up.
-     * 
+     *
      * This is used for deciding whether to drop an item where the Drop occurs
      * or placing it at the Player's feet. So the set doesn't have to be 100%
      * exhaustive; it just needs to cover the most common cases.

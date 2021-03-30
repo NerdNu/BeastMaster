@@ -1,6 +1,7 @@
 package nu.nerd.beastmaster.zones;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.bukkit.Location;
 import org.bukkit.block.Biome;
@@ -20,14 +21,16 @@ import nu.nerd.beastmaster.Util;
  */
 public enum ZonePredicate {
     BIOME(
-        "Location is in the specified biome type.",
+        "Location is in the specified biome type." +
+          " The type may contain the wildcard character, \'*\', to match zero or more arbitrary characters.",
         new ZonePredicateParameters("type", String.class),
         new IZonePredicate() {
             @Override
             public void validateArgs(List<Token> argTokens, List<Object> args) {
                 String biomeName = ((String) args.get(0)).toUpperCase();
                 try {
-                    args.set(0, Biome.valueOf(biomeName));
+                    Predicate<String> predicate = Util.globToStringPredicate(biomeName);
+                    args.set(0, (predicate != null) ? predicate : Biome.valueOf(biomeName));
                 } catch (IllegalArgumentException ex) {
                     throw new ParseError("invalid biome name: " + biomeName +
                                          "; it should be a double-quoted Biome API constant",
@@ -37,7 +40,10 @@ public enum ZonePredicate {
 
             @Override
             public boolean matches(Location loc, List<Object> args) {
-                return loc.getBlock().getBiome() == args.get(0);
+                Biome locBiome = loc.getBlock().getBiome();
+                Object arg = args.get(0);
+                return arg.getClass() == Biome.class ? (locBiome == arg)
+                                                     : ((Predicate<String>) arg).test(locBiome.name());
             }
         }),
 
@@ -134,11 +140,15 @@ public enum ZonePredicate {
         }),
 
     WG(
-        "Location is within the WorldGuard region of the specified name, or \"*\" to match any region.",
+        "Location is within the WorldGuard region of the specified name, or \"*\" to match any region."
+       + " The name may contain the wildcard character, \'*\', to match zero or more arbitrary characters.",
         new ZonePredicateParameters("name", String.class),
         new IZonePredicate() {
             @Override
             public void validateArgs(List<Token> argTokens, List<Object> args) {
+                String name = (String) args.get(0);
+                Predicate<String> predicate = Util.globToStringPredicate(name);
+                args.set(0, (predicate != null) ? predicate : name);
             }
 
             @Override
@@ -149,19 +159,26 @@ public enum ZonePredicate {
                     com.sk89q.worldedit.util.Location weLoc = BukkitAdapter.adapt(loc);
                     // applicableRegions does NOT include the global region.
                     ApplicableRegionSet applicableRegions = regionManager.getApplicableRegions(weLoc.toVector().toBlockPoint());
-                    String name = (String) args.get(0);
-                    if (applicableRegions.size() == 0) {
-                        if (name.equalsIgnoreCase("__global__")) {
-                            return true;
+                    Object arg = args.get(0);
+                    if (arg.getClass() == String.class) {
+                        // No wildcards. Region name must match exactly.
+                        String name = (String) arg;
+                        if (applicableRegions.size() == 0) {
+                            if (name.equalsIgnoreCase("__global__")) {
+                                return true;
+                            }
+                        } else { // There are non-global regions.
+                            for (ProtectedRegion region : applicableRegions) {
+                                if (name.equalsIgnoreCase(region.getId())) {
+                                    return true;
+                                }
+                            }
                         }
-                    } else { // There are non-global regions.
-                        if (name.equals("*")) {
-                            // Any (non-global) region will do.
-                            return true;
-                        }
-
+                    } else {
+                        // Wildcard match.
+                        Predicate<String> predicate = (Predicate<String>) arg;
                         for (ProtectedRegion region : applicableRegions) {
-                            if (name.equals(region.getId())) {
+                            if (predicate.test(region.getId())) {
                                 return true;
                             }
                         }
