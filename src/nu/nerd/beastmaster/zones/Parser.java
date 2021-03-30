@@ -120,11 +120,12 @@ public class Parser {
      */
     Expression orExpr() {
         Expression left = xorExpr();
-        if (take(Token.Type.OR)) {
-            Expression right = xorExpr();
+        if (have(Token.Type.OR)) {
             Expression operator = new OrExpression();
             operator.addChild(left);
-            operator.addChild(right);
+            while (take(Token.Type.OR)) {
+                operator.addChild(xorExpr());
+            }
             return operator;
         } else {
             return left;
@@ -142,11 +143,12 @@ public class Parser {
      */
     Expression xorExpr() {
         Expression left = andExpr();
-        if (take(Token.Type.XOR)) {
-            Expression right = andExpr();
+        if (have(Token.Type.XOR)) {
             Expression operator = new XorExpression();
             operator.addChild(left);
-            operator.addChild(right);
+            while (take(Token.Type.XOR)) {
+                operator.addChild(andExpr());
+            }
             return operator;
         } else {
             return left;
@@ -164,11 +166,12 @@ public class Parser {
      */
     Expression andExpr() {
         Expression left = primary();
-        if (take(Token.Type.AND)) {
-            Expression right = primary();
+        if (have(Token.Type.AND)) {
             Expression operator = new AndExpression();
             operator.addChild(left);
-            operator.addChild(right);
+            while (take(Token.Type.AND)) {
+                operator.addChild(primary());
+            }
             return operator;
         } else {
             return left;

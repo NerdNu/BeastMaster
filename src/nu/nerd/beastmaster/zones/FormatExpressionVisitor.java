@@ -25,8 +25,10 @@ public class FormatExpressionVisitor implements ExpressionVisitor {
         StringBuilder sb = (StringBuilder) context;
         sb.append('(');
         node.firstChild().visit(this, context);
-        sb.append(" & ");
-        node.secondChild().visit(this, context);
+        for (int i = 1; i < node.getChildCount(); ++i) {
+            sb.append(" & ");
+            node.getChild(i).visit(this, context);
+        }
         sb.append(')');
         return null;
     }
@@ -41,8 +43,10 @@ public class FormatExpressionVisitor implements ExpressionVisitor {
         StringBuilder sb = (StringBuilder) context;
         sb.append('(');
         node.firstChild().visit(this, context);
-        sb.append(" | ");
-        node.secondChild().visit(this, context);
+        for (int i = 1; i < node.getChildCount(); ++i) {
+            sb.append(" | ");
+            node.getChild(i).visit(this, context);
+        }
         sb.append(')');
         return null;
     }
@@ -57,8 +61,10 @@ public class FormatExpressionVisitor implements ExpressionVisitor {
         StringBuilder sb = (StringBuilder) context;
         sb.append('(');
         node.firstChild().visit(this, context);
-        sb.append(" ^ ");
-        node.secondChild().visit(this, context);
+        for (int i = 1; i < node.getChildCount(); ++i) {
+            sb.append(" ^ ");
+            node.getChild(i).visit(this, context);
+        }
         sb.append(')');
         return null;
     }

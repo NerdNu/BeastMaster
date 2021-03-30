@@ -37,21 +37,28 @@ public class EvalExpressionVisitor implements ExpressionVisitor {
      */
     @Override
     public Object visit(AndExpression node, Object context) {
+        Boolean first = (Boolean) node.firstChild().visit(this, context);
         if (_trace != null) {
-            Boolean left = (Boolean) node.firstChild().visit(this, context);
-            showBoolean(_trace, left);
-            Boolean right = (Boolean) node.secondChild().visit(this, context);
-            showBoolean(_trace, right);
-            _trace.append("&");
-            return left && right;
+            showBoolean(_trace, first);
         }
-
-        Boolean left = (Boolean) node.firstChild().visit(this, context);
-        if (!left) {
+        if (!first) {
             return false;
         }
-        Boolean right = (Boolean) node.secondChild().visit(this, context);
-        return right;
+
+        for (int i = 1; i < node.getChildCount(); ++i) {
+            if (_trace != null) {
+                _trace.append("&");
+            }
+            Boolean term = (Boolean) node.getChild(i).visit(this, context);
+            if (_trace != null) {
+                showBoolean(_trace, term);
+            }
+            if (!term) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // ------------------------------------------------------------------------
@@ -61,21 +68,28 @@ public class EvalExpressionVisitor implements ExpressionVisitor {
      */
     @Override
     public Object visit(OrExpression node, Object context) {
+        Boolean first = (Boolean) node.firstChild().visit(this, context);
         if (_trace != null) {
-            Boolean left = (Boolean) node.firstChild().visit(this, context);
-            showBoolean(_trace, left);
-            Boolean right = (Boolean) node.secondChild().visit(this, context);
-            showBoolean(_trace, right);
-            _trace.append("|");
-            return left || right;
+            showBoolean(_trace, first);
         }
-
-        Boolean left = (Boolean) node.firstChild().visit(this, context);
-        if (left) {
+        if (first) {
             return true;
         }
-        Boolean right = (Boolean) node.secondChild().visit(this, context);
-        return right;
+
+        for (int i = 1; i < node.getChildCount(); ++i) {
+            if (_trace != null) {
+                _trace.append("|");
+            }
+            Boolean term = (Boolean) node.getChild(i).visit(this, context);
+            if (_trace != null) {
+                showBoolean(_trace, term);
+            }
+            if (term) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // ------------------------------------------------------------------------
@@ -85,17 +99,25 @@ public class EvalExpressionVisitor implements ExpressionVisitor {
      */
     @Override
     public Object visit(XorExpression node, Object context) {
-        Boolean left = (Boolean) node.firstChild().visit(this, context);
+        boolean result;
+        Boolean first = (Boolean) node.firstChild().visit(this, context);
+        result = first;
         if (_trace != null) {
-            showBoolean(_trace, left);
+            showBoolean(_trace, first);
         }
-        Boolean right = (Boolean) node.secondChild().visit(this, context);
-        if (_trace != null) {
-            showBoolean(_trace, right);
-            _trace.append("^");
 
+        for (int i = 1; i < node.getChildCount(); ++i) {
+            if (_trace != null) {
+                _trace.append("^");
+            }
+            Boolean term = (Boolean) node.getChild(i).visit(this, context);
+            result ^= term;
+            if (_trace != null) {
+                showBoolean(_trace, term);
+            }
         }
-        return left ^ right;
+
+        return result;
     }
 
     // ------------------------------------------------------------------------
