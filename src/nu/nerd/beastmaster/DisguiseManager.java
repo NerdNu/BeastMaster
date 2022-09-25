@@ -81,7 +81,7 @@ public class DisguiseManager {
         try {
             Disguise disguise = DisguiseParser.parseDisguise(Bukkit.getConsoleSender(), entity, encodedDisguise);
             createDisguise(entity, world, disguise);
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             MobType mobType = BeastMaster.getMobType(entity);
             String mobTypeId = mobType != null ? mobType.getId() : entity.getType().name();
             Throwable cause = ex.getCause();

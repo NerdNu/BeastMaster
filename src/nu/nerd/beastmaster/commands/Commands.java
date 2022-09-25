@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -252,6 +253,58 @@ public class Commands {
     public static void invalidArguments(CommandSender sender, String usage) {
         sender.sendMessage(ChatColor.RED + "Invalid arguments.");
         sender.sendMessage(ChatColor.RED + "Usage: /" + usage);
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return an error message to be presented to the user signifying that a
+     * numeric value must be in the inclusive range specified by min and max.
+     *
+     * @param thing the name of the value to be constrained, e.g. "value".
+     * @param type  the name of the type of the value, e.g. "an integer", "a
+     *              real number".
+     * @param min   the lower bound of the range, or null if not constrained.
+     * @param max   the upper bound of the range, or null if not constrained.
+     * @return an error message.
+     */
+    public static <T> String rangeErrorMessage(String thing, String type, T min, T max) {
+        StringBuilder message = new StringBuilder();
+        message.append("The ").append(thing);
+        message.append(" must be ").append(type);
+        if (min != null) {
+            if (max != null) {
+                message.append(" in the range ");
+                message.append(min).append(" to ").append(max);
+                message.append(", inclusive.");
+            } else {
+                // min but no max.
+                message.append(" not less than ").append(min).append('.');
+            }
+        } else {
+            // max but no min.
+            if (max != null) {
+                message.append(" not greater than ").append(max);
+            }
+            message.append('.');
+        }
+        return message.toString();
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Send the specified error message through the sender, or log to the
+     * console as an error if the CommandSender is null.
+     *
+     * @param sender  the command sender.
+     * @param message the message, including all chat formatting.
+     */
+    public static void sendError(CommandSender sender, String message) {
+        if (sender != null) {
+            sender.sendMessage(message);
+        } else {
+            Bukkit.getLogger().severe(message);
+        }
+
     }
 
     // ------------------------------------------------------------------------

@@ -1,10 +1,10 @@
 package nu.nerd.beastmaster.mobs;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
@@ -13,7 +13,6 @@ import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 
-import me.libraryaddict.disguise.utilities.parser.DisguiseParseException;
 import me.libraryaddict.disguise.utilities.parser.DisguiseParser;
 import nu.nerd.beastmaster.BeastMaster;
 import nu.nerd.beastmaster.DropSet;
@@ -24,7 +23,7 @@ import nu.nerd.beastmaster.commands.Commands;
 // ----------------------------------------------------------------------------
 /**
  * Concrete implementations of {@link IDataType}.
- * 
+ *
  * TODO: audit where compare() is being called and work out whether I actually
  * need to handle null.
  */
@@ -50,41 +49,15 @@ public class DataType {
 
     // ------------------------------------------------------------------------
 
-    public static final IDataType INTEGER = new IDataType() {
-        @Override
-        public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
-            return Integer.parseInt(value);
-        }
+    public static final IDataType INTEGER = clampedInteger(null, null);
 
-        @Override
-        public Object deserialise(String value) throws IllegalArgumentException {
-            return Integer.parseInt(value);
-        }
+    public static final IDataType NON_NEGATIVE_INTEGER = clampedInteger(0, null);
 
-        @Override
-        public int compare(Object o1, Object o2) {
-            return Integer.compare((Integer) o1, (Integer) o2);
-        }
-    };
+    public static final IDataType DOUBLE = clampedDouble(null, null);
 
-    // ------------------------------------------------------------------------
+    public static final IDataType NON_NEGATIVE_DOUBLE = clampedDouble(0.0, null);
 
-    public static final IDataType DOUBLE = new IDataType() {
-        @Override
-        public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
-            return Double.parseDouble(value);
-        }
-
-        @Override
-        public Object deserialise(String value) throws IllegalArgumentException {
-            return Double.parseDouble(value);
-        }
-
-        @Override
-        public int compare(Object o1, Object o2) {
-            return Double.compare((Double) o1, (Double) o2);
-        }
-    };
+    public static final IDataType PERCENT = clampedDouble(0.0, 100.0);
 
     // ------------------------------------------------------------------------
 
@@ -108,7 +81,7 @@ public class DataType {
     // ------------------------------------------------------------------------
     /**
      * Comma separated ordered set of case-insensitive Strings.
-     * 
+     *
      * Spaces are treated as equivalent to commas.
      */
     public static final IDataType TAG_SET = new IDataType() {
@@ -133,9 +106,9 @@ public class DataType {
             Set<String> set = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
             // Handle input like: "," by removing empty tags.
             List<String> tags = Arrays.asList(value.split(",")).stream()
-            .filter(tag -> !tag.isEmpty())
-            .sorted(String.CASE_INSENSITIVE_ORDER)
-            .collect(Collectors.toList());
+                .filter(tag -> !tag.isEmpty())
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .collect(Collectors.toList());
             set.addAll(tags);
             return set;
         }
@@ -298,7 +271,7 @@ public class DataType {
             try {
                 DisguiseParser.parseDisguise(Bukkit.getConsoleSender(), null, (String) value);
                 return ChatColor.GREEN + value.toString();
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
                 return ChatColor.RED + value.toString();
             }
         }
@@ -308,7 +281,7 @@ public class DataType {
             try {
                 DisguiseParser.parseDisguise(Bukkit.getConsoleSender(), null, value);
                 return value;
-            } catch (IllegalAccessException | InvocationTargetException | DisguiseParseException ex) {
+            } catch (Throwable ex) {
                 Throwable cause = ex.getCause();
                 sender.sendMessage(ChatColor.RED + "Invalid disguise: " + (cause != null ? cause.getMessage() : ex.getMessage()));
                 return null;
@@ -329,7 +302,7 @@ public class DataType {
     // ------------------------------------------------------------------------
     /**
      * IDataType for properties of the {@link SoundEffect}.
-     * 
+     *
      * TODO: if /beast-tune is added, support tune ID as higher precendence.
      */
     public static final IDataType SOUND_EFFECT = new IDataType() {
@@ -419,14 +392,14 @@ public class DataType {
 
         /**
          * Show a help message when parsing sounds.
-         * 
+         *
          * When loading config, parse() is called with a null command sender. We
          * log an error in console instead.
-         * 
-         * @param sender the sender to send the message to.
-         * @param value the string that was parsed as a SoundEffect.
+         *
+         * @param sender      the sender to send the message to.
+         * @param value       the string that was parsed as a SoundEffect.
          * @param parsedSoFar is the number of fields successfully parsed, or -1
-         *        for invalid argument count.
+         *                    for invalid argument count.
          */
         protected void showHelp(CommandSender sender, String value, int parsedSoFar) {
             if (sender == null) {
@@ -447,4 +420,71 @@ public class DataType {
             }
         }
     };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return a custom IDataType implementation that represents an integer
+     * clamped to the range [min,max].
+     *
+     * @param min the minimum allowed value, or null if not enforced.
+     * @param max the maximum allowed value, or null if not enforced.
+     * @return the custom IDataType instance.
+     */
+    public static IDataType clampedInteger(Integer min, Integer max) {
+        return new IDataType() {
+            @Override
+            public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
+                final Predicate<Integer> inRange = Commands.inclusiveRangePredicate(min, max);
+                final String errorMsg = ChatColor.RED + Commands.rangeErrorMessage("value", "an integer", min, max);
+                final Runnable onError = () -> {
+                    Commands.sendError(sender, errorMsg);
+                };
+                return Commands.parseNumber(value, Integer::parseInt, inRange, onError, onError);
+            }
+
+            @Override
+            public Object deserialise(String value) throws IllegalArgumentException {
+                return Integer.parseInt(value);
+            }
+
+            @Override
+            public int compare(Object o1, Object o2) {
+                return Integer.compare((Integer) o1, (Integer) o2);
+            }
+        };
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Return a custom IDataType implementation that represents a double clamped
+     * to the range [min,max].
+     *
+     * @param min the minimum allowed value, or null if not enforced.
+     * @param max the maximum allowed value, or null if not enforced.
+     * @return the custom IDataType instance.
+     */
+    public static IDataType clampedDouble(Double min, Double max) {
+        return new IDataType() {
+            @Override
+            public Object parse(String value, CommandSender sender, String id) throws IllegalArgumentException {
+                final Predicate<Double> inRange = Commands.inclusiveRangePredicate(min, max);
+                final String errorMsg = ChatColor.RED + Commands.rangeErrorMessage("value", "a number", min, max);
+                final Runnable onError = () -> {
+                    Commands.sendError(sender, errorMsg);
+                };
+                return Commands.parseNumber(value, Double::parseDouble, inRange, onError, onError);
+            }
+
+            @Override
+            public Object deserialise(String value) throws IllegalArgumentException {
+                return Double.parseDouble(value);
+            }
+
+            @Override
+            public int compare(Object o1, Object o2) {
+                return Double.compare((Double) o1, (Double) o2);
+            }
+        };
+    };
+
 } // class DataType

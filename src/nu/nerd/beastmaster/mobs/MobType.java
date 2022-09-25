@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
@@ -450,8 +451,8 @@ public class MobType {
                     }
                 }
             }));
-        addProperty(new MobProperty("passenger-percent", DataType.DOUBLE, null));
-        addProperty(new MobProperty("size", DataType.INTEGER,
+        addProperty(new MobProperty("passenger-percent", DataType.PERCENT, null));
+        addProperty(new MobProperty("size", DataType.NON_NEGATIVE_INTEGER,
             (mob, logger) -> {
                 if (mob instanceof Phantom) {
                     ((Phantom) mob).setSize((Integer) getDerivedProperty("size").getValue());
@@ -460,11 +461,24 @@ public class MobType {
                     ((Slime) mob).setSize((Integer) getDerivedProperty("size").getValue());
                 }
             }));
+        addProperty(new MobProperty("burning-percent", DataType.PERCENT,
+            (mob, logger) -> {
+                mob.setVisualFire(Math.random() * 100 < (Double) getDerivedProperty("burning-percent").getValue());
+            }));
+        // TODO: remove deprecated "glowing" and use "glowing-percent" instead.
         addProperty(new MobProperty("glowing", DataType.BOOLEAN,
             (mob, logger) -> {
                 mob.setGlowing((Boolean) getDerivedProperty("glowing").getValue());
             }));
-        addProperty(new MobProperty("baby-percent", DataType.DOUBLE,
+        addProperty(new MobProperty("glowing-percent", DataType.PERCENT,
+            (mob, logger) -> {
+                mob.setGlowing(Math.random() * 100 < (Double) getDerivedProperty("glowing-percent").getValue());
+            }));
+        addProperty(new MobProperty("invisible-percent", DataType.PERCENT,
+            (mob, logger) -> {
+                mob.setInvisible(Math.random() * 100 < (Double) getDerivedProperty("invisible-percent").getValue());
+            }));
+        addProperty(new MobProperty("baby-percent", DataType.PERCENT,
             (mob, logger) -> {
                 boolean isBaby = (Math.random() * 100 < (Double) getDerivedProperty("baby-percent").getValue());
                 if (mob instanceof Ageable) {
@@ -474,10 +488,15 @@ public class MobType {
                         ((Ageable) mob).setAdult();
                     }
                 } else if (mob instanceof Zombie) {
-                    ((Zombie) mob).setBaby(isBaby);
+                    // Avoid deprecated Zombie.setBaby(boolean).
+                    Zombie zombie = (Zombie) mob;
+                    zombie.setAdult();
+                    if (isBaby) {
+                        zombie.setBaby();
+                    }
                 }
             }));
-        addProperty(new MobProperty("charged-percent", DataType.DOUBLE,
+        addProperty(new MobProperty("charged-percent", DataType.PERCENT,
             (mob, logger) -> {
                 if (mob instanceof Creeper) {
                     ((Creeper) mob).setPowered(Math.random() * 100 < (Double) getDerivedProperty("charged-percent").getValue());
@@ -486,17 +505,19 @@ public class MobType {
 
         // Sounds -------------------------------------------------------------
 
-        addProperty(new MobProperty("silent", DataType.BOOLEAN, (mob, logger) -> {
-            mob.setSilent((Boolean) getDerivedProperty("silent").getValue());
-        }));
-        addProperty(new MobProperty("spawn-sound", DataType.SOUND_EFFECT, (mob, logger) -> {
-            // configureMob() is called when the entity spawns. So play the
-            // sound.
-            SoundEffect soundEffect = (SoundEffect) getDerivedProperty("spawn-sound").getValue();
-            if (soundEffect != null) {
-                soundEffect.play(mob.getLocation());
-            }
-        }));
+        addProperty(new MobProperty("silent", DataType.BOOLEAN,
+            (mob, logger) -> {
+                mob.setSilent((Boolean) getDerivedProperty("silent").getValue());
+            }));
+        addProperty(new MobProperty("spawn-sound", DataType.SOUND_EFFECT,
+            (mob, logger) -> {
+                // configureMob() is called when the entity spawns. So play the
+                // sound.
+                SoundEffect soundEffect = (SoundEffect) getDerivedProperty("spawn-sound").getValue();
+                if (soundEffect != null) {
+                    soundEffect.play(mob.getLocation());
+                }
+            }));
         addProperty(new MobProperty("death-sound", DataType.SOUND_EFFECT, null));
         addProperty(new MobProperty("projectile-launch-sound", DataType.SOUND_EFFECT, null));
         addProperty(new MobProperty("projectile-immunity-sound", DataType.SOUND_EFFECT, null));
@@ -507,7 +528,7 @@ public class MobType {
 
         // Buffs --------------------------------------------------------------
 
-        addProperty(new MobProperty("health", DataType.DOUBLE,
+        addProperty(new MobProperty("health", DataType.NON_NEGATIVE_DOUBLE,
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_MAX_HEALTH);
                 if (attribute != null) {
@@ -515,48 +536,48 @@ public class MobType {
                     mob.setHealth(attribute.getBaseValue());
                 }
             }));
-        addProperty(new MobProperty("breath-seconds", DataType.INTEGER,
+        addProperty(new MobProperty("breath-seconds", DataType.NON_NEGATIVE_INTEGER,
             (mob, logger) -> {
                 int ticks = 20 * (Integer) getDerivedProperty("breath-seconds").getValue();
                 mob.setMaximumAir(ticks);
                 mob.setRemainingAir(ticks);
             }));
-        addProperty(new MobProperty("speed", DataType.DOUBLE,
+        addProperty(new MobProperty("speed", DataType.clampedDouble(0.0, 1024.0),
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
                 if (attribute != null) {
                     attribute.setBaseValue((Double) getDerivedProperty("speed").getValue());
                 }
             }));
-        addProperty(new MobProperty("flying-speed", DataType.DOUBLE,
+        addProperty(new MobProperty("flying-speed", DataType.clampedDouble(0.0, 1024.0),
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_FLYING_SPEED);
                 if (attribute != null) {
                     attribute.setBaseValue((Double) getDerivedProperty("flying-speed").getValue());
                 }
             }));
-        addProperty(new MobProperty("follow-range", DataType.DOUBLE,
+        addProperty(new MobProperty("follow-range", DataType.clampedDouble(0.0, 2048.0),
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_FOLLOW_RANGE);
                 if (attribute != null) {
                     attribute.setBaseValue((Double) getDerivedProperty("follow-range").getValue());
                 }
             }));
-        addProperty(new MobProperty("attack-damage", DataType.DOUBLE,
+        addProperty(new MobProperty("attack-damage", DataType.clampedDouble(0.0, 2048.0),
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
                 if (attribute != null) {
                     attribute.setBaseValue((Double) getDerivedProperty("attack-damage").getValue());
                 }
             }));
-        addProperty(new MobProperty("attack-speed", DataType.DOUBLE,
+        addProperty(new MobProperty("attack-speed", DataType.NON_NEGATIVE_DOUBLE,
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
                 if (attribute != null) {
                     attribute.setBaseValue((Double) getDerivedProperty("attack-speed").getValue());
                 }
             }));
-        addProperty(new MobProperty("pick-up-percent", DataType.DOUBLE,
+        addProperty(new MobProperty("pick-up-percent", DataType.PERCENT,
             (mob, logger) -> {
                 mob.setCanPickupItems(Math.random() * 100 < (Double) getDerivedProperty("pick-up-percent").getValue());
             }));
@@ -568,11 +589,8 @@ public class MobType {
                     potionSet.apply(mob);
                 }
             }));
-        addProperty(new MobProperty("attack-potions", DataType.POTION_SET, (mob, logger) -> {
-        }));
-
-        addProperty(new MobProperty("hurt-potions", DataType.POTION_SET, (mob, logger) -> {
-        }));
+        addProperty(new MobProperty("attack-potions", DataType.POTION_SET, null));
+        addProperty(new MobProperty("hurt-potions", DataType.POTION_SET, null));
 
         // Equipment ----------------------------------------------------------
 
@@ -584,7 +602,7 @@ public class MobType {
                     mob.getEquipment().setHelmet(itemStack);
                 }
             }));
-        addProperty(new MobProperty("helmet-drop-percent", DataType.DOUBLE,
+        addProperty(new MobProperty("helmet-drop-percent", DataType.PERCENT,
             (mob, logger) -> {
                 double percent = (Double) getDerivedProperty("helmet-drop-percent").getValue();
                 mob.getEquipment().setHelmetDropChance((float) percent / 100);
@@ -597,7 +615,7 @@ public class MobType {
                     mob.getEquipment().setChestplate(itemStack);
                 }
             }));
-        addProperty(new MobProperty("chest-plate-drop-percent", DataType.DOUBLE,
+        addProperty(new MobProperty("chest-plate-drop-percent", DataType.PERCENT,
             (mob, logger) -> {
                 double percent = (Double) getDerivedProperty("chest-plate-drop-percent").getValue();
                 mob.getEquipment().setChestplateDropChance((float) percent / 100);
@@ -610,7 +628,7 @@ public class MobType {
                     mob.getEquipment().setLeggings(itemStack);
                 }
             }));
-        addProperty(new MobProperty("leggings-drop-percent", DataType.DOUBLE,
+        addProperty(new MobProperty("leggings-drop-percent", DataType.PERCENT,
             (mob, logger) -> {
                 double percent = (Double) getDerivedProperty("leggings-drop-percent").getValue();
                 mob.getEquipment().setLeggingsDropChance((float) percent / 100);
@@ -623,7 +641,7 @@ public class MobType {
                     mob.getEquipment().setBoots(itemStack);
                 }
             }));
-        addProperty(new MobProperty("boots-drop-percent", DataType.DOUBLE,
+        addProperty(new MobProperty("boots-drop-percent", DataType.PERCENT,
             (mob, logger) -> {
                 double percent = (Double) getDerivedProperty("boots-drop-percent").getValue();
                 mob.getEquipment().setBootsDropChance((float) percent / 100);
@@ -636,7 +654,7 @@ public class MobType {
                     mob.getEquipment().setItemInMainHand(itemStack);
                 }
             }));
-        addProperty(new MobProperty("main-hand-drop-percent", DataType.DOUBLE,
+        addProperty(new MobProperty("main-hand-drop-percent", DataType.PERCENT,
             (mob, logger) -> {
                 double percent = (Double) getDerivedProperty("main-hand-drop-percent").getValue();
                 mob.getEquipment().setItemInMainHandDropChance((float) percent / 100);
@@ -649,7 +667,7 @@ public class MobType {
                     mob.getEquipment().setItemInOffHand(itemStack);
                 }
             }));
-        addProperty(new MobProperty("off-hand-drop-percent", DataType.DOUBLE,
+        addProperty(new MobProperty("off-hand-drop-percent", DataType.PERCENT,
             (mob, logger) -> {
                 double percent = (Double) getDerivedProperty("off-hand-drop-percent").getValue();
                 mob.getEquipment().setItemInOffHandDropChance((float) percent / 100);
@@ -658,10 +676,45 @@ public class MobType {
         // Drops --------------------------------------------------------------
 
         addProperty(new MobProperty("drops", DataType.LOOT, null));
-        addProperty(new MobProperty("experience", DataType.INTEGER, null));
+        addProperty(new MobProperty("experience", DataType.NON_NEGATIVE_INTEGER, null));
 
         // Behaviour ----------------------------------------------------------
 
+        addProperty(new MobProperty("explosion-radius", DataType.clampedInteger(0, 127),
+            (mob, logger) -> {
+                int radius = (Integer) getDerivedProperty("explosion-radius").getValue();
+                if (mob instanceof Creeper) {
+                    ((Creeper) mob).setExplosionRadius(radius);
+                }
+            }));
+        addProperty(new MobProperty("fuse-ticks", DataType.NON_NEGATIVE_INTEGER,
+            (mob, logger) -> {
+                int ticks = (Integer) getDerivedProperty("fuse-ticks").getValue();
+                if (mob instanceof Creeper) {
+                    // These methods don't delay ignite() in in 1.18.1.
+                    // Creeper creeper = (Creeper) mob;
+                    // creeper.setMaxFuseTicks(ticks);
+                    // creeper.setFuseTicks(ticks);
+                }
+            }));
+        addProperty(new MobProperty("ignited-percent", DataType.PERCENT,
+            (mob, logger) -> {
+                if (mob instanceof Creeper && Math.random() * 100 < (Double) getDerivedProperty("ignited-percent").getValue()) {
+                    // Work around a bug in Creeper.ignite() that causes the
+                    // explosion immediately, rather than waiting
+                    // getFuseTicks().
+                    Creeper creeper = (Creeper) mob;
+                    int fuseTicks = (Integer) getDerivedProperty("fuse-ticks").getValue();
+                    int waitTicks = Math.max(1, fuseTicks - creeper.getFuseTicks());
+                    // Bukkit.getLogger().info("Fuse ticks: " +
+                    // creeper.getFuseTicks());
+                    // Bukkit.getLogger().info("fuse-ticks: " + fuseTicks);
+                    // Bukkit.getLogger().info("Wait ticks: " + waitTicks);
+                    Bukkit.getScheduler().runTaskLater(BeastMaster.PLUGIN, () -> {
+                        creeper.ignite();
+                    }, waitTicks);
+                }
+            }));
         addProperty(new MobProperty("groups", DataType.TAG_SET, null));
         addProperty(new MobProperty("friend-groups", DataType.TAG_SET, null));
         addProperty(new MobProperty("tags", DataType.TAG_SET, (mob, logger) -> {
@@ -670,7 +723,7 @@ public class MobType {
             mob.getScoreboardTags().addAll(tags);
         }));
 
-        addProperty(new MobProperty("anger-ticks", DataType.INTEGER, (mob, logger) -> {
+        addProperty(new MobProperty("anger-ticks", DataType.NON_NEGATIVE_INTEGER, (mob, logger) -> {
             int ticks = (Integer) getDerivedProperty("anger-ticks").getValue();
             if (mob instanceof Bee) {
                 ((Bee) mob).setAnger(ticks);
@@ -695,18 +748,18 @@ public class MobType {
         addProperty(new MobProperty("projectile-mobs", DataType.LOOT_OR_MOB, null));
         addProperty(new MobProperty("projectile-disguise", DataType.DISGUISE, null));
         addProperty(new MobProperty("projectile-removed", DataType.BOOLEAN, null));
-        addProperty(new MobProperty("projectile-immunity-percent", DataType.DOUBLE, null));
+        addProperty(new MobProperty("projectile-immunity-percent", DataType.PERCENT, null));
 
-        addProperty(new MobProperty("hurt-teleport-percent", DataType.DOUBLE, null));
+        addProperty(new MobProperty("hurt-teleport-percent", DataType.PERCENT, null));
         addProperty(new MobProperty("slime-can-split", DataType.BOOLEAN, null));
 
         // Support Mobs -------------------------------------------------------
         // support-... properties are implemented in EntityDmanageEvent.
         // The mechanism is distinct from vanilla zombie reinforcements.
         addProperty(new MobProperty("support-mobs", DataType.LOOT_OR_MOB, null));
-        addProperty(new MobProperty("support-percent", DataType.DOUBLE, null));
-        addProperty(new MobProperty("support-health", DataType.DOUBLE, null));
-        addProperty(new MobProperty("support-health-step", DataType.DOUBLE, null));
+        addProperty(new MobProperty("support-percent", DataType.PERCENT, null));
+        addProperty(new MobProperty("support-health", DataType.NON_NEGATIVE_DOUBLE, null));
+        addProperty(new MobProperty("support-health-step", DataType.NON_NEGATIVE_DOUBLE, null));
 
         // TODO: projectile-substitution to replace one type of projectile with
         // a different type of projectile.
