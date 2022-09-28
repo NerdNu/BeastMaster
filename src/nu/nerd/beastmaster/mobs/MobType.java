@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
@@ -691,28 +690,13 @@ public class MobType {
             (mob, logger) -> {
                 int ticks = (Integer) getDerivedProperty("fuse-ticks").getValue();
                 if (mob instanceof Creeper) {
-                    // These methods don't delay ignite() in in 1.18.1.
-                    // Creeper creeper = (Creeper) mob;
-                    // creeper.setMaxFuseTicks(ticks);
-                    // creeper.setFuseTicks(ticks);
+                    ((Creeper) mob).setMaxFuseTicks(ticks);
                 }
             }));
         addProperty(new MobProperty("ignited-percent", DataType.PERCENT,
             (mob, logger) -> {
                 if (mob instanceof Creeper && Math.random() * 100 < (Double) getDerivedProperty("ignited-percent").getValue()) {
-                    // Work around a bug in Creeper.ignite() that causes the
-                    // explosion immediately, rather than waiting
-                    // getFuseTicks().
-                    Creeper creeper = (Creeper) mob;
-                    int fuseTicks = (Integer) getDerivedProperty("fuse-ticks").getValue();
-                    int waitTicks = Math.max(1, fuseTicks - creeper.getFuseTicks());
-                    // Bukkit.getLogger().info("Fuse ticks: " +
-                    // creeper.getFuseTicks());
-                    // Bukkit.getLogger().info("fuse-ticks: " + fuseTicks);
-                    // Bukkit.getLogger().info("Wait ticks: " + waitTicks);
-                    Bukkit.getScheduler().runTaskLater(BeastMaster.PLUGIN, () -> {
-                        creeper.ignite();
-                    }, waitTicks);
+                    ((Creeper) mob).ignite();
                 }
             }));
         addProperty(new MobProperty("groups", DataType.TAG_SET, null));
