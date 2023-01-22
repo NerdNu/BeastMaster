@@ -763,6 +763,15 @@ public class BeastMaster extends JavaPlugin implements Listener {
             if (sound != null) {
                 sound.play(damagedEntity.getLocation());
             }
+
+            // Nerf warden sonic boom attack?
+            if (event.getCause() == DamageCause.SONIC_BOOM) {
+                Double scaleFactor = (Double) attackingMobType.getDerivedProperty("sonic-boom-damage-scale").getValue();
+                if (scaleFactor != null) {
+                    // TODO: damage modifiers bamboozle me. Read!
+                    event.setDamage(event.getDamage() * scaleFactor);
+                }
+            }
         }
     }
 

@@ -569,6 +569,7 @@ public class MobType {
                     attribute.setBaseValue((Double) getDerivedProperty("attack-damage").getValue());
                 }
             }));
+        addProperty(new MobProperty("sonic-boom-damage-scale", DataType.NON_NEGATIVE_DOUBLE, null));
         addProperty(new MobProperty("attack-speed", DataType.NON_NEGATIVE_DOUBLE,
             (mob, logger) -> {
                 AttributeInstance attribute = mob.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
