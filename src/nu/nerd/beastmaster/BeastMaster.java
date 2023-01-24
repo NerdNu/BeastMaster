@@ -541,10 +541,19 @@ public class BeastMaster extends JavaPlugin implements Listener {
     }
 
     // ------------------------------------------------------------------------
+    @SuppressWarnings("deprecation")
     /**
-     * When a mob is damaged, play the `projectile-hurt-sound`, or the
-     * `melee-hurt-sound` for all other damage types.
+     * Handle damage to a mob.
      *
+     * Processing:
+     * <ul>
+     * <li>Summon support mobs per the `support-*` properties.</li>
+     * <li>Process projectile immunity and corresponding sound.</li>
+     * <li>Play the `projectile-hurt-sound`, or the `melee-hurt-sound` for all
+     * other damage types.</li>
+     * <li>Apply `hurt-potions`.</li>
+     * <li>Teleport when hurt.</li>
+     * </ul>
      * Note: onEntityDamange() is called after onEntityDamageByEntity().
      */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -567,19 +576,45 @@ public class BeastMaster extends JavaPlugin implements Listener {
             Location mobLocation = entity.getLocation();
 
             // Support mobs.
-            String supportId = (String) mobType.getProperty("support-mobs").getValue();
+            String supportId = (String) mobType.getDerivedProperty("support-mobs").getValue();
             if (supportId != null) {
-                Double healthThreshold = (Double) mobType.getProperty("support-health").getValue();
+                Double healthThreshold = (Double) mobType.getDerivedProperty("support-health").getValue();
                 boolean healthLow = (healthThreshold == null || finalHealth <= healthThreshold);
                 Double prevHealth = (Double) EntityMeta.api().get(entity, this, "support-health");
-                Double healthStep = (Double) mobType.getProperty("support-health-step").getValue();
-                Double supportPercent = (Double) mobType.getProperty("support-percent").getValue();
+                Double healthStep = (Double) mobType.getDerivedProperty("support-health-step").getValue();
+                Double supportPercent = (Double) mobType.getDerivedProperty("support-percent").getValue();
 
-                if (healthLow && (prevHealth == null ||
-                                  healthStep == null ||
-                                  prevHealth - finalHealth >= healthStep)
-                    && (supportPercent == null ||
-                        Math.random() * 100 < supportPercent)) {
+                if (healthThreshold == null) {
+                    healthThreshold = damagedLiving.getMaxHealth();
+                }
+
+                // If support mobs have not previously spawned, require health
+                // to drop by at least healthStep.
+                if (prevHealth == null) {
+                    prevHealth = damagedLiving.getMaxHealth();
+                }
+
+                if (healthStep == null) {
+                    healthStep = 0.0;
+                }
+
+                if (supportPercent == null) {
+                    supportPercent = 100.0;
+                }
+
+                if (CONFIG.DEBUG_SUPPORT_MOBS) {
+                    getLogger().info("Support mobs for: " + mobType.getId());
+                    getLogger().info("    Spawn when health     <= " + healthThreshold);
+                    getLogger().info("    Current    health      = " + finalHealth);
+                    getLogger().info("    Previous   health      = " + prevHealth);
+                    getLogger().info("    Change in  health      = " + (prevHealth - finalHealth));
+                    getLogger().info("    Spawn when change     >= " + healthStep);
+                    getLogger().info("    % chance of spawn      = " + supportPercent);
+                }
+
+                if (healthLow
+                    && (prevHealth - finalHealth >= healthStep)
+                    && Math.random() * 100 <= supportPercent) {
 
                     // TODO: spawning needs to do better at looking for a
                     // spawnable location. Really need to do spawn conditions
@@ -590,6 +625,10 @@ public class BeastMaster extends JavaPlugin implements Listener {
                     DropResults results = new DropResults();
                     List<LivingEntity> supportMobs = spawnMultipleMobs(supportLocation, supportId, false, results,
                                                                        mobType.getId() + " support-mobs");
+                    if (CONFIG.DEBUG_SUPPORT_MOBS) {
+                        getLogger().info("    Spawned number of mobs = " + supportMobs.size());
+                    }
+
                     if (damagedLiving instanceof Mob) {
                         for (LivingEntity mob : supportMobs) {
                             if (mob instanceof Mob) {

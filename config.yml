@@ -3,6 +3,7 @@ debug:
   blockstore: false
   disguises: false
   equipment-drops: false
+  support-mobs: false
 
 chance:
   wither-skeleton: 0.8
