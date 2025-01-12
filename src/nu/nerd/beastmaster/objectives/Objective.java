@@ -23,8 +23,8 @@ public class Objective {
      * Constructor.
      *
      * @param objectiveType the type of this Objective.
-     * @param loc the location of the objective.
-     * @param lifeTicks the number of ticks this objective should live.
+     * @param loc           the location of the objective.
+     * @param lifeTicks     the number of ticks this objective should live.
      */
     public Objective(ObjectiveType objectiveType, Location loc, int lifeTicks) {
         _objectiveType = objectiveType;
@@ -82,12 +82,12 @@ public class Objective {
             }
         }
 
-        _location.getWorld().spawnParticle(Particle.BLOCK_CRACK, _location,
-                                                                 _objectiveType.getParticleCount(),
-                                                                 _objectiveType.getParticleRadius(),
-                                                                 _objectiveType.getParticleRadius(),
-                                                                 _objectiveType.getParticleRadius(),
-                                                                 Material.GLOWSTONE);
+        _location.getWorld().spawnParticle(Particle.BLOCK, _location,
+                _objectiveType.getParticleCount(),
+                _objectiveType.getParticleRadius(),
+                _objectiveType.getParticleRadius(),
+                _objectiveType.getParticleRadius(),
+                Material.GLOWSTONE);
 
         for (Entity entity : _location.getWorld().getNearbyEntities(_location, 2, 2, 2)) {
             if (entity instanceof Player) {
@@ -106,7 +106,7 @@ public class Objective {
      */
     public void spawnLoot(Player player) {
         BeastMaster.PLUGIN.getLogger().info("Objective reached by " + player.getName() + " " +
-                                            Util.formatLocation(getLocation()));
+                Util.formatLocation(getLocation()));
 
         World world = getLocation().getWorld();
         world.playSound(getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 3, 1);
