@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.block.Biome;
 
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -21,31 +23,46 @@ import nu.nerd.beastmaster.Util;
  */
 public enum ZonePredicate {
     BIOME(
-        "Location is in the specified biome type." +
-          " The type may contain the wildcard character, \'*\', to match zero or more arbitrary characters.",
-        new ZonePredicateParameters("type", String.class),
-        new IZonePredicate() {
-            @Override
-            public void validateArgs(List<Token> argTokens, List<Object> args) {
-                String biomeName = ((String) args.get(0)).toUpperCase();
-                try {
-                    Predicate<String> predicate = Util.globToStringPredicate(biomeName);
-                    args.set(0, (predicate != null) ? predicate : Biome.valueOf(biomeName));
-                } catch (IllegalArgumentException ex) {
-                    throw new ParseError("invalid biome name: " + biomeName +
-                                         "; it should be a double-quoted Biome API constant",
-                        argTokens.get(0));
-                }
-            }
+            "Location is in the specified biome type." +
+                    " The type may contain the wildcard character, '*', to match zero or more arbitrary characters." +
+                    " Custom biomes from data packs can be given as a namespaced key, e.g. \"mypack:frozen_swamp\"" +
+                    " (bare names are assumed to be in the \"minecraft\" namespace).",
+            new ZonePredicateParameters("type", String.class),
+            new IZonePredicate() {
+                @Override
+                public void validateArgs(List<Token> argTokens, List<Object> args) {
+                    String biomeName = (String) args.get(0);
 
-            @Override
-            public boolean matches(Location loc, List<Object> args) {
-                Biome locBiome = loc.getBlock().getBiome();
-                Object arg = args.get(0);
-                return arg.getClass() == Biome.class ? (locBiome == arg)
-                                                     : ((Predicate<String>) arg).test(locBiome.name());
-            }
-        }),
+                    Predicate<String> predicate = Util.globToStringPredicate(biomeName.toLowerCase());
+                    if (predicate != null) {
+                        args.set(0, predicate);
+                        return;
+                    }
+
+                    NamespacedKey key = NamespacedKey.fromString(biomeName.toLowerCase());
+                    if (key == null) {
+                        key = NamespacedKey.minecraft(biomeName.toLowerCase());
+                    }
+                    Biome biome = Registry.BIOME.get(key);
+                    if (biome == null) {
+                        throw new ParseError("invalid biome name: " + biomeName +
+                                "; it should be a registered biome key, e.g. \"plains\" or \"mypack:custom_biome\"",
+                                argTokens.get(0));
+                    }
+                    args.set(0, biome.getKey());
+                }
+
+                @Override
+                public boolean matches(Location loc, List<Object> args) {
+                    Biome locBiome = loc.getBlock().getBiome();
+                    Object arg = args.get(0);
+                    if (arg instanceof NamespacedKey) {
+                        return locBiome.getKey().equals(arg);
+                    } else {
+                        return ((Predicate<String>) arg).test(locBiome.getKey().toString());
+                    }
+                }
+            }),
 
     CIRCLE(
         "Location is within radius blocks of (x,z).",
